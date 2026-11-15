@@ -354,6 +354,39 @@ async function accountBalanceOtp(request, env, headers, accountId) {
   return json({ url: wsUrl }, 200, headers);
 }
 
+async function tradingOtp(request, env, headers, accountId) {
+  if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) return json({ error: "invalid_account_request" }, 400, headers);
+  const auth = await getValidSession(request, env);
+  if (!auth) return json({ error: "session_expired", connected: false }, 401, headers);
+  let accountResponse;
+  try {
+    accountResponse = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch { return json({ error: "deriv_unavailable" }, 502, headers); }
+  const accountPayload = await accountResponse.json().catch(() => null);
+  const accountList = Array.isArray(accountPayload?.data) ? accountPayload.data :
+    Array.isArray(accountPayload?.data?.accounts) ? accountPayload.data.accounts :
+    Array.isArray(accountPayload?.accounts) ? accountPayload.accounts : [];
+  const account = accountList.find((a) => String(a?.account_id || a?.accountId || "") === accountId);
+  const accountType = String(account?.account_type || account?.accountType || "").toLowerCase();
+  if (!accountResponse.ok || !account || !["demo", "real"].includes(accountType)) return json({ error: "account_not_available" }, 404, headers);
+  let otpResponse;
+  try {
+    otpResponse = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(accountId)}/otp`, {
+      method: "POST", headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch { return json({ error: "deriv_unavailable" }, 502, headers); }
+  const otpPayload = await otpResponse.json().catch(() => null);
+  const wsUrl = otpPayload?.data?.url;
+  if (!otpResponse.ok || typeof wsUrl !== "string") return json({ error: "trading_connection_unavailable", upstreamStatus: otpResponse.status }, otpResponse.status || 502, headers);
+  let parsed;
+  try { parsed = new URL(wsUrl); } catch { return json({ error: "invalid_trading_socket_url" }, 502, headers); }
+  if (parsed.protocol !== "wss:" || parsed.hostname !== "api.derivws.com") return json({ error: "invalid_trading_socket_url" }, 502, headers);
+  return json({ url: wsUrl, account_id: accountId, account_type: accountType, currency: account.currency || null }, 200, headers);
+}
+
 async function resetDemoBalance(request, env, headers, accountId) {
   if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
   if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) {
@@ -452,6 +485,8 @@ export default {
     if (url.pathname === "/oauth/accounts" && request.method === "GET") {
       return listAccounts(request, env, headers);
     }
+    const tradingOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/trading-otp$/);
+    if (tradingOtpMatch && request.method === "POST") return tradingOtp(request, env, headers, decodeURIComponent(tradingOtpMatch[1]));
     const resetDemoMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/reset-demo-balance$/);
     if (resetDemoMatch && request.method === "POST") {
       return resetDemoBalance(request, env, headers, decodeURIComponent(resetDemoMatch[1]));
