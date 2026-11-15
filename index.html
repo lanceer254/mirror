@@ -385,7 +385,7 @@ li span:first-child{color:#668b70}
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
-  var historyRequestId=null,subscribeRequestId=null,historyReady=false,pendingLiveTicks=[];
+  var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
     var visibleTitle='',visibleDetail='',visibleType='system';
@@ -460,7 +460,7 @@ li span:first-child{color:#668b70}
     price=Number(value);
     lastDigit=Number(digits.charAt(digits.length-1));
     ds.push(lastDigit);ps.push(price);
-    tickEpochs.push(Number.isFinite(Number(epoch))?Number(epoch):null);
+    tickEpochs.push(epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null);
     if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
       render();
@@ -471,7 +471,7 @@ li span:first-child{color:#668b70}
   }
   function clearMarketData(){
     ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;
-    historyReady=false;pendingLiveTicks=[];
+    historyReady=false;historyFailed=false;pendingLiveTicks=[];
     $('#price').textContent='WAITING FOR TICKS';
     setTickWindowState('LOADING DERIV HISTORY');
     render();updateTickWindow();
@@ -494,8 +494,8 @@ li span:first-child{color:#668b70}
       if(!skippedOverlap&&sameAsHistory){skippedOverlap=true;return}
       addQuote(tick.quote,tick.pip_size,tick.epoch);
     });
-    if(tickSubscriptionId)setTickWindowState('LIVE · DERIV SUBSCRIBED');
-    else setTickWindowState('HISTORY LOADED · AWAITING LIVE TICK');
+    if(tickSubscriptionId)setTickWindowState(historyFailed?'HISTORY UNAVAILABLE · LIVE ONLY':'LIVE · DERIV SUBSCRIBED');
+    else setTickWindowState(historyFailed?'HISTORY UNAVAILABLE · AWAITING LIVE TICK':'HISTORY LOADED · AWAITING LIVE TICK');
     updateTickWindow();
   }
   function loadHistory(data){
@@ -510,7 +510,7 @@ li span:first-child{color:#668b70}
     var rows=prices.map(function(value,index){
       return{quote:value,epoch:times[index]!==undefined?Number(times[index]):null,index:index};
     });
-    if(rows.length&&rows.every(function(row){return Number.isFinite(row.epoch)})){
+    if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)})){
       rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index});
     }
     ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;
@@ -570,7 +570,7 @@ li span:first-child{color:#668b70}
       if(data.error){
         $('#status').textContent='Deriv data error: '+(data.error.message||'Request rejected');
         if(data.req_id===historyRequestId){
-          historyReady=true;
+          historyReady=true;historyFailed=true;
           setTickWindowState('HISTORY UNAVAILABLE · LIVE ONLY');
           flushPendingLiveTicks();
         }else if(data.req_id===subscribeRequestId){
