@@ -222,6 +222,23 @@ li span:first-child{color:#668b70}
   box-shadow:none!important;
 }
 
+
+/* Deriv-backed rolling tick window */
+.tick-window{width:100%;margin:12px 0 0;background:#050b09;border:1px solid #17452e;border-radius:8px;box-shadow:0 0 18px rgba(0,255,120,.045),inset 0 0 22px rgba(0,255,120,.018);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.tick-window-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;background:transparent;border:0;color:#c9f7d5;text-align:left;cursor:pointer;font:inherit}
+.tick-window-toggle:focus-visible{outline:2px solid #55f59a;outline-offset:2px}
+.tick-window-heading{font-size:10px;font-weight:700;letter-spacing:.13em;color:#aaf8bf}
+.tick-window-latest{display:flex;align-items:center;gap:9px;margin-left:auto}
+.tick-window-latest small{font-size:8px;letter-spacing:.1em;color:#668b70}
+.tick-window-latest b{min-width:18px;text-align:center;color:#55f59a;font-size:20px;line-height:1}
+.tick-window-chevron{color:#8bdba2;font-size:14px}
+.tick-window-body{padding:0 12px 12px}
+.tick-window-body[hidden]{display:none!important}
+.tick-window-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #153323;border-bottom:1px solid #153323;color:#8bdba2;font-size:9px;letter-spacing:.06em}
+.tick-digit-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;max-height:230px;overflow-y:auto;overflow-x:hidden;padding:9px 2px 2px;scrollbar-width:thin;scrollbar-color:#245b3a #07110b}
+.tick-digit{display:flex;align-items:center;justify-content:center;min-height:24px;border:1px solid rgba(31,83,52,.48);border-radius:3px;background:#07110b;color:#c9f7d5;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.tick-digit:first-child{border-color:#55f59a;color:#55f59a;background:#0a1a10}
+@media(max-width:600px){.tick-window{margin-top:10px}.tick-window-toggle{padding:9px 10px}.tick-digit-grid{gap:3px;max-height:210px}.tick-digit{min-height:22px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -302,6 +319,20 @@ li span:first-child{color:#668b70}
         </section>
       </div>
   </div>
+  <section class="tick-window" aria-label="Deriv rolling tick window">
+    <button class="tick-window-toggle" id="tickWindowToggle" type="button" aria-expanded="false" aria-controls="tickWindowBody">
+      <span class="tick-window-heading">TICK ROLLING WINDOW</span>
+      <span class="tick-window-latest"><small>LATEST DIGIT</small><b id="latestDigit">—</b></span>
+      <span class="tick-window-chevron" id="tickWindowChevron" aria-hidden="true">▾</span>
+    </button>
+    <div class="tick-window-body" id="tickWindowBody" hidden>
+      <div class="tick-window-meta">
+        <span id="tickWindowState">WAITING FOR DERIV CONNECTION</span>
+        <span id="tickWindowCount">0 / 1000 DIGITS</span>
+      </div>
+      <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest 1000 tick digits, newest first"></div>
+    </div>
+  </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
       <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag" id="feedState">DERIV FEED OFFLINE</span></div>
@@ -319,7 +350,7 @@ li span:first-child{color:#668b70}
 <script>
 (function(){
   var $=function(s){return document.querySelector(s)};
-  var grid=$('#digits'),cur=$('#cursor'),C=2*Math.PI*42,cells=[],ds=[],ps=[],price=1000,lastPrice='',timer=null;
+  var grid=$('#digits'),cur=$('#cursor'),C=2*Math.PI*42,cells=[],ds=[],ps=[],tickEpochs=[],price=1000,lastPrice='',timer=null;
   var MK=[
     {n:'Volatility 10 (1s)',g:'1-second indices',symbol:'1HZ10V'},
     {n:'Volatility 25 (1s)',g:'1-second indices',symbol:'1HZ25V'},
@@ -354,6 +385,7 @@ li span:first-child{color:#668b70}
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
+  var historyRequestId=null,subscribeRequestId=null,historyReady=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
     var visibleTitle='',visibleDetail='',visibleType='system';
@@ -386,34 +418,108 @@ li span:first-child{color:#668b70}
   }
 
   var mk=MK[0];
-  function clearMarketData(){
-    ds=[];ps=[];lastPrice='';price=0;lastDigit=0;
-    $('#price').textContent='WAITING FOR TICKS';
-    render();
+  function setTickWindowState(label){
+    $('#tickWindowState').textContent=label;
   }
-  function addHistoryQuote(value){
-    if(value===undefined||value===null||!Number.isFinite(Number(value)))return;
+  function renderTickWindowDigits(){
+    var container=$('#tickDigitGrid');
+    if(!container)return;
+    var fragment=document.createDocumentFragment();
+    for(var i=ds.length-1;i>=0;i--){
+      var digit=document.createElement('span');
+      digit.className='tick-digit';
+      digit.textContent=String(ds[i]);
+      fragment.appendChild(digit);
+    }
+    container.replaceChildren(fragment);
+  }
+  function updateTickWindow(){
+    $('#latestDigit').textContent=ds.length?String(lastDigit):'—';
+    $('#tickWindowCount').textContent=ds.length+' / 1000 DIGITS';
+    if(!$('#tickWindowBody').hidden)renderTickWindowDigits();
+  }
+  function quoteDecimals(value){
     var raw=String(value),dot=raw.indexOf('.');
-    if(dot>=0)marketPipSize=Math.max(marketPipSize,Math.min(8,raw.length-dot-1));
-    var formatted=Number(value).toFixed(marketPipSize);
-    var digits=formatted.replace(/\D/g,'');
-    if(!digits)return;
-    lastPrice=formatted;price=Number(value);lastDigit=Number(digits.charAt(digits.length-1));
-    ds.push(lastDigit);ps.push(price);
-    if(ds.length>1000){ds.shift();ps.shift()}
+    return dot<0?0:Math.min(8,raw.length-dot-1);
   }
-  function addQuote(value,pipSize){
-    if(value===undefined||value===null||!Number.isFinite(Number(value)))return;
-    if(Number.isInteger(pipSize))marketPipSize=Math.max(0,Math.min(8,pipSize));
-    lastPrice=Number(value).toFixed(marketPipSize);
+  function formatQuote(value,pipSize){
+    var supplied=Number(pipSize);
+    if(pipSize!==undefined&&pipSize!==null&&Number.isInteger(supplied)&&supplied>=0&&supplied<=8){
+      marketPipSize=supplied;
+    }else{
+      marketPipSize=Math.max(marketPipSize,quoteDecimals(value));
+    }
+    return Number(value).toFixed(marketPipSize);
+  }
+  function appendTick(value,pipSize,epoch,processLive){
+    if(value===undefined||value===null||!Number.isFinite(Number(value)))return false;
+    var formatted=formatQuote(value,pipSize);
+    var digits=formatted.replace(/\D/g,'');
+    if(!digits)return false;
+    lastPrice=formatted;
     price=Number(value);
-    var digits=lastPrice.replace(/\D/g,'');
-    if(!digits)return;
     lastDigit=Number(digits.charAt(digits.length-1));
     ds.push(lastDigit);ps.push(price);
-    if(ds.length>1000){ds.shift();ps.shift()}
-    render();moveCursor(lastDigit,true);
-    processMarketTick(lastDigit,price);
+    tickEpochs.push(Number.isFinite(Number(epoch))?Number(epoch):null);
+    if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
+    if(processLive){
+      render();
+      moveCursor(lastDigit,true);
+      processMarketTick(lastDigit,price);
+    }
+    return true;
+  }
+  function clearMarketData(){
+    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;
+    historyReady=false;pendingLiveTicks=[];
+    $('#price').textContent='WAITING FOR TICKS';
+    setTickWindowState('LOADING DERIV HISTORY');
+    render();updateTickWindow();
+  }
+  function addHistoryQuote(value,epoch){
+    return appendTick(value,null,epoch,false);
+  }
+  function addQuote(value,pipSize,epoch){
+    if(!appendTick(value,pipSize,epoch,true))return;
+  }
+  function flushPendingLiveTicks(){
+    var queued=pendingLiveTicks;
+    pendingLiveTicks=[];
+    var lastIndex=ds.length-1;
+    var historyLastEpoch=lastIndex>=0?tickEpochs[lastIndex]:null;
+    var historyLastPrice=lastIndex>=0?ps[lastIndex]:null;
+    var skippedOverlap=false;
+    queued.forEach(function(tick){
+      var sameAsHistory=historyLastEpoch!==null&&Number(tick.epoch)===historyLastEpoch&&Number(tick.quote)===historyLastPrice;
+      if(!skippedOverlap&&sameAsHistory){skippedOverlap=true;return}
+      addQuote(tick.quote,tick.pip_size,tick.epoch);
+    });
+    if(tickSubscriptionId)setTickWindowState('LIVE · DERIV SUBSCRIBED');
+    else setTickWindowState('HISTORY LOADED · AWAITING LIVE TICK');
+    updateTickWindow();
+  }
+  function loadHistory(data){
+    var history=data.history||{},prices=history.prices||[],times=history.times||[];
+    var responsePipSize=data.pip_size!==undefined?data.pip_size:history.pip_size;
+    var parsedPipSize=Number(responsePipSize);
+    if(responsePipSize!==undefined&&Number.isInteger(parsedPipSize)&&parsedPipSize>=0&&parsedPipSize<=8){
+      marketPipSize=parsedPipSize;
+    }else{
+      prices.forEach(function(value){marketPipSize=Math.max(marketPipSize,quoteDecimals(value))});
+    }
+    var rows=prices.map(function(value,index){
+      return{quote:value,epoch:times[index]!==undefined?Number(times[index]):null,index:index};
+    });
+    if(rows.length&&rows.every(function(row){return Number.isFinite(row.epoch)})){
+      rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index});
+    }
+    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;
+    rows.forEach(function(row){addHistoryQuote(row.quote,row.epoch)});
+    historyReady=true;
+    render();
+    if(ds.length)moveCursor(lastDigit,false);
+    flushPendingLiveTicks();
+    updateTickWindow();
   }
   function sendSocket(payload){
     if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(payload));
@@ -423,8 +529,10 @@ li span:first-child{color:#668b70}
     if(tickSubscriptionId){sendSocket({forget:tickSubscriptionId,req_id:requestId++});tickSubscriptionId=null}
     clearMarketData();
     $('#activeMarket').textContent=mk.n;
-    sendSocket({ticks_history:mk.symbol,count:1000,end:'latest',style:'ticks',req_id:requestId++});
-    sendSocket({ticks:mk.symbol,subscribe:1,req_id:requestId++});
+    subscribeRequestId=requestId++;
+    historyRequestId=requestId++;
+    sendSocket({ticks:mk.symbol,subscribe:1,req_id:subscribeRequestId});
+    sendSocket({ticks_history:mk.symbol,count:1000,end:'latest',style:'ticks',req_id:historyRequestId});
   }
   function scheduleReconnect(){
     if(manuallyClosed||reconnectTimer)return;
@@ -439,10 +547,12 @@ li span:first-child{color:#668b70}
     if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
     $('#feedState').textContent='DERIV FEED CONNECTING';
     $('#engineState').textContent='Connecting';
+    setTickWindowState('CONNECTING TO DERIV');
     try{socket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public')}
     catch(error){
       $('#feedState').textContent='DERIV FEED ERROR';
       $('#status').textContent='WebSocket could not be created.';
+      setTickWindowState('CONNECTION ERROR');
       scheduleReconnect();return;
     }
     socket.onopen=function(){
@@ -459,6 +569,13 @@ li span:first-child{color:#668b70}
       try{data=JSON.parse(message.data)}catch(error){return}
       if(data.error){
         $('#status').textContent='Deriv data error: '+(data.error.message||'Request rejected');
+        if(data.req_id===historyRequestId){
+          historyReady=true;
+          setTickWindowState('HISTORY UNAVAILABLE · LIVE ONLY');
+          flushPendingLiveTicks();
+        }else if(data.req_id===subscribeRequestId){
+          setTickWindowState('SUBSCRIPTION ERROR');
+        }
         return;
       }
       if(data.msg_type==='active_symbols'){
@@ -466,24 +583,33 @@ li span:first-child{color:#668b70}
         var found=symbols.some(function(item){return (item.underlying_symbol||item.symbol)===mk.symbol});
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
-        ds=[];ps=[];
-        data.history.prices.forEach(function(value){addHistoryQuote(value)});
-        render();
-        if(ds.length)moveCursor(lastDigit,false);
+        if(data.req_id!==historyRequestId)return;
+        loadHistory(data);
       }else if(data.msg_type==='tick'&&data.tick){
+        if(data.tick.symbol!==mk.symbol)return;
         if(data.subscription&&data.subscription.id)tickSubscriptionId=data.subscription.id;
-        if(data.tick.symbol===mk.symbol)addQuote(data.tick.quote,data.tick.pip_size);
+        if(!historyReady){
+          pendingLiveTicks.push(data.tick);
+          if(pendingLiveTicks.length>5000)pendingLiveTicks.shift();
+          setTickWindowState('DERIV SUBSCRIBED · LOADING HISTORY');
+          updateTickWindow();
+        }else{
+          addQuote(data.tick.quote,data.tick.pip_size,data.tick.epoch);
+          setTickWindowState('LIVE · DERIV SUBSCRIBED');
+        }
       }
     };
     socket.onerror=function(){
       $('#feedState').textContent='DERIV FEED ERROR';
       $('#status').textContent='Deriv WebSocket connection error.';
+      setTickWindowState('CONNECTION ERROR');
     };
     socket.onclose=function(){
       socket=null;tickSubscriptionId=null;
       $('#feedState').textContent='DERIV FEED DISCONNECTED';
       $('#engineState').textContent='Disconnected';
       $('#status').textContent='Deriv feed disconnected. Reconnecting…';
+      setTickWindowState('DISCONNECTED · RECONNECTING');
       if(!manuallyClosed)scheduleReconnect();
     };
   }
@@ -500,6 +626,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
+    updateTickWindow();
   }
 
   function moveCursor(i,flash){
@@ -619,6 +746,13 @@ li span:first-child{color:#668b70}
       tradeLine();
     },2600);
   }
+  $('#tickWindowToggle').addEventListener('click',function(){
+    var open=this.getAttribute('aria-expanded')==='true';
+    this.setAttribute('aria-expanded',String(!open));
+    $('#tickWindowBody').hidden=open;
+    $('#tickWindowChevron').textContent=open?'▾':'▴';
+    if(!open)renderTickWindowDigits();
+  });
   $('#settingsToggle').addEventListener('click',function(){
     var open=this.getAttribute('aria-expanded')==='true';
     this.setAttribute('aria-expanded',String(!open));
