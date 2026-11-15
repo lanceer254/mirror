@@ -463,7 +463,7 @@ li span:first-child{color:#668b70}
       }
       if(data.msg_type==='active_symbols'){
         var symbols=data.active_symbols||[];
-        var found=symbols.some(function(item){return item.symbol===mk.symbol});
+        var found=symbols.some(function(item){return (item.underlying_symbol||item.symbol)===mk.symbol});
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
         ds=[];ps=[];
