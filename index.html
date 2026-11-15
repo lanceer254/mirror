@@ -34,6 +34,36 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .ghost{margin-top:16px;background:transparent;border:1px solid var(--line);color:var(--mute);font:inherit;font-size:.76rem;font-weight:600;border-radius:10px;padding:9px 13px;cursor:pointer;transition:all .2s}.ghost:hover{border-color:var(--accent);color:var(--ink);background:var(--glow)}.tline{margin-top:12px;font-size:.82rem;color:var(--mute)}
 @media(max-width:600px){.wrap{padding:22px 14px 32px}header{align-items:flex-start;margin-bottom:18px}.price{font-size:1.45rem;padding:10px 13px}.panel{padding:17px;border-radius:15px}.stage{padding:20px 15px;min-height:0}.digits{gap:5px}.d small{font-size:.6rem}.actions{gap:14px;margin-top:20px;padding-top:17px}.brain{width:72px;height:72px;border-radius:18px}.brain svg{width:40px;height:40px}.stats{gap:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Live activity workspace */
+.activity{margin-top:18px;display:grid;gap:18px}
+.activity-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.activity-head h2{margin:0;font-size:1rem;letter-spacing:-.01em}
+.live-tag{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(53,214,160,.25);background:rgba(53,214,160,.08);color:var(--win);padding:6px 10px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.live-tag:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.activity-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr);gap:18px}
+.feed{display:grid;gap:0;max-height:390px;overflow:auto;padding-right:4px}
+.feed-item{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+.feed-time{font-size:.68rem;color:var(--mute);font-variant-numeric:tabular-nums;padding-top:2px}
+.feed-title{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700}
+.feed-dot{width:7px;height:7px;flex:none;border-radius:50%;background:var(--accent)}
+.feed-item.decision .feed-dot{background:#a78bfa}.feed-item.trade .feed-dot{background:var(--win)}.feed-item.result .feed-dot{background:var(--accent)}.feed-item.warning .feed-dot{background:var(--loss)}
+.feed-detail{margin-top:4px;color:var(--mute);font-size:.73rem;line-height:1.55}
+.feed-empty{color:var(--mute);font-size:.78rem;padding:18px 0}
+.table-wrap{overflow:auto}
+.trade-table{width:100%;border-collapse:collapse;min-width:620px;font-size:.73rem;font-variant-numeric:tabular-nums}
+.trade-table th{text-align:left;color:var(--mute);font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:10px 9px;border-bottom:1px solid var(--line)}
+.trade-table td{padding:12px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+.trade-table tbody tr:last-child td{border-bottom:0}
+.trade-table .empty-row{text-align:center;color:var(--mute);padding:24px}
+.activity-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--mute);font-size:.68rem}
+.metric-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.metric{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px}
+.metric small{display:block;color:var(--mute);font-size:.64rem;text-transform:uppercase;letter-spacing:.07em}
+.metric b{display:block;margin-top:4px;font-size:1rem;font-variant-numeric:tabular-nums}
+@media(max-width:800px){.activity-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.metric-strip{gap:7px}.metric{padding:10px}.metric b{font-size:.88rem}.feed-item{grid-template-columns:58px 1fr;gap:8px}}
+
 </style>
 </head>
 <body>
@@ -117,6 +147,36 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
       </section>
     </div>
   </div>
+
+  <section class="activity" aria-label="Live trading activity">
+    <div class="panel">
+      <div class="activity-head">
+        <h2>Live activity center</h2>
+        <span class="live-tag">Session feed</span>
+      </div>
+      <div class="metric-strip">
+        <div class="metric"><small>Engine state</small><b id="engineState">Idle</b></div>
+        <div class="metric"><small>Current market</small><b id="activeMarket">Volatility 10 (1s)</b></div>
+        <div class="metric"><small>Session events</small><b id="eventCount">0</b></div>
+      </div>
+      <div class="activity-grid">
+        <section>
+          <h2>Decision & system timeline</h2>
+          <div class="feed" id="eventFeed" aria-live="polite"><div class="feed-empty">Waiting for scanner activity. Press Scan to begin.</div></div>
+        </section>
+        <section>
+          <h2>Trade execution ledger</h2>
+          <div class="table-wrap">
+            <table class="trade-table">
+              <thead><tr><th>Time</th><th>Market</th><th>Contract</th><th>Entry</th><th>Exit</th><th>Stake</th><th>Outcome</th><th>P/L</th></tr></thead>
+              <tbody id="tradeHistory"><tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="activity-foot"><span>Decision records include the observed sample and selected contract.</span><span>Paper simulation · session-only history</span></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -155,7 +215,16 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
     if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}
     var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o);
   });
-  var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],lastDigit=0;
+  var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
+  function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+  function event(type,title,detail){
+    events.unshift({time:stamp(),type:type,title:title,detail:detail});
+    if(events.length>100)events.length=100;
+    $('#eventCount').textContent=events.length;
+    $('#eventFeed').innerHTML=events.map(function(e){
+      return '<div class="feed-item '+e.type+'"><div class="feed-time">'+e.time+'</div><div><div class="feed-title"><i class="feed-dot"></i>'+e.title+'</div><div class="feed-detail">'+e.detail+'</div></div></div>';
+    }).join('');
+  }
 
   for(var i=0;i<10;i++){
     var d=document.createElement('div');d.className='d';
@@ -234,7 +303,8 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
   $('#contract').addEventListener('change',function(){applyContract()});
   $('#market').addEventListener('change',function(){
     mk=MK[+this.value];seed();restart();render();moveCursor(lastDigit,false);
-    $('#status').textContent=mk.n+' loaded.';
+    $('#status').textContent=mk.n+' loaded.';$('#activeMarket').textContent=mk.n;
+    event('system','Market changed',mk.n+' selected. Historical session entries are retained.');
   });
 
   function money(v){return(v>=0?'+':'\u2212')+Math.abs(v).toFixed(2)}
@@ -242,9 +312,200 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
     var t=$('#total');t.textContent=money(pnl);t.className='total '+(pnl>0?'pos':pnl<0?'neg':'');
     $('#wins').textContent=wins;$('#losses').textContent=losses;
     var all=wins+losses;$('#rate').textContent=(all?Math.round(wins/all*100):0)+'%';
-    $('#log').innerHTML=log.length?log.map(function(r){
+    $('#log').innerHTML=log.length?log.slice(0,6).map(function(r){
       return'<li><span>'+r.t+'</span><span>'+r.label+' \u2022 exit '+r.x+'</span><span class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</span></li>';
     }).join(''):'<li class="empty" style="border:0;padding:0">No trades yet.</li>';
+    $('#tradeHistory').innerHTML=log.length?log.map(function(r){
+      return '<tr><td>'+r.t+'</td><td>'+r.market+'</td><td>'+r.label+'</td><td>'+r.entry+'</td><td>'+r.x+'</td><td>
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    if(!trade&&!busy)$('#engineState').textContent='Idle';
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:stamp(),market:trade.market,label:trade.label,entry:trade.entry.toFixed(2),x:x,stake:trade.stake,amt:amt});
+    event('result',win?'Trade closed · PROFIT':'Trade closed · LOSS',
+      trade.market+' · '+trade.label+' · entry '+trade.entry.toFixed(2)+' → exit '+x+' · stake 
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#engineState').textContent='Scanning';$('#activeMarket').textContent=mk.n;
+    event('system','Scan initiated','Analysing the latest 25 simulated ticks on '+mk.n+'.');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  $('#activeMarket').textContent=mk.n;
+  event('system','Scanner ready','Paper-trading simulator initialised. No broker orders are being sent.');
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+trade.stake.toFixed(2)+' · P/L '+money(amt));
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
   }
 
   function tradeLine(){
