@@ -1028,7 +1028,7 @@ li span:first-child{color:#668b70}
       barrier:snapshot.barrier,duration:snapshot.duration,durationUnit:snapshot.durationUnit,
       digits:digits,prices:prices
     })})
-    .then(function(response){return response.json().then(function(data){if(!response.ok)throw new Error(data.error||'Gemini analysis failed');return data})})
+    .then(function(response){return response.json().then(function(data){if(!response.ok){var parts=[data.error||'Gemini analysis failed'];if(data.upstreamStatus)parts.push('Google HTTP '+data.upstreamStatus);if(data.details)parts.push(String(data.details));throw new Error(parts.join(' · '))}return data})})
     .then(function(decision){
       aiLastAnalysisMs=performance.now()-aiAnalysisStartedAt;
       aiLastModelMs=Number(decision.geminiLatencyMs)||0;
