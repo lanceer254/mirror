@@ -475,7 +475,7 @@ export default {
     }
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return json({ ok: true, service: "zyntrix-oauth", stage: "2.1" }, 200, headers);
+      return json({ ok: true, service: "zyntrix-oauth", stage: "2.3" }, 200, headers);
     }
     if (url.pathname === "/oauth/start" && request.method === "GET") return startOAuth(request, env);
     if (url.pathname === "/oauth/callback" && request.method === "GET") return oauthCallback(request, env);
