@@ -592,6 +592,7 @@ li span:first-child{color:#668b70}
 
   function scan(){
     if(busy||trade)return;
+    if(ds.length<25){$('#status').textContent='Waiting for at least 25 live Deriv ticks.';return;}
     busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
     $('#engineState').textContent='Scanning';$('#activeMarket').textContent=mk.n;
     event('system','Scan initiated','Analysing the latest 25 simulated ticks on '+mk.n+'.');
