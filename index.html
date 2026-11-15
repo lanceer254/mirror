@@ -356,7 +356,659 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
       else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
       else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
       var t=CT[id];
+      var decisionBasis=why||'Configured contract selection; no additional directional filter.';
+      event('decision','Decision recorded · '+t.n,
+        'Observed sample: 25 ticks ('+ups+' rising / '+downs+' falling). Decision basis: '+decisionBasis+'. Selected '+t.n+(c.b===null?'':' at barrier '+c.b)+'. Stake 
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      $('#engineState').textContent='Trade open';
+      event('trade','Trade opened · '+trade.label,
+        mk.n+' · entry '+trade.entry.toFixed(2)+' · stake 
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  $('#activeMarket').textContent=mk.n;
+  event('system','Scanner ready','Paper-trading simulator initialised. No broker orders are being sent.');
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
       trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+trade.stake.toFixed(2)+' · P/L '+money(amt));
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+c.stake.toFixed(2)+', duration '+c.n+' '+c.unit+'.');
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,duration:c.n,market:mk.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  $('#activeMarket').textContent=mk.n;
+  event('system','Scanner ready','Paper-trading simulator initialised. No broker orders are being sent.');
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+trade.stake.toFixed(2)+' · P/L '+money(amt));
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+trade.stake.toFixed(2)+' · duration '+trade.left+' '+trade.unit+'.');
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  $('#activeMarket').textContent=mk.n;
+  event('system','Scanner ready','Paper-trading simulator initialised. No broker orders are being sent.');
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+trade.stake.toFixed(2)+' · P/L '+money(amt));
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
+    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+  }
+
+  function tradeLine(){
+    var line='No open trade';
+    if(trade){
+      if(trade.unit==='ticks')line=trade.label+' \u2022 '+trade.left+' tick'+(trade.left===1?'':'s')+' left';
+      else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
+    }
+    $('#tline').textContent=line;
+    var lock=!!trade||busy;
+    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+  }
+
+  function settle(d,win){
+    var amt=win?+(trade.stake*(0.975/trade.p-1)).toFixed(2):-trade.stake;
+    var x=/^DIGIT/.test(trade.id)?d:lastPrice;
+    pnl=+(pnl+amt).toFixed(2);if(win)wins++;else losses++;
+    log.unshift({t:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}),label:trade.label,x:x,amt:amt});
+    if(log.length>6)log.length=6;
+    $('#status').textContent=(win?'Won':'Lost')+'. Exit '+x+'. Scan again when ready.';
+    trade=null;renderPnl();tradeLine();
+  }
+
+  function scan(){
+    if(busy||trade)return;
+    busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#status').textContent='Scanning the last 25 ticks\u2026';tradeLine();
+    setTimeout(function(){
+      var w=ds.slice(-25),pw=ps.slice(-25),c=cfg(),id=PR[c.id][0],why='',ups=0,downs=0;
+      for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
+      var cnt=function(f){return w.filter(f).length};
+      if(c.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
+      else if(c.id==='DIGITOVER'){var ov=cnt(function(x){return x>c.b}),un=cnt(function(x){return x<c.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+c.b}
+      else if(c.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
+      else if(c.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+      var t=CT[id];
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
+      busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+      $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
+      tradeLine();
+    },2600);
+  }
+  $('#scan').addEventListener('click',scan);
+  $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl()});
+
+  function tick(){
+    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    if(trade){
+      if(trade.run){
+        var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
+        if(!ok)settle(d,false);
+        else{trade.last=pn;if(--trade.left<=0)settle(d,true)}
+      }else if(trade.unit==='ticks'){if(--trade.left<=0)settle(d,result(trade,d,pn))}
+      else if(Date.now()>=trade.expiry)settle(d,result(trade,d,pn));
+    }
+    tradeLine();
+  }
+  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
+  restart();
+  setInterval(tradeLine,250);
+  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  applyContract();render();renderPnl();tradeLine();
+  setTimeout(function(){moveCursor(lastDigit,false)},50);
+})();
+</script>
+</body>
+</html>+c.stake.toFixed(2)+', duration '+c.n+' '+c.unit+'.');
+      trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,duration:c.n,market:mk.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
       busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
       $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
       tradeLine();
