@@ -998,7 +998,7 @@ li span:first-child{color:#668b70}
     }).catch(function(error){if(busy)tradingFailure('Trading authorization failed: '+error.message,false)});
   }
   function runGeminiAnalysis(){
-    if(!aiMonitoring||aiRequestInFlight||busy||trade||ds.length<25)return;
+    if(!aiMonitoring||aiRequestInFlight||ds.length<25)return;
     var token=sessionStorage.getItem(oauthSessionKey);
     var account=derivAccounts.find(function(a){return a.account_id===selectedDerivAccount});
     if(!token||!account){stopGeminiMonitoring('Deriv session expired or no account is selected. Reconnect before scanning.');accountStatus('Trading unavailable · select an authenticated account.');return}
@@ -1031,6 +1031,12 @@ li span:first-child{color:#668b70}
       }
       var allowed=PR[config.id]||[];
       if(allowed.indexOf(decision.signal)<0){event('warning','SIGNAL REJECTED','Gemini returned an outcome outside the selected contract. No purchase sent.');return}
+      if(busy||trade){
+        $('#geminiState').textContent='MONITORING · TRADE OPEN';
+        $('#status').textContent='Gemini identified another signal while a Deriv contract is open · no overlapping purchase will be placed.';
+        event('decision','GEMINI SIGNAL HELD · TRADE OPEN',decision.signal+' · '+decision.confidence_percent+'% confidence · '+decision.pattern_summary);
+        return;
+      }
       $('#geminiState').textContent='SIGNAL READY';
       executeGeminiTrade(decision.signal,config,account,decision,snapshot);
     })
@@ -1043,7 +1049,7 @@ li span:first-child{color:#668b70}
     })
     .finally(function(){
       aiRequestInFlight=false;
-      if(aiMonitoring&&!busy&&!trade&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();
+      if(aiMonitoring&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();
     });
   }
   function scan(){
@@ -1081,7 +1087,7 @@ li span:first-child{color:#668b70}
   updateGeminiStats();
   $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
 
-  function processMarketTick(d,pn){tradeLine();if(aiMonitoring&&!busy&&!trade&&!aiRequestInFlight&&ds.length>=25&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();}
+  function processMarketTick(d,pn){tradeLine();if(aiMonitoring&&!aiRequestInFlight&&ds.length>=25&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();}
   setInterval(tradeLine,250);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
