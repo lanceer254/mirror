@@ -258,6 +258,94 @@ async function exchangeHandoff(request, env, headers) {
   }, 200, headers);
 }
 
+
+async function getValidSession(request, env) {
+  const sessionId = bearerToken(request);
+  if (!sessionId) return null;
+  const session = await env.ZYNTRIX_KV.get(`session:${sessionId}`, "json");
+  if (!session || !session.accessToken || session.expiresAt <= Date.now()) {
+    await env.ZYNTRIX_KV.delete(`session:${sessionId}`);
+    return null;
+  }
+  return { sessionId, session };
+}
+
+async function listAccounts(request, env, headers) {
+  if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  const auth = await getValidSession(request, env);
+  if (!auth) return json({ error: "session_expired", connected: false }, 401, headers);
+  let upstream;
+  try {
+    upstream = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
+  const payload = await upstream.json().catch(() => null);
+  if (!upstream.ok) {
+    return json({ error: "account_lookup_failed", upstreamStatus: upstream.status, details: payload?.errors || null }, upstream.status, headers);
+  }
+  const raw = Array.isArray(payload?.data) ? payload.data :
+    Array.isArray(payload?.data?.accounts) ? payload.data.accounts :
+    Array.isArray(payload?.accounts) ? payload.accounts : [];
+  const accounts = raw.map((a) => ({
+    account_id: String(a?.account_id || a?.accountId || ""),
+    account_type: String(a?.account_type || a?.accountType || "").toLowerCase(),
+    currency: typeof a?.currency === "string" ? a.currency : null,
+    balance: Number.isFinite(Number(a?.balance)) ? Number(a.balance) : null,
+    status: typeof a?.status === "string" ? a.status : null,
+    group: typeof a?.group === "string" ? a.group : null
+  })).filter((a) => a.account_id && ["demo", "real"].includes(a.account_type));
+  return json({ connected: true, accounts }, 200, headers);
+}
+
+async function accountBalanceOtp(request, env, headers, accountId) {
+  if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) {
+    return json({ error: "invalid_account_request" }, 400, headers);
+  }
+  const auth = await getValidSession(request, env);
+  if (!auth) return json({ error: "session_expired", connected: false }, 401, headers);
+
+  // Confirm that this account belongs to the authenticated Deriv identity.
+  let accountResponse;
+  try {
+    accountResponse = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
+  const accountPayload = await accountResponse.json().catch(() => null);
+  const accountList = Array.isArray(accountPayload?.data) ? accountPayload.data :
+    Array.isArray(accountPayload?.data?.accounts) ? accountPayload.data.accounts : [];
+  const ownsAccount = accountList.some((a) => String(a?.account_id || a?.accountId || "") === accountId);
+  if (!accountResponse.ok || !ownsAccount) return json({ error: "account_not_available" }, 404, headers);
+
+  let otpResponse;
+  try {
+    otpResponse = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(accountId)}/otp`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
+  const otpPayload = await otpResponse.json().catch(() => null);
+  const wsUrl = otpPayload?.data?.url;
+  if (!otpResponse.ok || typeof wsUrl !== "string") {
+    return json({ error: "balance_connection_unavailable", upstreamStatus: otpResponse.status }, otpResponse.status || 502, headers);
+  }
+  let parsed;
+  try { parsed = new URL(wsUrl); } catch { return json({ error: "invalid_balance_socket_url" }, 502, headers); }
+  if (parsed.protocol !== "wss:" || parsed.hostname !== "api.derivws.com") {
+    return json({ error: "invalid_balance_socket_url" }, 502, headers);
+  }
+  return json({ url: wsUrl }, 200, headers);
+}
+
 async function sessionStatus(request, env, headers) {
   if (!requireAllowedOrigin(request, env)) {
     return json({ error: "origin_not_allowed" }, 403, headers);
@@ -300,6 +388,13 @@ export default {
     if (url.pathname === "/oauth/callback" && request.method === "GET") return oauthCallback(request, env);
     if (url.pathname === "/oauth/session/exchange" && request.method === "POST") {
       return exchangeHandoff(request, env, headers);
+    }
+    if (url.pathname === "/oauth/accounts" && request.method === "GET") {
+      return listAccounts(request, env, headers);
+    }
+    const balanceOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/balance-otp$/);
+    if (balanceOtpMatch && request.method === "POST") {
+      return accountBalanceOtp(request, env, headers, decodeURIComponent(balanceOtpMatch[1]));
     }
     if (url.pathname === "/oauth/session" && request.method === "GET") {
       return sessionStatus(request, env, headers);
