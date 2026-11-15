@@ -836,7 +836,6 @@ li span:first-child{color:#668b70}
       ws.onopen=function(){
         if(tradingSocket!==ws||tradingMonitorStopped)return;
         startTradingHeartbeat(ws);
-        tradingReconnectDelay=1000;
         $('#engineState').textContent='Deriv contract open';
         $('#status').textContent='Reconnected · monitoring Deriv contract #'+contractId+'.';
         try{ws.send(JSON.stringify({proposal_open_contract:1,contract_id:contractId,subscribe:1,req_id:++tradingRequestId}));}
@@ -848,6 +847,7 @@ li span:first-child{color:#668b70}
         if(data.msg_type==='ping'&&Number(data.req_id)===Number(tradingPingRequestId)){if(tradingPingTimeout){clearTimeout(tradingPingTimeout);tradingPingTimeout=null;}return;}
         if(data.error){event('warning','CONTRACT MONITOR ERROR',(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error'));try{ws.close()}catch(e){}return;}
         if(data.msg_type==='proposal_open_contract'&&data.proposal_open_contract&&trade){
+          tradingReconnectDelay=1000;
           var contract=data.proposal_open_contract;
           if(contract.contract_id&&Number(contract.contract_id)!==Number(trade.contractId))return;
           if(contract.is_sold){recordDerivSettlement(contract);return;}
@@ -1050,7 +1050,6 @@ li span:first-child{color:#668b70}
       var ws=new WebSocket(data.url);state.ws=ws;
       ws.onopen=function(){
         if(state.stopped||state.ws!==ws)return;
-        state.delay=1000;
         try{ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}));}catch(e){try{ws.close()}catch(ignore){}}
         if(state.pingTimer)clearInterval(state.pingTimer);
         state.pingTimer=setInterval(function(){
@@ -1069,6 +1068,7 @@ li span:first-child{color:#668b70}
         if(data.msg_type==='ping'&&Number(data.req_id)===Number(state.pingReqId)){if(state.pingTimeout){clearTimeout(state.pingTimeout);state.pingTimeout=null;}return;}
         if(data.error){if(account.account_id===selectedDerivAccount)accountStatus('Balance feed error · '+(data.error.message||'Deriv error'));return;}
         if(data.msg_type==='balance'&&data.balance){
+          state.delay=1000;
           updateAccountBalance(account.account_id,data.balance.balance,data.balance.currency);
           if(account.account_id===selectedDerivAccount)accountStatus((account.account_type==='real'?'Real':'Demo')+' account selected · balance live');
         }
