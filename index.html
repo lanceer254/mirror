@@ -289,6 +289,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
       else{var s=Math.max(0,Math.ceil((trade.expiry-Date.now())/1000));line=trade.label+' \u2022 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+' left'}
     }
     $('#tline').textContent=line;
+    if(!trade&&!busy)$('#engineState').textContent='Idle';
     var lock=!!trade||busy;
     $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
   }
