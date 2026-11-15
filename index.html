@@ -398,7 +398,7 @@ li span:first-child{color:#668b70}
     if(!digits)return;
     lastPrice=formatted;price=Number(value);lastDigit=Number(digits.charAt(digits.length-1));
     ds.push(lastDigit);ps.push(price);
-    if(ds.length>100){ds.shift();ps.shift()}
+    if(ds.length>1000){ds.shift();ps.shift()}
   }
   function addQuote(value,pipSize){
     if(value===undefined||value===null||!Number.isFinite(Number(value)))return;
@@ -409,7 +409,7 @@ li span:first-child{color:#668b70}
     if(!digits)return;
     lastDigit=Number(digits.charAt(digits.length-1));
     ds.push(lastDigit);ps.push(price);
-    if(ds.length>100){ds.shift();ps.shift()}
+    if(ds.length>1000){ds.shift();ps.shift()}
     render();moveCursor(lastDigit,true);
     processMarketTick(lastDigit,price);
   }
@@ -421,7 +421,7 @@ li span:first-child{color:#668b70}
     if(tickSubscriptionId){sendSocket({forget:tickSubscriptionId,req_id:requestId++});tickSubscriptionId=null}
     clearMarketData();
     $('#activeMarket').textContent=mk.n;
-    sendSocket({ticks_history:mk.symbol,count:100,end:'latest',style:'ticks',req_id:requestId++});
+    sendSocket({ticks_history:mk.symbol,count:1000,end:'latest',style:'ticks',req_id:requestId++});
     sendSocket({ticks:mk.symbol,subscribe:1,req_id:requestId++});
   }
   function scheduleReconnect(){
