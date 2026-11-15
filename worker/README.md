@@ -17,7 +17,8 @@ This Worker is the server-side OAuth foundation for the Zyntrix GitHub Pages das
 3. Bind that namespace to the Worker using the binding name `ZYNTRIX_KV`.
 4. Configure these Worker variables:
    - `DERIV_CLIENT_ID` — the Deriv OAuth application ID (keep it in Worker configuration, not dashboard HTML).
-   - `APP_ORIGIN` — `https://lanceer254.github.io` (the browser origin; the app itself is under `/mirror/`).
+   - `APP_ORIGIN` — `https://lanceer254.github.io` (the browser origin used for CORS checks).
+   - `APP_URL` — `https://lanceer254.github.io/mirror/` (the dashboard return URL after OAuth).
 5. Deploy this Worker.
 6. Derive the exact callback URL from the deployed Worker origin: `https://YOUR-WORKER-HOST/oauth/callback`.
 7. Add that exact HTTPS callback URL to the Redirect URLs for the Deriv OAuth application. Do not use the GitHub Pages website URL as the callback.
