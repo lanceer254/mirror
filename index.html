@@ -264,6 +264,20 @@ li span:first-child{color:#668b70}
 .account-empty{font-size:.78rem;color:var(--mute);padding:12px 0}
 @media(max-width:600px){.account-panel{padding:13px}.account-grid{grid-template-columns:1fr}}
 
+
+.gemini-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.gemini-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}
+.gemini-metrics{display:flex;gap:16px;flex-wrap:wrap;padding-bottom:9px;border-bottom:1px solid #153323}
+.gemini-metric{display:flex;gap:6px;align-items:baseline;font-size:10px}
+.gemini-metric span{color:#668b70}.gemini-metric b{color:#b4f8c8}
+.gemini-signal{display:flex;align-items:baseline;gap:12px;margin:10px 0 5px}
+.gemini-signal strong{font-size:18px;color:#55f59a}
+.gemini-signal b{font-size:15px;color:#c9f7d5}
+.gemini-summary{font-size:10px;line-height:1.6;color:#a9cbb2}
+.gemini-evidence{margin-top:8px;padding-left:16px;list-style:disc;font-size:10px;color:#c9f7d5}
+.gemini-evidence li{display:list-item;border:0;padding:3px 0;color:#c9f7d5}
+@media(max-width:600px){.gemini-panel{padding:10px}.gemini-metrics{gap:9px}.gemini-metric{font-size:9px}}
+
 </style>
 </head>
 <body>
@@ -372,6 +386,17 @@ li span:first-child{color:#668b70}
       <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest 1000 tick digits, newest first"></div>
     </div>
   </section>
+  <section class="gemini-panel" aria-label="Gemini continuous digit analysis">
+    <h2>GEMINI INTELLIGENCE // CONTINUOUS MONITOR</h2>
+    <div class="gemini-metrics">
+      <div class="gemini-metric"><span>AI:</span><b id="geminiState">OFFLINE</b></div>
+      <div class="gemini-metric"><span>SETTLED:</span><b id="geminiSettled">0</b></div>
+      <div class="gemini-metric"><span>HISTORICAL ACCURACY:</span><b id="geminiAccuracy">—</b></div>
+    </div>
+    <div class="gemini-signal"><strong id="geminiSignal">NO SIGNAL</strong><b id="geminiConfidence">—</b></div>
+    <div class="gemini-summary" id="geminiSummary">Press SCAN to start continuous Gemini monitoring. Every new tick updates the local evidence window.</div>
+    <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for Gemini analysis.</li></ul>
+  </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
       <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag" id="feedState">DERIV FEED OFFLINE</span></div>
@@ -423,6 +448,7 @@ li span:first-child{color:#668b70}
     var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o);
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
+  var aiMonitoring=false,aiRequestInFlight=false,aiLastAnalyzedCount=0,aiGeneration=0,aiSignalCount=0,aiSettledWins=0,aiSettledLosses=0;
   var tradingSocket=null,tradingRequestId=100,tradingBuySubmitted=false,tradingBuyRequestId=0,tradingAccount=null;
   var tradingReconnectTimer=null,tradingReconnectDelay=1000,tradingMonitorStopped=false;
   var tradingPingTimer=null,tradingPingTimeout=null,tradingPingRequestId=0;
@@ -751,7 +777,11 @@ li span:first-child{color:#668b70}
     $('#tline').textContent=line;
     if(!trade&&!busy)$('#engineState').textContent='Idle';
     var lock=!!trade||busy;
-    $('#scan').disabled=lock;$('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
+    $('#scan').disabled=false;
+    $('#scan').classList.toggle('scanning',aiMonitoring||busy);
+    $('#scan').setAttribute('aria-label',aiMonitoring?'Stop continuous Gemini scanning':'Start continuous Gemini scanning');
+    $('#stage').classList.toggle('scanning',aiMonitoring||busy);
+    $('#market').disabled=lock;$('#contract').disabled=lock;$('#barrier').disabled=lock;
     $('#derivDisconnect').disabled=lock||!sessionStorage.getItem(oauthSessionKey);
   }
 
@@ -782,7 +812,7 @@ li span:first-child{color:#668b70}
     if(ws){try{ws.onclose=null;ws.close()}catch(e){}}
   }
   function unlockAfterTradeError(message,keepTrade){
-    busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+    busy=false;$('#scan').classList.toggle('scanning',aiMonitoring);$('#stage').classList.toggle('scanning',aiMonitoring);
     $('#engineState').textContent=keepTrade?'Trade status unknown':'Idle';$('#status').textContent=message;
     if(!keepTrade)trade=null;tradeLine();
   }
@@ -792,6 +822,7 @@ li span:first-child{color:#668b70}
     if(!Number.isFinite(amount)){unlockAfterTradeError('Deriv closed the contract but did not return a valid profit value.',true);return}
     var stake=Number(contract.buy_price||trade.stake),payout=Number(contract.payout),win=amount>0;
     pnl=+(pnl+amount).toFixed(2);if(win)wins++;else losses++;
+    if(win)aiSettledWins++;else aiSettledLosses++;updateGeminiStats();
     var exitValue=contract.exit_tick!==undefined?String(contract.exit_tick):'—';
     log.unshift({t:stamp(),market:trade.market,label:trade.label,entry:contract.entry_tick!==undefined?String(contract.entry_tick):'—',x:exitValue,stake:stake,amt:amount});
     event('result',win?'DERIV SETTLED · PROFIT':'DERIV SETTLED · LOSS',trade.market+' · '+trade.label+' · stake '+moneyBalance(stake,trade.currency)+' · payout '+(Number.isFinite(payout)?moneyBalance(payout,trade.currency):'—')+' · actual P/L '+moneyBalance(amount,trade.currency));
@@ -799,7 +830,7 @@ li span:first-child{color:#668b70}
     trade=null;busy=false;tradingBuySubmitted=false;tradingAccount=null;
     tradingMonitorStopped=true;tradingReconnectDelay=1000;
     if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
-    $('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+    $('#scan').classList.toggle('scanning',aiMonitoring);$('#stage').classList.toggle('scanning',aiMonitoring);
     releaseTradingSocket();renderPnl();tradeLine();
   }
   function tradingFailure(message,uncertain){
@@ -873,27 +904,43 @@ li span:first-child{color:#668b70}
     event('trade','REQUESTING DERIV QUOTE',mk.n+' · '+contractId+' · '+config.n+' '+request.duration_unit+' · '+moneyBalance(config.stake,account.currency));
     $('#status').textContent='Requesting a live Deriv quote…';
   }
-  function scan(){
-    if(busy||trade)return;
-    if(ds.length<25){$('#status').textContent='Waiting for at least 25 live Deriv ticks.';return}
-    var token=sessionStorage.getItem(oauthSessionKey),account=derivAccounts.find(function(a){return a.account_id===selectedDerivAccount});
-    if(!token||!account){$('#status').textContent='Connect to Deriv and select a Demo or Real account before trading.';accountStatus('Trading unavailable · select an authenticated account.');return}
-    var config=cfg();
-    if(!Number.isFinite(config.stake)||config.stake<=0){$('#status').textContent='Enter a valid stake amount.';return}
+  function updateGeminiStats(){
+    var settled=aiSettledWins+aiSettledLosses;
+    $('#geminiSettled').textContent=String(settled);
+    $('#geminiAccuracy').textContent=settled?Math.round(aiSettledWins/settled*100)+'%':'—';
+  }
+  function renderGeminiDecision(decision){
+    $('#geminiSignal').textContent=decision.signal==='WAIT'?'WAIT':(CT[decision.signal]&&CT[decision.signal].n||decision.signal);
+    $('#geminiConfidence').textContent=decision.confidence_percent+'% CONFIDENCE';
+    $('#geminiSummary').textContent=decision.pattern_summary+(decision.caution?' · '+decision.caution:'');
+    $('#geminiEvidence').replaceChildren();
+    decision.evidence.forEach(function(item){
+      var li=document.createElement('li');li.textContent=item;$('#geminiEvidence').appendChild(li);
+    });
+  }
+  function stopGeminiMonitoring(message){
+    aiMonitoring=false;aiGeneration++;
+    $('#geminiState').textContent='STOPPED';
+    $('#status').textContent=message||'Gemini continuous monitoring stopped. Any already-open Deriv contract will continue to settlement.';
+    $('#scan').classList.toggle('scanning',!!busy);$('#stage').classList.toggle('scanning',!!busy);
+    event('system','GEMINI MONITOR STOPPED','No further AI signals will be requested. An already submitted trade is not cancelled.');
+    tradeLine();
+  }
+  function executeGeminiTrade(id,config,account,decision,snapshot){
+    if(!aiMonitoring||busy||trade)return;
+    var allowed=PR[config.id]||[];
+    if(allowed.indexOf(id)<0){event('warning','INVALID GEMINI SIGNAL','Gemini returned a contract outside the selected contract family. No trade sent.');return}
+    if(snapshot.symbol!==mk.symbol||snapshot.selectedContract!==$('#contract').value||snapshot.accountId!==selectedDerivAccount){
+      event('warning','STALE GEMINI SIGNAL','Market, contract or account changed while Gemini was analyzing. Signal discarded.');
+      return;
+    }
     tradingMonitorStopped=false;tradingReconnectDelay=1000;
     if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
     busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
-    $('#engineState').textContent='Connecting to Deriv trading';$('#activeMarket').textContent=mk.n;
-    $('#status').textContent='Authorizing a secure Deriv trading connection…';tradeLine();
-    var w=ds.slice(-25),pw=ps.slice(-25),id=PR[config.id][0],why='',ups=0,downs=0;
-    for(var j=1;j<pw.length;j++){if(pw[j]>pw[j-1])ups++;else if(pw[j]<pw[j-1])downs++}
-    var cnt=function(f){return w.filter(f).length};
-    if(config.id==='DIGITEVEN'){var od=cnt(function(x){return x%2});id=od>25-od?'DIGITODD':'DIGITEVEN';why=(25-od)+' even, '+od+' odd'}
-    else if(config.id==='DIGITOVER'){var ov=cnt(function(x){return x>config.b}),un=cnt(function(x){return x<config.b});id=ov>=un?'DIGITOVER':'DIGITUNDER';why=ov+' over, '+un+' under '+config.b}
-    else if(config.id==='RUNHIGH'){id=ups>=downs?'RUNHIGH':'RUNLOW';why=ups+' ups, '+downs+' downs'}
-    else if(config.id==='CALL'){id=ups>=downs?'CALL':'PUT';why=ups+' ups, '+downs+' downs'}
+    $('#engineState').textContent='Validating Gemini signal';$('#activeMarket').textContent=mk.n;
     var label=(CT[id]&&CT[id].n||id)+(config.b===null?'':' '+config.b);
-    event('decision','Decision recorded · '+id,'25 live ticks · '+ups+' rising / '+downs+' falling · '+(why||'Configured contract selection')+'.');
+    event('decision','GEMINI SIGNAL · '+id,decision.confidence_percent+'% confidence · '+decision.pattern_summary+' · '+decision.evidence.join(' | '));
+    $('#status').textContent='Gemini signal '+label+' · validating Deriv quote…';tradeLine();
     fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/trading-otp',{method:'POST',headers:oauthHeaders()})
     .then(function(response){return response.json().then(function(data){if(!response.ok||!data.url)throw new Error(data.error||'Deriv trading authorization failed');return data})})
     .then(function(auth){
@@ -914,9 +961,9 @@ li span:first-child{color:#668b70}
         if(data.msg_type==='proposal'&&data.proposal&&!tradingBuySubmitted){
           var quote=data.proposal,ask=Number(quote.ask_price),payout=Number(quote.payout);
           if(!quote.id||!Number.isFinite(ask)||ask<=0||!Number.isFinite(payout)||payout<0){tradingFailure('Deriv returned an incomplete or invalid proposal. No purchase was sent.',false);return}
-          trade={id:id,b:config.b,stake:ask,quotedStake:config.stake,unit:config.unit,left:config.n,duration:config.n,market:mk.n,entry:+lastPrice,label:label,phase:'BUYING',proposalId:quote.id,contractId:null,currency:account.currency,accountId:account.account_id,accountType:account.account_type,potentialPayout:payout,potentialProfit:+(payout-ask).toFixed(8)};
-          event('trade','DERIV QUOTE RECEIVED',label+' · ask '+moneyBalance(ask,account.currency)+' · potential payout '+moneyBalance(payout,account.currency)+' · potential profit '+moneyBalance(payout-ask,account.currency));
-          $('#status').textContent='Quote received · buying the Deriv contract…';tradeLine();tradingBuySubmitted=true;
+          trade={id:id,b:config.b,stake:ask,quotedStake:config.stake,unit:config.unit,left:config.n,duration:config.n,market:mk.n,entry:+lastPrice,label:label,phase:'BUYING',proposalId:quote.id,contractId:null,currency:account.currency,accountId:account.account_id,accountType:account.account_type,potentialPayout:payout,potentialProfit:+(payout-ask).toFixed(8),signalConfidence:decision.confidence_percent,signalEvidence:decision.evidence,signalSummary:decision.pattern_summary};
+          event('trade','DERIV QUOTE RECEIVED',label+' · '+decision.confidence_percent+'% Gemini confidence · ask '+moneyBalance(ask,account.currency)+' · potential payout '+moneyBalance(payout,account.currency));
+          $('#status').textContent='Gemini signal validated · buying the Deriv contract…';tradeLine();tradingBuySubmitted=true;
           tradingBuyRequestId=++tradingRequestId;
           try{ws.send(JSON.stringify({buy:quote.id,price:ask,req_id:tradingBuyRequestId}))}catch(error){tradingFailure('The buy request could not be sent; its execution status may be uncertain.',true)}
           return;
@@ -925,8 +972,9 @@ li span:first-child{color:#668b70}
           var contractId=Number(data.buy.contract_id);
           if(!Number.isFinite(contractId)){tradingFailure('Deriv accepted the buy request but returned no valid contract ID. Check your Deriv statement.',true);return}
           trade.contractId=contractId;trade.phase='OPEN';trade.stake=Number(data.buy.buy_price||trade.stake);
-          $('#engineState').textContent='Deriv contract open';$('#status').textContent=label+' purchased on Deriv · monitoring settlement.';
-          event('trade','DERIV CONTRACT PURCHASED','Contract #'+contractId+' · '+account.account_type.toUpperCase()+' · '+moneyBalance(trade.stake,account.currency));tradeLine();
+          aiSignalCount++;updateGeminiStats();
+          $('#engineState').textContent='Deriv contract open';$('#status').textContent=label+' purchased on Deriv · Gemini confidence '+decision.confidence_percent+'% · monitoring settlement.';
+          event('trade','DERIV CONTRACT PURCHASED','Contract #'+contractId+' · '+account.account_type.toUpperCase()+' · '+decision.confidence_percent+'% Gemini confidence · '+moneyBalance(trade.stake,account.currency));tradeLine();
           try{ws.send(JSON.stringify({proposal_open_contract:1,contract_id:contractId,subscribe:1,req_id:++tradingRequestId}))}catch(error){tradingFailure('Contract #'+contractId+' was purchased but monitoring could not start. Check Deriv before taking another trade.',true)}
           return;
         }
@@ -938,7 +986,7 @@ li span:first-child{color:#668b70}
       };
       ws.onerror=function(){
         if(tradingSocket!==ws)return;
-        if(trade&&trade.contractId){$('#status').textContent='Contract monitor interrupted · reconnecting…';return;}
+        if(trade&&trade.contractId){$('#status').textContent='Contract monitor interrupted · reconnecting…';return}
         if(tradingBuySubmitted)tradingFailure('Deriv connection failed after the buy request was sent. The order status is uncertain.',true);
         else tradingFailure('Deriv trading WebSocket connection failed before purchase.',false);
       };
@@ -949,6 +997,72 @@ li span:first-child{color:#668b70}
       };
     }).catch(function(error){if(busy)tradingFailure('Trading authorization failed: '+error.message,false)});
   }
+  function runGeminiAnalysis(){
+    if(!aiMonitoring||aiRequestInFlight||busy||trade||ds.length<25)return;
+    var token=sessionStorage.getItem(oauthSessionKey);
+    var account=derivAccounts.find(function(a){return a.account_id===selectedDerivAccount});
+    if(!token||!account){stopGeminiMonitoring('Deriv session expired or no account is selected. Reconnect before scanning.');accountStatus('Trading unavailable · select an authenticated account.');return}
+    var config=cfg();
+    if(!Number.isFinite(config.stake)||config.stake<=0){stopGeminiMonitoring('Enter a valid stake before automatic trading can continue.');return}
+    var generation=aiGeneration;
+    var snapshot={symbol:mk.symbol,marketName:mk.n,selectedContract:config.id,barrier:config.b,duration:config.n,durationUnit:config.unit,stake:config.stake,accountId:account.account_id,accountType:account.account_type};
+    var digits=ds.slice(-1000),prices=ps.slice(-1000);
+    aiLastAnalyzedCount=ds.length;aiRequestInFlight=true;
+    $('#geminiState').textContent='ANALYZING';
+    $('#geminiSummary').textContent='Examining '+digits.length+' chronological ticks, transitions, repetitions, sequences and price changes…';
+    fetch(OAUTH_WORKER_URL+'/gemini/signal',{method:'POST',headers:oauthHeaders(),body:JSON.stringify({
+      symbol:snapshot.symbol,marketName:snapshot.marketName,selectedContract:snapshot.selectedContract,
+      barrier:snapshot.barrier,duration:snapshot.duration,durationUnit:snapshot.durationUnit,
+      digits:digits,prices:prices
+    })})
+    .then(function(response){return response.json().then(function(data){if(!response.ok)throw new Error(data.error||'Gemini analysis failed');return data})})
+    .then(function(decision){
+      if(!aiMonitoring||generation!==aiGeneration)return;
+      if(snapshot.symbol!==mk.symbol||snapshot.selectedContract!==$('#contract').value||snapshot.barrier!==cfg().b||snapshot.duration!==cfg().n||snapshot.durationUnit!==cfg().unit||snapshot.stake!==cfg().stake||snapshot.accountId!==selectedDerivAccount){
+        event('warning','STALE GEMINI ANALYSIS','The selected market, contract, trade settings or account changed during analysis. Result discarded.');
+        return;
+      }
+      renderGeminiDecision(decision);
+      if(decision.action==='WAIT'){
+        $('#geminiState').textContent='MONITORING';
+        $('#status').textContent='Gemini found insufficient evidence for a trade · continuing to monitor.';
+        event('decision','GEMINI · WAIT',decision.confidence_percent+'% confidence · '+decision.pattern_summary);
+        return;
+      }
+      var allowed=PR[config.id]||[];
+      if(allowed.indexOf(decision.signal)<0){event('warning','SIGNAL REJECTED','Gemini returned an outcome outside the selected contract. No purchase sent.');return}
+      $('#geminiState').textContent='SIGNAL READY';
+      executeGeminiTrade(decision.signal,config,account,decision,snapshot);
+    })
+    .catch(function(error){
+      if(aiMonitoring&&generation===aiGeneration){
+        $('#geminiState').textContent='API ERROR';
+        $('#status').textContent='Gemini analysis failed · no trade was placed: '+error.message;
+        event('warning','GEMINI ANALYSIS FAILED',error.message+' · automatic trading paused for this analysis cycle.');
+      }
+    })
+    .finally(function(){
+      aiRequestInFlight=false;
+      if(aiMonitoring&&!busy&&!trade&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();
+    });
+  }
+  function scan(){
+    if(aiMonitoring){stopGeminiMonitoring('Gemini monitoring stopped by user. Any open Deriv trade will continue to settlement.');return}
+    if(busy||trade)return;
+    if(ds.length<25){$('#status').textContent='Waiting for at least 25 live Deriv ticks.';return}
+    var token=sessionStorage.getItem(oauthSessionKey),account=derivAccounts.find(function(a){return a.account_id===selectedDerivAccount});
+    if(!token||!account){$('#status').textContent='Connect to Deriv and select a Demo or Real account before trading.';accountStatus('Trading unavailable · select an authenticated account.');return}
+    var config=cfg();
+    if(!Number.isFinite(config.stake)||config.stake<=0){$('#status').textContent='Enter a valid stake amount.';return}
+    aiMonitoring=true;aiGeneration++;aiLastAnalyzedCount=ds.length-5;
+    $('#geminiState').textContent='STARTING';
+    $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#engineState').textContent='Gemini continuous monitoring';$('#activeMarket').textContent=mk.n;
+    $('#status').textContent='Gemini monitoring started · preparing full rolling digit analysis…';
+    event('system','GEMINI CONTINUOUS MONITOR STARTED',mk.n+' · '+config.id+' · rolling window up to 1,000 digits · automatic execution enabled.');
+    tradeLine();runGeminiAnalysis();
+  }
+
 
   $('#tickWindowToggle').addEventListener('click',function(){
     var open=this.getAttribute('aria-expanded')==='true';
@@ -964,9 +1078,10 @@ li span:first-child{color:#668b70}
     $('#tradeSettings').hidden=open;
   });
   $('#scan').addEventListener('click',scan);
+  updateGeminiStats();
   $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
 
-  function processMarketTick(d,pn){tradeLine();}
+  function processMarketTick(d,pn){tradeLine();if(aiMonitoring&&!busy&&!trade&&!aiRequestInFlight&&ds.length>=25&&ds.length-aiLastAnalyzedCount>=5)runGeminiAnalysis();}
   setInterval(tradeLine,250);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
