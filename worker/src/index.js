@@ -354,6 +354,58 @@ async function accountBalanceOtp(request, env, headers, accountId) {
   return json({ url: wsUrl }, 200, headers);
 }
 
+async function resetDemoBalance(request, env, headers, accountId) {
+  if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
+  if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) {
+    return json({ error: "invalid_account_request" }, 400, headers);
+  }
+  const auth = await getValidSession(request, env);
+  if (!auth) return json({ error: "session_expired", connected: false }, 401, headers);
+
+  // Verify ownership and account type before calling Deriv. Real accounts are never eligible.
+  let accountResponse;
+  try {
+    accountResponse = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+    });
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
+  const accountPayload = await accountResponse.json().catch(() => null);
+  const accountList = Array.isArray(accountPayload?.data) ? accountPayload.data :
+    Array.isArray(accountPayload?.data?.accounts) ? accountPayload.data.accounts :
+    Array.isArray(accountPayload?.accounts) ? accountPayload.accounts : [];
+  const account = accountList.find((a) =>
+    String(a?.account_id || a?.accountId || "") === accountId
+  );
+  const accountType = String(account?.account_type || account?.accountType || "").toLowerCase();
+  if (!accountResponse.ok || !account || accountType !== "demo") {
+    return json({ error: "demo_account_not_available" }, 404, headers);
+  }
+
+  let resetResponse;
+  try {
+    resetResponse = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(accountId)}/reset-demo-balance`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${auth.session.accessToken}`,
+        "Accept": "application/json"
+      }
+    });
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
+  const resetPayload = await resetResponse.json().catch(() => null);
+  if (!resetResponse.ok) {
+    return json({
+      error: "demo_balance_reset_failed",
+      upstreamStatus: resetResponse.status,
+      details: resetPayload?.errors || null
+    }, resetResponse.status, headers);
+  }
+  return json({ success: true, account_id: accountId }, 200, headers);
+}
+
 async function sessionStatus(request, env, headers) {
   if (!requireAllowedOrigin(request, env)) {
     return json({ error: "origin_not_allowed" }, 403, headers);
@@ -399,6 +451,10 @@ export default {
     }
     if (url.pathname === "/oauth/accounts" && request.method === "GET") {
       return listAccounts(request, env, headers);
+    }
+    const resetDemoMatch = url.pathname.match(/^\\/oauth\\/accounts\\/([^/]+)\\/reset-demo-balance$/);
+    if (resetDemoMatch && request.method === "POST") {
+      return resetDemoBalance(request, env, headers, decodeURIComponent(resetDemoMatch[1]));
     }
     const balanceOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/balance-otp$/);
     if (balanceOtpMatch && request.method === "POST") {
