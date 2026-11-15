@@ -252,10 +252,10 @@ li span:first-child{color:#668b70}
 .account-status{font-size:.75rem;color:var(--mute);min-height:18px;margin:0 0 10px}
 .account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
 .account-card-wrap{display:flex;flex-direction:column;gap:7px;min-width:0}
-.account-card{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0}
+.account-card{display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0;font:inherit}
 .account-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.account-card:disabled{cursor:default;opacity:.85}
-.reset-demo-btn{border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);padding:8px 10px;font:inherit;font-size:.7rem;font-weight:700;letter-spacing:.04em;cursor:pointer}
+.account-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.reset-demo-btn{border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);padding:5px 7px;font:inherit;font-size:.62rem;font-weight:700;letter-spacing:.03em;cursor:pointer;white-space:nowrap}
 .reset-demo-btn:disabled{opacity:.4;cursor:not-allowed}
 .reset-demo-btn:not(:disabled){border-color:var(--accent);color:var(--accent)}
 .account-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
@@ -838,26 +838,26 @@ li span:first-child{color:#668b70}
     if(!derivAccounts.length){box.innerHTML='<div class="account-empty">No Demo or Real Options accounts were returned for this Deriv login.</div>';return}
     box.replaceChildren();
     derivAccounts.forEach(function(a){
-      var wrap=document.createElement('div');wrap.className='account-card-wrap';
-      var card=document.createElement('button');card.type='button';card.className='account-card'+(a.account_id===selectedDerivAccount?' selected':'');
+      var card=document.createElement('div');card.className='account-card'+(a.account_id===selectedDerivAccount?' selected':'');
+      card.setAttribute('role','button');card.setAttribute('tabindex','0');
       card.setAttribute('aria-pressed',String(a.account_id===selectedDerivAccount));
       var top=document.createElement('div');top.className='account-card-top';
       var type=document.createElement('b');type.textContent=a.account_type==='real'?'REAL ACCOUNT':'DEMO ACCOUNT';
       var state=document.createElement('span');state.textContent=a.account_id===selectedDerivAccount?'SELECTED':(a.status||'AVAILABLE').toUpperCase();
       top.append(type,state);
+      if(a.account_type==='demo'){
+        var reset=document.createElement('button');reset.type='button';reset.className='reset-demo-btn';
+        reset.textContent='RESET';reset.disabled=a.account_id!==selectedDerivAccount;
+        reset.title=reset.disabled?'Select this Demo account first':'Reset this Demo account balance';
+        reset.addEventListener('click',function(event){event.stopPropagation();resetDemoAccount(a,reset)});
+        top.appendChild(reset);
+      }
       var balance=document.createElement('div');balance.className='account-card-balance';balance.id='balance-'+a.account_id;balance.textContent=moneyBalance(a.balance,a.currency);
       var id=document.createElement('div');id.className='account-card-id';id.textContent=a.account_id+(a.currency?' · '+a.currency:'');
       card.append(top,balance,id);
       card.addEventListener('click',function(){selectDerivAccount(a.account_id)});
-      wrap.appendChild(card);
-      if(a.account_type==='demo'){
-        var reset=document.createElement('button');reset.type='button';reset.className='reset-demo-btn';
-        reset.textContent='RESET DEMO BALANCE';reset.disabled=a.account_id!==selectedDerivAccount;
-        reset.title=reset.disabled?'Select this Demo account first':'Restore this Demo account to Deriv’s default balance';
-        reset.addEventListener('click',function(event){event.stopPropagation();resetDemoAccount(a,reset)});
-        wrap.appendChild(reset);
-      }
-      box.appendChild(wrap);
+      card.addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();selectDerivAccount(a.account_id)}});
+      box.appendChild(card);
     });
   }
   function selectDerivAccount(accountId){
@@ -914,10 +914,8 @@ li span:first-child{color:#668b70}
     $('#derivRefresh').disabled=false;$('#derivDisconnect').disabled=false;
   }
   async function resetDemoAccount(account,button){
-    if(!account||account.account_type!=='demo'||account.account_id!==selectedDerivAccount)return;
-    if(!window.confirm('Reset the selected Demo account to Deriv’s default virtual balance? This affects only this Demo account.'))return;
+    if(!account||account.account_type!=='demo'||account.account_id!==selectedDerivAccount||button.disabled)return;
     button.disabled=true;button.textContent='RESETTING…';
-    accountStatus('Requesting Demo balance reset from Deriv…');
     try{
       var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/reset-demo-balance',{
         method:'POST',headers:oauthHeaders()
@@ -925,10 +923,8 @@ li span:first-child{color:#668b70}
       var data=await response.json().catch(function(){return{}});
       if(!response.ok||!data.success)throw new Error((data.details&&data.details[0]&&data.details[0].message)||data.error||'Deriv could not reset this Demo balance.');
       await loadDerivAccounts();
-      accountStatus('Demo balance reset successfully. Refreshing the live balance…');
     }catch(error){
       accountStatus('Demo balance reset failed: '+error.message);
-    }finally{
       renderDerivAccounts();
     }
   }
