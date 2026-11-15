@@ -63,6 +63,94 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .activity-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:7px;color:#50745b;font:8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em}
 .table-wrap{display:none}
 @media(max-width:600px){.activity{padding:0 8px;margin-top:12px}.activity .panel{padding:9px}.feed{height:128px;max-height:128px}.feed-item{grid-template-columns:55px 48px minmax(0,1fr);gap:5px;font-size:9px}.feed-detail{font-size:9px}.metric-strip{gap:9px}}
+
+/* Unified SYS.LOG terminal skin across the dashboard */
+:root{
+  color-scheme:dark;
+  --bg:#030806;--panel:#050b09;--panel2:#07110b;--line:#17452e;
+  --ink:#c9f7d5;--mute:#668b70;--accent:#55f59a;--glow:rgba(0,255,120,.16);
+  --win:#55f59a;--loss:#ff806f;--field:#030806;
+}
+body{
+  background:#030806;
+  background-image:linear-gradient(rgba(40,110,65,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(40,110,65,.055) 1px,transparent 1px);
+  background-size:28px 28px;
+  color:var(--ink);
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  letter-spacing:.01em;
+}
+.wrap{max-width:1040px;padding:22px 20px 30px}
+header{margin-bottom:14px;padding:0 2px 12px;border-bottom:1px solid #153323;gap:12px}
+h1{font-family:inherit;font-size:1.08rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#aaf8bf}
+h1:before{content:"[ ";color:#4f9867}
+h1:after{content:" ]";color:#4f9867}
+.sub{margin:4px 0 0;color:#62856c;font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase}
+.price{font:700 1.35rem ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.02em;padding:8px 12px;border:1px solid #17452e;border-radius:6px;background:#050b09;box-shadow:inset 0 0 16px rgba(0,255,120,.035);color:#b4f8c8}
+.price em{color:#55f59a}
+.layout{gap:12px}
+@media(min-width:900px){.layout{grid-template-columns:minmax(0,1.25fr) minmax(290px,.85fr)}}
+.panel,.stage{
+  background:#050b09;
+  border:1px solid #17452e;
+  border-radius:8px;
+  box-shadow:0 0 18px rgba(0,255,120,.045),inset 0 0 22px rgba(0,255,120,.018);
+}
+.panel{padding:15px}
+.stage{padding:18px 18px 15px;min-height:0}
+h2{font:700 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.13em;text-transform:uppercase;color:#8bdba2;margin:0 0 12px}
+.digits{gap:clamp(5px,1.4vw,12px)}
+.d b{font:700 clamp(1.1rem,3.2vw,1.7rem) ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9f7d5}
+.d small{font:9px ui-monospace,SFMono-Regular,Consolas,monospace;color:#668b70}
+.d .trk{stroke:#153323}
+.d .fg{stroke:#3d9c61}
+.d.hi .fg{stroke:#55f59a}
+.d.lo .fg{stroke:#a65b52}
+.cursor::before{border-color:#55f59a;box-shadow:0 0 14px rgba(0,255,120,.14),inset 0 0 10px rgba(0,255,120,.1)}
+.cursor::after{background:#55f59a;box-shadow:0 0 10px #55f59a}
+.sweep{background:linear-gradient(90deg,transparent,rgba(0,255,120,.12),transparent)}
+.actions{gap:14px;margin-top:18px;padding-top:14px;border-top:1px solid #153323}
+.brain{width:68px;height:68px;border-radius:7px;border:1px solid #287447;background:#06130b;color:#55f59a;animation:breathe 3s ease-in-out infinite}
+.brain svg{width:38px;height:38px;filter:drop-shadow(0 0 5px rgba(0,255,120,.2))}
+.brain.scanning::after{border-radius:9px;border-color:#55f59a}
+.say strong{font:700 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#aaf8bf}
+.say span{font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#668b70}
+.side{gap:12px}
+.total{font:700 2rem ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:0;color:#c9f7d5}
+.stats{gap:12px;margin:9px 0 13px;font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:#668b70}
+.stats b{color:#b4f8c8}
+.field{font:9px ui-monospace,SFMono-Regular,Consolas,monospace;color:#79a986;letter-spacing:.08em;text-transform:uppercase;gap:5px}
+.field input,.field select{
+  font:11px ui-monospace,SFMono-Regular,Consolas,monospace;
+  color:#b4f8c8;background:#030806;border:1px solid #17452e;border-radius:5px;
+  padding:9px 10px;min-height:36px;
+}
+.field input:focus,.field select:focus{border-color:#55f59a;box-shadow:0 0 0 2px rgba(0,255,120,.1)}
+.row{gap:9px}
+ul{font:10px ui-monospace,SFMono-Regular,Consolas,monospace}
+li{padding:8px 0;border-top:1px solid #153323}
+li span:first-child{color:#668b70}
+.empty{color:#668b70}
+.ghost{margin-top:12px;background:#06130b;border:1px solid #245b3a;color:#8bdba2;font:9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;border-radius:5px;padding:8px 11px}
+.ghost:hover{border-color:#55f59a;color:#c9f7d5;background:#0a1a10}
+.pos{color:#55f59a}.neg{color:#ff806f}
+.activity{max-width:100%;margin:12px auto 0;padding:0}
+.activity .panel{padding:10px 12px}
+@media(max-width:600px){
+  .wrap{padding:16px 10px 24px}
+  header{margin-bottom:11px;padding-bottom:10px}
+  h1{font-size:.95rem}
+  .price{font-size:1.1rem;padding:7px 9px}
+  .panel{padding:12px;border-radius:7px}
+  .stage{padding:14px 11px;min-height:0}
+  .digits{gap:4px}
+  .d small{font-size:8px}
+  .actions{margin-top:14px;padding-top:12px}
+  .brain{width:60px;height:60px}
+  .brain svg{width:34px;height:34px}
+  .side{gap:10px}
+  .activity{margin-top:10px}
+}
+
 </style>
 </head>
 <body>
