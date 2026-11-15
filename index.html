@@ -227,7 +227,7 @@ li span:first-child{color:#668b70}
   <header>
     <div>
       <h1>Digit scanner</h1>
-      <p class="sub">Simulated 1-second ticks, paper trades only.</p>
+      <p class="sub">DERIV LIVE MARKET DATA · LOCAL PAPER TRADES ONLY.</p>
     </div>
     <div class="price" id="price" aria-label="Latest price">0000.00</div>
   </header>
@@ -302,7 +302,7 @@ li span:first-child{color:#668b70}
   </div>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
-      <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag">SIM FEED ACTIVE</span></div>
+      <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag" id="feedState">DERIV FEED OFFLINE</span></div>
       <div class="metric-strip">
         <div class="metric"><small>ENGINE:</small><b id="engineState">IDLE</b></div>
         <div class="metric"><small>MARKET:</small><b id="activeMarket">---</b></div>
@@ -319,16 +319,16 @@ li span:first-child{color:#668b70}
   var $=function(s){return document.querySelector(s)};
   var grid=$('#digits'),cur=$('#cursor'),C=2*Math.PI*42,cells=[],ds=[],ps=[],price=1000,lastPrice='',timer=null;
   var MK=[
-    {n:'Volatility 10 (1s) Index',g:'1-second indices',s:.4,b:6540,ms:1000},
-    {n:'Volatility 25 (1s) Index',g:'1-second indices',s:.8,b:2815,ms:1000},
-    {n:'Volatility 50 (1s) Index',g:'1-second indices',s:1.2,b:318,ms:1000},
-    {n:'Volatility 75 (1s) Index',g:'1-second indices',s:1.6,b:421900,ms:1000},
-    {n:'Volatility 100 (1s) Index',g:'1-second indices',s:2,b:900,ms:1000},
-    {n:'Volatility 10 Index',g:'Standard indices',s:.4,b:6540,ms:2000},
-    {n:'Volatility 25 Index',g:'Standard indices',s:.8,b:2815,ms:2000},
-    {n:'Volatility 50 Index',g:'Standard indices',s:1.2,b:318,ms:2000},
-    {n:'Volatility 75 Index',g:'Standard indices',s:1.6,b:421900,ms:2000},
-    {n:'Volatility 100 Index',g:'Standard indices',s:2,b:900,ms:2000}
+    {n:'Volatility 10 (1s) Index',g:'1-second indices',symbol:'1HZ10V'},
+    {n:'Volatility 25 (1s) Index',g:'1-second indices',symbol:'1HZ25V'},
+    {n:'Volatility 50 (1s) Index',g:'1-second indices',symbol:'1HZ50V'},
+    {n:'Volatility 75 (1s) Index',g:'1-second indices',symbol:'1HZ75V'},
+    {n:'Volatility 100 (1s) Index',g:'1-second indices',symbol:'1HZ100V'},
+    {n:'Volatility 10 Index',g:'Standard indices',symbol:'R_10'},
+    {n:'Volatility 25 Index',g:'Standard indices',symbol:'R_25'},
+    {n:'Volatility 50 Index',g:'Standard indices',symbol:'R_50'},
+    {n:'Volatility 75 Index',g:'Standard indices',symbol:'R_75'},
+    {n:'Volatility 100 Index',g:'Standard indices',symbol:'R_100'}
   ];
   var CT={
     DIGITMATCH:{n:'Matches',bar:'any',p:function(){return .1}},
@@ -351,6 +351,7 @@ li span:first-child{color:#668b70}
     var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o);
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
+  var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
     var visibleTitle='',visibleDetail='',visibleType='system';
@@ -383,13 +384,110 @@ li span:first-child{color:#668b70}
   }
 
   var mk=MK[0];
-  function nextTick(){price=Math.max(1,price+(Math.random()-.5)*mk.s);return price.toFixed(2)}
-  function push(){lastPrice=nextTick();lastDigit=+lastPrice.slice(-1);ds.push(lastDigit);ps.push(+lastPrice);if(ds.length>100){ds.shift();ps.shift()}return lastDigit}
-  function seed(){price=mk.b;ds=[];ps=[];for(var k=0;k<100;k++)push()}
-  seed();
+  function clearMarketData(){
+    ds=[];ps=[];lastPrice='';price=0;lastDigit=0;
+    $('#price').textContent='WAITING FOR TICKS';
+    render();
+  }
+  function addHistoryQuote(value){
+    if(value===undefined||value===null||!Number.isFinite(Number(value)))return;
+    var raw=String(value),dot=raw.indexOf('.');
+    if(dot>=0)marketPipSize=Math.max(marketPipSize,Math.min(8,raw.length-dot-1));
+    var formatted=Number(value).toFixed(marketPipSize);
+    var digits=formatted.replace(/\D/g,'');
+    if(!digits)return;
+    lastPrice=formatted;price=Number(value);lastDigit=Number(digits.charAt(digits.length-1));
+    ds.push(lastDigit);ps.push(price);
+    if(ds.length>100){ds.shift();ps.shift()}
+  }
+  function addQuote(value,pipSize){
+    if(value===undefined||value===null||!Number.isFinite(Number(value)))return;
+    if(Number.isInteger(pipSize))marketPipSize=Math.max(0,Math.min(8,pipSize));
+    lastPrice=Number(value).toFixed(marketPipSize);
+    price=Number(value);
+    var digits=lastPrice.replace(/\D/g,'');
+    if(!digits)return;
+    lastDigit=Number(digits.charAt(digits.length-1));
+    ds.push(lastDigit);ps.push(price);
+    if(ds.length>100){ds.shift();ps.shift()}
+    render();moveCursor(lastDigit,true);
+    processMarketTick(lastDigit,price);
+  }
+  function sendSocket(payload){
+    if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(payload));
+  }
+  function subscribeMarket(){
+    if(!socket||socket.readyState!==WebSocket.OPEN)return;
+    if(tickSubscriptionId){sendSocket({forget:tickSubscriptionId,req_id:requestId++});tickSubscriptionId=null}
+    clearMarketData();
+    $('#activeMarket').textContent=mk.n;
+    sendSocket({ticks_history:mk.symbol,count:100,end:'latest',style:'ticks',req_id:requestId++});
+    sendSocket({ticks:mk.symbol,subscribe:1,req_id:requestId++});
+  }
+  function scheduleReconnect(){
+    if(manuallyClosed||reconnectTimer)return;
+    reconnectTimer=setTimeout(function(){
+      reconnectTimer=null;
+      connectMarketSocket();
+    },reconnectDelay);
+    reconnectDelay=Math.min(reconnectDelay*2,30000);
+  }
+  function connectMarketSocket(){
+    manuallyClosed=false;
+    if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
+    $('#feedState').textContent='DERIV FEED CONNECTING';
+    $('#engineState').textContent='Connecting';
+    try{socket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public')}
+    catch(error){
+      $('#feedState').textContent='DERIV FEED ERROR';
+      $('#status').textContent='WebSocket could not be created.';
+      scheduleReconnect();return;
+    }
+    socket.onopen=function(){
+      reconnectDelay=1000;
+      $('#feedState').textContent='DERIV FEED CONNECTED';
+      $('#engineState').textContent='Connected';
+      $('#status').textContent='Deriv market data connected. Waiting for live ticks.';
+      event('system','Scanner ready','Deriv public market-data WebSocket connected.');
+      sendSocket({active_symbols:'brief',req_id:requestId++});
+      subscribeMarket();
+    };
+    socket.onmessage=function(message){
+      var data;
+      try{data=JSON.parse(message.data)}catch(error){return}
+      if(data.error){
+        $('#status').textContent='Deriv data error: '+(data.error.message||'Request rejected');
+        return;
+      }
+      if(data.msg_type==='active_symbols'){
+        var symbols=data.active_symbols||[];
+        var found=symbols.some(function(item){return item.symbol===mk.symbol});
+        if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
+      }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
+        ds=[];ps=[];
+        data.history.prices.forEach(function(value){addHistoryQuote(value)});
+        render();
+        if(ds.length)moveCursor(lastDigit,false);
+      }else if(data.msg_type==='tick'&&data.tick){
+        if(data.subscription&&data.subscription.id)tickSubscriptionId=data.subscription.id;
+        if(data.tick.symbol===mk.symbol)addQuote(data.tick.quote,data.tick.pip_size);
+      }
+    };
+    socket.onerror=function(){
+      $('#feedState').textContent='DERIV FEED ERROR';
+      $('#status').textContent='Deriv WebSocket connection error.';
+    };
+    socket.onclose=function(){
+      socket=null;tickSubscriptionId=null;
+      $('#feedState').textContent='DERIV FEED DISCONNECTED';
+      $('#engineState').textContent='Disconnected';
+      $('#status').textContent='Deriv feed disconnected. Reconnecting…';
+      if(!manuallyClosed)scheduleReconnect();
+    };
+  }
 
   function render(){
-    var counts=Array(10).fill(0),n=ds.length,hi=0,lo=0;
+    var counts=Array(10).fill(0),n=ds.length||1,hi=0,lo=0;
     ds.forEach(function(x){counts[x]++});
     for(var i=1;i<10;i++){if(counts[i]>counts[hi])hi=i;if(counts[i]<counts[lo])lo=i}
     cells.forEach(function(c,i){
@@ -399,7 +497,7 @@ li span:first-child{color:#668b70}
       c.querySelector('small').textContent=(p*100).toFixed(1)+'%';
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);
     });
-    $('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
+    if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
   }
 
   function moveCursor(i,flash){
@@ -452,9 +550,11 @@ li span:first-child{color:#668b70}
   $('#unit').addEventListener('change',function(){applyLimits(true)});
   $('#contract').addEventListener('change',function(){applyContract()});
   $('#market').addEventListener('change',function(){
-    mk=MK[+this.value];seed();restart();render();moveCursor(lastDigit,false);
-    $('#status').textContent=mk.n+' loaded.';
-    $('#activeMarket').textContent=mk.n;event('system','Market changed',mk.n+' selected. Existing session history is retained.');
+    mk=MK[+this.value];
+    $('#status').textContent='Switching live feed to '+mk.n+'…';
+    $('#activeMarket').textContent=mk.n;
+    subscribeMarket();
+    event('system','Market changed',mk.n+' selected. Existing session history is retained.');
   });
 
   function money(v){return(v>=0?'+':'\u2212')+Math.abs(v).toFixed(2)}
@@ -525,8 +625,7 @@ li span:first-child{color:#668b70}
   $('#scan').addEventListener('click',scan);
   $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
 
-  function tick(){
-    var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+  function processMarketTick(d,pn){
     event('tick','TICK',mk.n+' | quote '+lastPrice+' | digit '+d+' | '+ds.length+' samples buffered');
     if(trade){
       if(trade.run){
@@ -538,13 +637,12 @@ li span:first-child{color:#668b70}
     }
     tradeLine();
   }
-  function restart(){clearInterval(timer);timer=setInterval(tick,mk.ms)}
-  restart();
   setInterval(tradeLine,250);
-  window.addEventListener('resize',function(){moveCursor(lastDigit,false)});
+  window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
+  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
   applyContract();render();renderPnl();tradeLine();
-  $('#activeMarket').textContent=mk.n;event('system','Scanner ready','Paper-trading simulator initialised. No broker orders are being sent.');
-  setTimeout(function(){moveCursor(lastDigit,false)},50);
+  $('#activeMarket').textContent=mk.n;
+  connectMarketSocket();
 })();
 </script>
 </body>
