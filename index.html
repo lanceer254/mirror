@@ -1022,6 +1022,7 @@ li span:first-child{color:#668b70}
       var state=accountSockets[id];state.stopped=true;
       if(state.timer){clearTimeout(state.timer);state.timer=null;}
       if(state.pingTimer){clearInterval(state.pingTimer);state.pingTimer=null;}
+      if(state.pingTimeout){clearTimeout(state.pingTimeout);state.pingTimeout=null;}
       if(state.ws){try{state.ws.onclose=null;state.ws.close()}catch(e){}}
     });
     accountSockets={};
@@ -1050,13 +1051,22 @@ li span:first-child{color:#668b70}
       ws.onopen=function(){
         if(state.stopped||state.ws!==ws)return;
         state.delay=1000;
-        try{ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}));ws.send(JSON.stringify({ping:1,req_id:2}));}catch(e){try{ws.close()}catch(ignore){}}
+        try{ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}));}catch(e){try{ws.close()}catch(ignore){}}
         if(state.pingTimer)clearInterval(state.pingTimer);
-        state.pingTimer=setInterval(function(){if(ws.readyState===WebSocket.OPEN){try{ws.send(JSON.stringify({ping:1,req_id:3}))}catch(e){try{ws.close()}catch(ignore){}}}},30000);
+        state.pingTimer=setInterval(function(){
+          if(ws.readyState!==WebSocket.OPEN||state.ws!==ws)return;
+          if(state.pingTimeout){try{ws.close(4000,'Deriv balance ping timeout')}catch(e){}return;}
+          state.pingReqId=(state.pingReqId||10)+1;
+          try{
+            ws.send(JSON.stringify({ping:1,req_id:state.pingReqId}));
+            state.pingTimeout=setTimeout(function(){state.pingTimeout=null;if(state.ws===ws&&ws.readyState===WebSocket.OPEN){try{ws.close(4000,'Deriv balance ping timeout')}catch(e){}}},15000);
+          }catch(e){try{ws.close()}catch(ignore){}}
+        },30000);
       };
       ws.onmessage=function(eventMessage){
         if(state.stopped||state.ws!==ws)return;
         var data;try{data=JSON.parse(eventMessage.data)}catch(e){return}
+        if(data.msg_type==='ping'&&Number(data.req_id)===Number(state.pingReqId)){if(state.pingTimeout){clearTimeout(state.pingTimeout);state.pingTimeout=null;}return;}
         if(data.error){if(account.account_id===selectedDerivAccount)accountStatus('Balance feed error · '+(data.error.message||'Deriv error'));return;}
         if(data.msg_type==='balance'&&data.balance){
           updateAccountBalance(account.account_id,data.balance.balance,data.balance.currency);
@@ -1067,6 +1077,7 @@ li span:first-child{color:#668b70}
       ws.onclose=function(){
         if(state.ws!==ws)return;
         state.ws=null;if(state.pingTimer){clearInterval(state.pingTimer);state.pingTimer=null;}
+        if(state.pingTimeout){clearTimeout(state.pingTimeout);state.pingTimeout=null;}
         scheduleBalanceReconnect(account,state);
       };
     }catch(error){
@@ -1088,7 +1099,7 @@ li span:first-child{color:#668b70}
     if(!derivAccounts.length){accountStatus('Connected to Deriv, but no Demo or Real Options accounts were returned.');return}
     accountStatus('Connected · retrieving live balances for '+derivAccounts.length+' account(s)…');
     derivAccounts.forEach(function(account){
-      var state={ws:null,timer:null,pingTimer:null,delay:1000,stopped:false};
+      var state={ws:null,timer:null,pingTimer:null,pingTimeout:null,pingReqId:10,delay:1000,stopped:false};
       accountSockets[account.account_id]=state;
       openAccountBalance(account,state);
     });
