@@ -385,7 +385,7 @@ li span:first-child{color:#668b70}
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
-  var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,pendingLiveTicks=[];
+  var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
     var visibleTitle='',visibleDetail='',visibleType='system';
@@ -471,7 +471,7 @@ li span:first-child{color:#668b70}
   }
   function clearMarketData(){
     ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;
-    historyReady=false;historyFailed=false;pendingLiveTicks=[];
+    historyReady=false;historyFailed=false;subscriptionFailed=false;pendingLiveTicks=[];
     $('#price').textContent='WAITING FOR TICKS';
     setTickWindowState('LOADING DERIV HISTORY');
     render();updateTickWindow();
@@ -494,7 +494,8 @@ li span:first-child{color:#668b70}
       if(!skippedOverlap&&sameAsHistory){skippedOverlap=true;return}
       addQuote(tick.quote,tick.pip_size,tick.epoch);
     });
-    if(tickSubscriptionId)setTickWindowState(historyFailed?'HISTORY UNAVAILABLE · LIVE ONLY':'LIVE · DERIV SUBSCRIBED');
+    if(subscriptionFailed)setTickWindowState('SUBSCRIPTION ERROR · HISTORY ONLY');
+    else if(tickSubscriptionId)setTickWindowState(historyFailed?'HISTORY UNAVAILABLE · LIVE ONLY':'LIVE · DERIV SUBSCRIBED');
     else setTickWindowState(historyFailed?'HISTORY UNAVAILABLE · AWAITING LIVE TICK':'HISTORY LOADED · AWAITING LIVE TICK');
     updateTickWindow();
   }
@@ -574,6 +575,7 @@ li span:first-child{color:#668b70}
           setTickWindowState('HISTORY UNAVAILABLE · LIVE ONLY');
           flushPendingLiveTicks();
         }else if(data.req_id===subscribeRequestId){
+          subscriptionFailed=true;
           setTickWindowState('SUBSCRIPTION ERROR');
         }
         return;
@@ -588,6 +590,7 @@ li span:first-child{color:#668b70}
       }else if(data.msg_type==='tick'&&data.tick){
         if(data.tick.symbol!==mk.symbol)return;
         if(data.subscription&&data.subscription.id)tickSubscriptionId=data.subscription.id;
+        subscriptionFailed=false;
         if(!historyReady){
           pendingLiveTicks.push(data.tick);
           if(pendingLiveTicks.length>5000)pendingLiveTicks.shift();
