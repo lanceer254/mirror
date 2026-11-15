@@ -608,7 +608,6 @@ li span:first-child{color:#668b70}
     }
     socket.onopen=function(){
       startMarketHeartbeat();
-      reconnectDelay=1000;
       $('#feedState').textContent='DERIV FEED CONNECTED';
       $('#engineState').textContent='Connected';
       $('#status').textContent='Deriv market data connected. Waiting for live ticks.';
@@ -641,9 +640,11 @@ li span:first-child{color:#668b70}
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
         if(data.req_id!==historyRequestId)return;
+        reconnectDelay=1000;
         loadHistory(data);
       }else if(data.msg_type==='tick'&&data.tick){
         if(data.tick.symbol!==mk.symbol)return;
+        reconnectDelay=1000;
         if(data.subscription&&data.subscription.id)tickSubscriptionId=data.subscription.id;
         subscriptionFailed=false;
         if(!historyReady){
@@ -996,6 +997,7 @@ li span:first-child{color:#668b70}
     Object.keys(accountSockets).forEach(function(id){
       var state=accountSockets[id];state.stopped=true;
       if(state.timer){clearTimeout(state.timer);state.timer=null;}
+      if(state.pingTimer){clearInterval(state.pingTimer);state.pingTimer=null;}
       if(state.ws){try{state.ws.onclose=null;state.ws.close()}catch(e){}}
     });
     accountSockets={};
