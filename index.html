@@ -321,16 +321,16 @@ li span:first-child{color:#668b70}
   var $=function(s){return document.querySelector(s)};
   var grid=$('#digits'),cur=$('#cursor'),C=2*Math.PI*42,cells=[],ds=[],ps=[],price=1000,lastPrice='',timer=null;
   var MK=[
-    {n:'Volatility 10 (1s) Index',g:'1-second indices',symbol:'1HZ10V'},
-    {n:'Volatility 25 (1s) Index',g:'1-second indices',symbol:'1HZ25V'},
-    {n:'Volatility 50 (1s) Index',g:'1-second indices',symbol:'1HZ50V'},
-    {n:'Volatility 75 (1s) Index',g:'1-second indices',symbol:'1HZ75V'},
-    {n:'Volatility 100 (1s) Index',g:'1-second indices',symbol:'1HZ100V'},
-    {n:'Volatility 10 Index',g:'Standard indices',symbol:'R_10'},
-    {n:'Volatility 25 Index',g:'Standard indices',symbol:'R_25'},
-    {n:'Volatility 50 Index',g:'Standard indices',symbol:'R_50'},
-    {n:'Volatility 75 Index',g:'Standard indices',symbol:'R_75'},
-    {n:'Volatility 100 Index',g:'Standard indices',symbol:'R_100'}
+    {n:'Volatility 10 (1s)',g:'1-second indices',symbol:'1HZ10V'},
+    {n:'Volatility 25 (1s)',g:'1-second indices',symbol:'1HZ25V'},
+    {n:'Volatility 50 (1s)',g:'1-second indices',symbol:'1HZ50V'},
+    {n:'Volatility 75 (1s)',g:'1-second indices',symbol:'1HZ75V'},
+    {n:'Volatility 100 (1s)',g:'1-second indices',symbol:'1HZ100V'},
+    {n:'Volatility 10',g:'Standard indices',symbol:'R_10'},
+    {n:'Volatility 25',g:'Standard indices',symbol:'R_25'},
+    {n:'Volatility 50',g:'Standard indices',symbol:'R_50'},
+    {n:'Volatility 75',g:'Standard indices',symbol:'R_75'},
+    {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var CT={
     DIGITMATCH:{n:'Matches',bar:'any',p:function(){return .1}},
