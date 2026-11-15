@@ -55,7 +55,7 @@ function json(data, status, h) {
 }
 
 function appRedirect(env, status) {
-  const url = new URL(env.APP_ORIGIN);
+  const url = new URL(env.APP_URL);
   url.searchParams.set("oauth", status);
   return Response.redirect(url.toString(), 302);
 }
