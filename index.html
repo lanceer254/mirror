@@ -35,12 +35,34 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 @media(max-width:600px){.wrap{padding:22px 14px 32px}header{align-items:flex-start;margin-bottom:18px}.price{font-size:1.45rem;padding:10px 13px}.panel{padding:17px;border-radius:15px}.stage{padding:20px 15px;min-height:0}.digits{gap:5px}.d small{font-size:.6rem}.actions{gap:14px;margin-top:20px;padding-top:17px}.brain{width:72px;height:72px;border-radius:18px}.brain svg{width:40px;height:40px}.stats{gap:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-.activity{margin-top:18px}.activity-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}.activity-head h2{margin:0;font-size:1rem}
-.live-tag{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(53,214,160,.25);background:rgba(53,214,160,.08);color:var(--win);padding:6px 10px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.live-tag:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
-.activity-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr);gap:18px}.feed{display:grid;max-height:390px;overflow:auto;padding-right:4px}.feed-item{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:13px 0;border-top:1px solid var(--line)}.feed-time{font-size:.68rem;color:var(--mute);font-variant-numeric:tabular-nums;padding-top:2px}.feed-title{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700}.feed-dot{width:7px;height:7px;flex:none;border-radius:50%;background:var(--accent)}.feed-item.decision .feed-dot{background:#a78bfa}.feed-item.trade .feed-dot{background:var(--win)}.feed-item.result .feed-dot{background:var(--accent)}.feed-item.warning .feed-dot{background:var(--loss)}.feed-detail{margin-top:4px;color:var(--mute);font-size:.73rem;line-height:1.55}.feed-empty{color:var(--mute);font-size:.78rem;padding:18px 0}
-.table-wrap{overflow:auto}.trade-table{width:100%;border-collapse:collapse;min-width:620px;font-size:.73rem;font-variant-numeric:tabular-nums}.trade-table th{text-align:left;color:var(--mute);font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:10px 9px;border-bottom:1px solid var(--line)}.trade-table td{padding:12px 9px;border-bottom:1px solid var(--line);white-space:nowrap}.trade-table tbody tr:last-child td{border-bottom:0}.trade-table .empty-row{text-align:center;color:var(--mute);padding:24px}
-.activity-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--mute);font-size:.68rem}.metric-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}.metric{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px}.metric small{display:block;color:var(--mute);font-size:.64rem;text-transform:uppercase;letter-spacing:.07em}.metric b{display:block;margin-top:4px;font-size:1rem;font-variant-numeric:tabular-nums}
-@media(max-width:800px){.activity-grid{grid-template-columns:1fr}}@media(max-width:600px){.metric-strip{gap:7px}.metric{padding:10px}.metric b{font-size:.88rem}.feed-item{grid-template-columns:58px 1fr;gap:8px}}
+/* Compact hacker-style terminal log */
+.activity{width:100%;max-width:760px;margin:18px auto 0;padding:0 10px}
+.activity .panel{background:#050b09;border:1px solid #17452e;border-radius:9px;padding:10px 12px;box-shadow:0 0 18px rgba(0,255,120,.06),inset 0 0 22px rgba(0,255,120,.025)}
+.activity-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.activity-head h2{margin:0;color:#9af7bd;font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+.live-tag{display:inline-flex;align-items:center;gap:6px;color:#55f59a;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.live-tag:before{content:"";width:6px;height:6px;border-radius:50%;background:#55f59a;box-shadow:0 0 8px #55f59a}
+.metric-strip{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 7px;padding:0 0 7px;border-bottom:1px solid #153323}
+.metric{display:flex;gap:5px;align-items:center;background:none;border:0;padding:0}
+.metric small{color:#56846a;font:9px ui-monospace,SFMono-Regular,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em}
+.metric b{color:#b4f8c8;font:10px ui-monospace,SFMono-Regular,Consolas,monospace}
+.activity-grid{display:block}
+.activity-grid section>h2{display:none}
+.feed{display:flex;flex-direction:column;gap:0;height:142px;max-height:142px;overflow-y:auto;overflow-x:hidden;padding:0 3px 0 0;scrollbar-width:thin;scrollbar-color:#245b3a #07110b}
+.feed-item{display:grid;grid-template-columns:66px 58px minmax(0,1fr);gap:7px;align-items:baseline;padding:3px 2px;border:0;border-bottom:1px solid rgba(31,83,52,.35);font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+.feed-time{color:#547b61;font-size:9px;white-space:nowrap}
+.feed-title{display:flex;align-items:center;gap:5px;color:#7beaa3;font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap}
+.feed-dot{width:5px;height:5px;border-radius:50%;flex:none;background:#55f59a}
+.feed-item.decision .feed-title,.feed-item.decision .feed-dot{color:#b9a0ff;background:#a78bfa}
+.feed-item.trade .feed-title,.feed-item.trade .feed-dot{color:#65f4a1;background:#55f59a}
+.feed-item.result .feed-title,.feed-item.result .feed-dot{color:#70caff;background:#48b9ff}
+.feed-item.warning .feed-title,.feed-item.warning .feed-dot{color:#ff9b82;background:#ff765f}
+.feed-item.tick .feed-title,.feed-item.tick .feed-dot{color:#5b9b70;background:#387d50}
+.feed-detail{min-width:0;overflow-wrap:anywhere;color:#a2c9ad;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+.feed-empty{padding:10px 2px;color:#62856c;font:10px ui-monospace,SFMono-Regular,Consolas,monospace}
+.activity-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:7px;color:#50745b;font:8px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.04em}
+.table-wrap{display:none}
+@media(max-width:600px){.activity{padding:0 8px;margin-top:12px}.activity .panel{padding:9px}.feed{height:128px;max-height:128px}.feed-item{grid-template-columns:55px 48px minmax(0,1fr);gap:5px;font-size:9px}.feed-detail{font-size:9px}.metric-strip{gap:9px}}
 </style>
 </head>
 <body>
@@ -124,22 +146,16 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
       </section>
     </div>
   </div>
-  <section class="activity" aria-label="Live trading activity">
+  <section class="activity" aria-label="Compact live system log">
     <div class="panel">
-      <div class="activity-head"><h2>Live activity center</h2><span class="live-tag">Session feed</span></div>
+      <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag">SIM FEED ACTIVE</span></div>
       <div class="metric-strip">
-        <div class="metric"><small>Engine state</small><b id="engineState">Idle</b></div>
-        <div class="metric"><small>Current market</small><b id="activeMarket">Volatility 10 (1s)</b></div>
-        <div class="metric"><small>Session events</small><b id="eventCount">0</b></div>
+        <div class="metric"><small>ENGINE:</small><b id="engineState">IDLE</b></div>
+        <div class="metric"><small>MARKET:</small><b id="activeMarket">---</b></div>
+        <div class="metric"><small>EVENTS:</small><b id="eventCount">0</b></div>
       </div>
-      <div class="activity-grid">
-        <section><h2>Decision & system timeline</h2><div class="feed" id="eventFeed" aria-live="polite"><div class="feed-empty">Waiting for scanner activity. Press Scan to begin.</div></div></section>
-        <section><h2>Trade execution ledger</h2><div class="table-wrap"><table class="trade-table">
-          <thead><tr><th>Time</th><th>Market</th><th>Contract</th><th>Entry</th><th>Exit</th><th>Stake</th><th>Outcome</th><th>P/L</th></tr></thead>
-          <tbody id="tradeHistory"><tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr></tbody>
-        </table></div></section>
-      </div>
-      <div class="activity-foot"><span>Decision records show the observed sample and selected contract.</span><span>Paper simulation · session-only history</span></div>
+      <div class="activity-grid"><section><div class="feed" id="eventFeed" aria-live="polite"><div class="feed-empty">[BOOT] Waiting for scanner feed...</div></div></section></div>
+      <div class="activity-foot"><span>LOCAL PAPER SIMULATION // NOT BROKER CONNECTED</span><span>LIVE EVENTS · SESSION MEMORY</span></div>
     </div>
   </section>
 </div>
@@ -183,9 +199,9 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
-    events.unshift({time:stamp(),type:type,title:title,detail:detail});if(events.length>100)events.length=100;
+    events.unshift({time:stamp(),type:type,title:title,detail:detail});if(events.length>120)events.length=120;
     $('#eventCount').textContent=events.length;
-    $('#eventFeed').innerHTML=events.map(function(e){return '<div class="feed-item '+e.type+'"><div class="feed-time">'+e.time+'</div><div><div class="feed-title"><i class="feed-dot"></i>'+e.title+'</div><div class="feed-detail">'+e.detail+'</div></div></div>'}).join('');
+    $('#eventFeed').innerHTML=events.map(function(e){return '<div class="feed-item '+e.type+'"><div class="feed-time">'+e.time+'</div><div class="feed-title"><i class="feed-dot"></i>'+e.title+'</div><div class="feed-detail">'+e.detail+'</div></div>'}).join('');
   }
 
   for(var i=0;i<10;i++){
@@ -277,9 +293,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
     $('#log').innerHTML=log.length?log.slice(0,6).map(function(r){
       return'<li><span>'+r.t+'</span><span>'+r.label+' \u2022 exit '+r.x+'</span><span class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</span></li>';
     }).join(''):'<li class="empty" style="border:0;padding:0">No trades yet.</li>';
-    $('#tradeHistory').innerHTML=log.length?log.map(function(r){
-      return '<tr><td>'+r.t+'</td><td>'+r.market+'</td><td>'+r.label+'</td><td>'+r.entry+'</td><td>'+r.x+'</td><td>$'+r.stake.toFixed(2)+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+(r.amt>0?'WIN':'LOSS')+'</td><td class="'+(r.amt>0?'pos':'neg')+'">'+money(r.amt)+'</td></tr>';
-    }).join(''):'<tr><td class="empty-row" colspan="8">No trades executed in this session.</td></tr>';
+
   }
 
   function tradeLine(){
@@ -334,6 +348,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 
   function tick(){
     var d=push(),pn=+lastPrice;render();moveCursor(d,true);
+    event('tick','TICK',mk.n+' | quote '+lastPrice+' | digit '+d+' | '+ds.length+' samples buffered');
     if(trade){
       if(trade.run){
         var ok=trade.id==='RUNHIGH'?pn>trade.last:pn<trade.last;
