@@ -424,7 +424,9 @@ li span:first-child{color:#668b70}
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var tradingSocket=null,tradingRequestId=100,tradingBuySubmitted=false,tradingBuyRequestId=0,tradingAccount=null;
+  var tradingReconnectTimer=null,tradingReconnectDelay=1000,tradingMonitorStopped=false;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
+  var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
@@ -562,13 +564,34 @@ li span:first-child{color:#668b70}
     sendSocket({ticks:mk.symbol,subscribe:1,req_id:subscribeRequestId});
     sendSocket({ticks_history:mk.symbol,count:1000,end:'latest',style:'ticks',req_id:historyRequestId});
   }
+  function stopMarketHeartbeat(){
+    if(marketPingTimer){clearInterval(marketPingTimer);marketPingTimer=null;}
+    if(marketPingTimeout){clearTimeout(marketPingTimeout);marketPingTimeout=null;}
+  }
+  function startMarketHeartbeat(){
+    stopMarketHeartbeat();
+    marketPingTimer=setInterval(function(){
+      if(!socket||socket.readyState!==WebSocket.OPEN)return;
+      if(marketPingTimeout){try{socket.close(4000,'Deriv ping timeout')}catch(e){}return;}
+      marketPingRequestId=requestId++;
+      try{
+        socket.send(JSON.stringify({ping:1,req_id:marketPingRequestId}));
+        marketPingTimeout=setTimeout(function(){
+          marketPingTimeout=null;
+          if(socket&&socket.readyState===WebSocket.OPEN){try{socket.close(4000,'Deriv ping timeout')}catch(e){}}
+        },15000);
+      }catch(error){try{socket.close()}catch(e){}}
+    },30000);
+  }
   function scheduleReconnect(){
     if(manuallyClosed||reconnectTimer)return;
+    var base=reconnectDelay;
+    reconnectDelay=Math.min(reconnectDelay*2,30000);
+    var delay=Math.round(base*(0.8+Math.random()*0.4));
     reconnectTimer=setTimeout(function(){
       reconnectTimer=null;
       connectMarketSocket();
-    },reconnectDelay);
-    reconnectDelay=Math.min(reconnectDelay*2,30000);
+    },delay);
   }
   function connectMarketSocket(){
     manuallyClosed=false;
@@ -584,6 +607,7 @@ li span:first-child{color:#668b70}
       scheduleReconnect();return;
     }
     socket.onopen=function(){
+      startMarketHeartbeat();
       reconnectDelay=1000;
       $('#feedState').textContent='DERIV FEED CONNECTED';
       $('#engineState').textContent='Connected';
@@ -595,6 +619,10 @@ li span:first-child{color:#668b70}
     socket.onmessage=function(message){
       var data;
       try{data=JSON.parse(message.data)}catch(error){return}
+      if(data.msg_type==='ping'&&Number(data.req_id)===Number(marketPingRequestId)){
+        if(marketPingTimeout){clearTimeout(marketPingTimeout);marketPingTimeout=null;}
+        return;
+      }
       if(data.error){
         $('#status').textContent='Deriv data error: '+(data.error.message||'Request rejected');
         if(data.req_id===historyRequestId){
@@ -635,6 +663,7 @@ li span:first-child{color:#668b70}
       setTickWindowState('CONNECTION ERROR');
     };
     socket.onclose=function(){
+      stopMarketHeartbeat();
       socket=null;tickSubscriptionId=null;
       $('#feedState').textContent='DERIV FEED DISCONNECTED';
       $('#engineState').textContent='Disconnected';
@@ -725,6 +754,8 @@ li span:first-child{color:#668b70}
   }
 
   function releaseTradingSocket(){
+    tradingMonitorStopped=true;
+    if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
     var ws=tradingSocket;tradingSocket=null;
     if(ws){try{ws.onclose=null;ws.close()}catch(e){}}
   }
@@ -744,6 +775,8 @@ li span:first-child{color:#668b70}
     event('result',win?'DERIV SETTLED · PROFIT':'DERIV SETTLED · LOSS',trade.market+' · '+trade.label+' · stake '+moneyBalance(stake,trade.currency)+' · payout '+(Number.isFinite(payout)?moneyBalance(payout,trade.currency):'—')+' · actual P/L '+moneyBalance(amount,trade.currency));
     $('#status').textContent=(win?'Deriv contract won':'Deriv contract lost')+' · actual P/L '+moneyBalance(amount,trade.currency)+'.';
     trade=null;busy=false;tradingBuySubmitted=false;tradingAccount=null;
+    tradingMonitorStopped=true;tradingReconnectDelay=1000;
+    if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
     $('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
     releaseTradingSocket();renderPnl();tradeLine();
   }
@@ -754,6 +787,59 @@ li span:first-child{color:#668b70}
       unlockAfterTradeError(message+' Do not retry until you verify the Deriv account statement.',true);
     }else{
       unlockAfterTradeError(message,false);tradingBuySubmitted=false;tradingAccount=null;releaseTradingSocket();
+    }
+  }
+  function scheduleTradeMonitorReconnect(account,contractId){
+    if(tradingMonitorStopped||tradingReconnectTimer||!trade||!trade.contractId||!account)return;
+    var base=tradingReconnectDelay;
+    tradingReconnectDelay=Math.min(tradingReconnectDelay*2,30000);
+    var delay=Math.round(base*(0.8+Math.random()*0.4));
+    $('#engineState').textContent='Reconnecting contract monitor';
+    $('#status').textContent='Deriv contract #'+contractId+' is open. Restoring its live status connection…';
+    event('warning','RESTORING CONTRACT MONITOR','Contract #'+contractId+' · requesting a fresh Deriv OTP before reconnecting.');
+    tradingReconnectTimer=setTimeout(function(){
+      tradingReconnectTimer=null;
+      connectTradeMonitor(account,contractId);
+    },delay);
+  }
+  async function connectTradeMonitor(account,contractId){
+    if(tradingMonitorStopped||!trade||Number(trade.contractId)!==Number(contractId))return;
+    try{
+      var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/trading-otp',{method:'POST',headers:oauthHeaders()});
+      var auth=await response.json();
+      if(!response.ok||!auth.url)throw new Error(auth.error||'Could not refresh Deriv trading authorization');
+      if(auth.account_id!==account.account_id||auth.account_type!==account.account_type)throw new Error('Reconnected account does not match the open contract account.');
+      if(tradingMonitorStopped||!trade||Number(trade.contractId)!==Number(contractId))return;
+      var ws=new WebSocket(auth.url);tradingSocket=ws;tradingAccount=account;
+      ws.onopen=function(){
+        if(tradingSocket!==ws||tradingMonitorStopped)return;
+        tradingReconnectDelay=1000;
+        $('#engineState').textContent='Deriv contract open';
+        $('#status').textContent='Reconnected · monitoring Deriv contract #'+contractId+'.';
+        try{ws.send(JSON.stringify({proposal_open_contract:1,contract_id:contractId,subscribe:1,req_id:++tradingRequestId}));}
+        catch(error){try{ws.close()}catch(e){}}
+      };
+      ws.onmessage=function(message){
+        if(tradingSocket!==ws)return;
+        var data;try{data=JSON.parse(message.data)}catch(e){return}
+        if(data.error){event('warning','CONTRACT MONITOR ERROR',(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error'));try{ws.close()}catch(e){}return;}
+        if(data.msg_type==='proposal_open_contract'&&data.proposal_open_contract&&trade){
+          var contract=data.proposal_open_contract;
+          if(contract.contract_id&&Number(contract.contract_id)!==Number(trade.contractId))return;
+          if(contract.is_sold){recordDerivSettlement(contract);return;}
+          if(contract.status)trade.phase=String(contract.status).toUpperCase();
+          tradeLine();
+        }
+      };
+      ws.onerror=function(){if(tradingSocket===ws)try{ws.close()}catch(e){}};
+      ws.onclose=function(){
+        if(tradingSocket!==ws)return;
+        tradingSocket=null;
+        scheduleTradeMonitorReconnect(account,contractId);
+      };
+    }catch(error){
+      event('warning','CONTRACT RECONNECT FAILED',error.message);
+      scheduleTradeMonitorReconnect(account,contractId);
     }
   }
   function sendTradingProposal(ws,config,contractId,account){
@@ -770,6 +856,8 @@ li span:first-child{color:#668b70}
     if(!token||!account){$('#status').textContent='Connect to Deriv and select a Demo or Real account before trading.';accountStatus('Trading unavailable · select an authenticated account.');return}
     var config=cfg();
     if(!Number.isFinite(config.stake)||config.stake<=0){$('#status').textContent='Enter a valid stake amount.';return}
+    tradingMonitorStopped=false;tradingReconnectDelay=1000;
+    if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
     busy=true;$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
     $('#engineState').textContent='Connecting to Deriv trading';$('#activeMarket').textContent=mk.n;
     $('#status').textContent='Authorizing a secure Deriv trading connection…';tradeLine();
@@ -793,6 +881,7 @@ li span:first-child{color:#668b70}
         if(tradingSocket!==ws)return;
         var data;try{data=JSON.parse(message.data)}catch(e){return}
         if(data.error){
+          if(trade&&trade.contractId){event('warning','CONTRACT MONITOR INTERRUPTED',(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error'));try{ws.close()}catch(e){}return;}
           var messageText=(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error');
           var rejectedBuy=tradingBuySubmitted&&Number(data.req_id)===Number(tradingBuyRequestId);
           tradingFailure(messageText,tradingBuySubmitted&&!rejectedBuy);return;
@@ -822,10 +911,15 @@ li span:first-child{color:#668b70}
           if(contract.status)trade.phase=String(contract.status).toUpperCase();tradeLine();
         }
       };
-      ws.onerror=function(){if(tradingSocket!==ws)return;if(tradingBuySubmitted)tradingFailure('Deriv connection failed after the buy request was sent. The order status is uncertain.',true);else tradingFailure('Deriv trading WebSocket connection failed before purchase.',false)};
+      ws.onerror=function(){
+        if(tradingSocket!==ws)return;
+        if(trade&&trade.contractId){$('#status').textContent='Contract monitor interrupted · reconnecting…';return;}
+        if(tradingBuySubmitted)tradingFailure('Deriv connection failed after the buy request was sent. The order status is uncertain.',true);
+        else tradingFailure('Deriv trading WebSocket connection failed before purchase.',false);
+      };
       ws.onclose=function(){
         if(tradingSocket!==ws)return;tradingSocket=null;
-        if(trade&&trade.contractId)tradingFailure('Connection to Deriv closed while contract #'+trade.contractId+' was being monitored. Verify its status in Deriv before retrying.',true);
+        if(trade&&trade.contractId)scheduleTradeMonitorReconnect(account,trade.contractId);
         else if(busy)tradingFailure(tradingBuySubmitted?'Connection closed after buy submission; purchase status is uncertain.':'Connection closed before a purchase was made.',tradingBuySubmitted);
       };
     }).catch(function(error){if(busy)tradingFailure('Trading authorization failed: '+error.message,false)});
@@ -899,7 +993,11 @@ li span:first-child{color:#668b70}
     accountStatus((account&&account.account_type==='real'?'Real':'Demo')+' account selected · '+accountId);
   }
   function closeAccountSockets(){
-    Object.keys(accountSockets).forEach(function(id){try{accountSockets[id].close()}catch(e){}});
+    Object.keys(accountSockets).forEach(function(id){
+      var state=accountSockets[id];state.stopped=true;
+      if(state.timer){clearTimeout(state.timer);state.timer=null;}
+      if(state.ws){try{state.ws.onclose=null;state.ws.close()}catch(e){}}
+    });
     accountSockets={};
   }
   function updateAccountBalance(accountId,value,currency){
@@ -908,28 +1006,48 @@ li span:first-child{color:#668b70}
     var target=document.getElementById('balance-'+accountId);
     if(target)target.textContent=moneyBalance(value,currency||(account&&account.currency));
   }
-  async function openAccountBalance(account){
+  function scheduleBalanceReconnect(account,state){
+    if(state.stopped||state.timer||accountSockets[account.account_id]!==state)return;
+    var base=state.delay;state.delay=Math.min(state.delay*2,30000);
+    var delay=Math.round(base*(0.8+Math.random()*0.4));
+    if(account.account_id===selectedDerivAccount)accountStatus('Balance feed interrupted · reconnecting…');
+    state.timer=setTimeout(function(){state.timer=null;openAccountBalance(account,state);},delay);
+  }
+  async function openAccountBalance(account,state){
+    if(!state||state.stopped||accountSockets[account.account_id]!==state)return;
     try{
       var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/balance-otp',{method:'POST',headers:oauthHeaders()});
       var data=await response.json();
       if(!response.ok||!data.url)throw new Error(data.error||'Could not authorize account balance');
-      var ws=new WebSocket(data.url);accountSockets[account.account_id]=ws;
-      ws.onopen=function(){ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}))};
+      if(state.stopped||accountSockets[account.account_id]!==state)return;
+      var ws=new WebSocket(data.url);state.ws=ws;
+      ws.onopen=function(){
+        if(state.stopped||state.ws!==ws)return;
+        state.delay=1000;
+        try{ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}));ws.send(JSON.stringify({ping:1,req_id:2}));}catch(e){try{ws.close()}catch(ignore){}}
+        if(state.pingTimer)clearInterval(state.pingTimer);
+        state.pingTimer=setInterval(function(){if(ws.readyState===WebSocket.OPEN){try{ws.send(JSON.stringify({ping:1,req_id:3}))}catch(e){try{ws.close()}catch(ignore){}}}},30000);
+      };
       ws.onmessage=function(eventMessage){
-        var data;
-        try{data=JSON.parse(eventMessage.data)}catch(e){return}
-        if(data.error){accountStatus('Balance unavailable for '+account.account_id+': '+(data.error.message||'Deriv error'));return}
+        if(state.stopped||state.ws!==ws)return;
+        var data;try{data=JSON.parse(eventMessage.data)}catch(e){return}
+        if(data.error){if(account.account_id===selectedDerivAccount)accountStatus('Balance feed error · '+(data.error.message||'Deriv error'));return;}
         if(data.msg_type==='balance'&&data.balance){
           updateAccountBalance(account.account_id,data.balance.balance,data.balance.currency);
           if(account.account_id===selectedDerivAccount)accountStatus((account.account_type==='real'?'Real':'Demo')+' account selected · balance live');
         }
       };
-      ws.onerror=function(){if(account.account_id===selectedDerivAccount)accountStatus('Balance connection error · '+account.account_id)};
-      ws.onclose=function(){if(accountSockets[account.account_id]===ws)delete accountSockets[account.account_id]};
+      ws.onerror=function(){if(account.account_id===selectedDerivAccount)accountStatus('Balance connection error · reconnecting…')};
+      ws.onclose=function(){
+        if(state.ws!==ws)return;
+        state.ws=null;if(state.pingTimer){clearInterval(state.pingTimer);state.pingTimer=null;}
+        scheduleBalanceReconnect(account,state);
+      };
     }catch(error){
       var target=document.getElementById('balance-'+account.account_id);
-      if(target)target.textContent='Balance unavailable';
-      if(account.account_id===selectedDerivAccount)accountStatus('Could not load selected account balance. '+error.message);
+      if(target)target.textContent='Balance unavailable · retrying';
+      if(account.account_id===selectedDerivAccount)accountStatus('Balance connection failed · retrying. '+error.message);
+      scheduleBalanceReconnect(account,state);
     }
   }
   async function loadDerivAccounts(){
@@ -943,7 +1061,11 @@ li span:first-child{color:#668b70}
     if(selectedDerivAccount)sessionStorage.setItem('zyntrix_selected_account',selectedDerivAccount);
     if(!derivAccounts.length){accountStatus('Connected to Deriv, but no Demo or Real Options accounts were returned.');return}
     accountStatus('Connected · retrieving live balances for '+derivAccounts.length+' account(s)…');
-    derivAccounts.forEach(openAccountBalance);
+    derivAccounts.forEach(function(account){
+      var state={ws:null,timer:null,pingTimer:null,delay:1000,stopped:false};
+      accountSockets[account.account_id]=state;
+      openAccountBalance(account,state);
+    });
     $('#derivRefresh').disabled=false;$('#derivDisconnect').disabled=false;
   }
   async function resetDemoAccount(account,button){
