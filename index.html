@@ -817,7 +817,7 @@ li span:first-child{color:#668b70}
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
 
   // Deriv OAuth account panel. Set this to the deployed Cloudflare Worker origin.
-  var OAUTH_WORKER_URL = '';
+  var OAUTH_WORKER_URL = 'https://zyntrix-oauth.fiverlancer51.workers.dev';
   var oauthSessionKey = 'zyntrix_session_token';
   var accountSockets = {};
   var derivAccounts = [];
