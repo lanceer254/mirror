@@ -251,9 +251,9 @@ li span:first-child{color:#668b70}
 .account-actions button:disabled{opacity:.45;cursor:not-allowed}
 .account-status{font-size:.75rem;color:var(--mute);min-height:18px;margin:0 0 10px}
 .account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.account-card{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0}
+.account-card-wrap{display:flex;flex-direction:column;gap:7px;min-width:0}\n.account-card{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0}
 .account-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.account-card:disabled{cursor:default;opacity:.85}
+.account-card:disabled{cursor:default;opacity:.85}\n.reset-demo-btn{border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);padding:8px 10px;font:inherit;font-size:.7rem;font-weight:700;letter-spacing:.04em;cursor:pointer}\n.reset-demo-btn:disabled{opacity:.4;cursor:not-allowed}\n.reset-demo-btn:not(:disabled){border-color:var(--accent);color:var(--accent)}
 .account-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
 .account-card-balance{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:8px;overflow-wrap:anywhere}
 .account-card-id{font-size:.68rem;color:var(--mute);margin-top:5px;overflow-wrap:anywhere}
@@ -834,6 +834,7 @@ li span:first-child{color:#668b70}
     if(!derivAccounts.length){box.innerHTML='<div class="account-empty">No Demo or Real Options accounts were returned for this Deriv login.</div>';return}
     box.replaceChildren();
     derivAccounts.forEach(function(a){
+      var wrap=document.createElement('div');wrap.className='account-card-wrap';
       var card=document.createElement('button');card.type='button';card.className='account-card'+(a.account_id===selectedDerivAccount?' selected':'');
       card.setAttribute('aria-pressed',String(a.account_id===selectedDerivAccount));
       var top=document.createElement('div');top.className='account-card-top';
@@ -844,7 +845,15 @@ li span:first-child{color:#668b70}
       var id=document.createElement('div');id.className='account-card-id';id.textContent=a.account_id+(a.currency?' · '+a.currency:'');
       card.append(top,balance,id);
       card.addEventListener('click',function(){selectDerivAccount(a.account_id)});
-      box.appendChild(card);
+      wrap.appendChild(card);
+      if(a.account_type==='demo'){
+        var reset=document.createElement('button');reset.type='button';reset.className='reset-demo-btn';
+        reset.textContent='RESET DEMO BALANCE';reset.disabled=a.account_id!==selectedDerivAccount;
+        reset.title=reset.disabled?'Select this Demo account first':'Restore this Demo account to Deriv’s default balance';
+        reset.addEventListener('click',function(event){event.stopPropagation();resetDemoAccount(a,reset)});
+        wrap.appendChild(reset);
+      }
+      box.appendChild(wrap);
     });
   }
   function selectDerivAccount(accountId){
@@ -899,6 +908,25 @@ li span:first-child{color:#668b70}
     accountStatus('Connected · retrieving live balances for '+derivAccounts.length+' account(s)…');
     derivAccounts.forEach(openAccountBalance);
     $('#derivRefresh').disabled=false;$('#derivDisconnect').disabled=false;
+  }
+  async function resetDemoAccount(account,button){
+    if(!account||account.account_type!=='demo'||account.account_id!==selectedDerivAccount)return;
+    if(!window.confirm('Reset the selected Demo account to Deriv’s default virtual balance? This affects only this Demo account.'))return;
+    button.disabled=true;button.textContent='RESETTING…';
+    accountStatus('Requesting Demo balance reset from Deriv…');
+    try{
+      var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/reset-demo-balance',{
+        method:'POST',headers:oauthHeaders()
+      });
+      var data=await response.json().catch(function(){return{}});
+      if(!response.ok||!data.success)throw new Error((data.details&&data.details[0]&&data.details[0].message)||data.error||'Deriv could not reset this Demo balance.');
+      await loadDerivAccounts();
+      accountStatus('Demo balance reset successfully. Refreshing the live balance…');
+    }catch(error){
+      accountStatus('Demo balance reset failed: '+error.message);
+    }finally{
+      renderDerivAccounts();
+    }
   }
   async function exchangeOAuthHandoff(){
     if(!OAUTH_WORKER_URL)return;
