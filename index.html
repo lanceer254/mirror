@@ -182,6 +182,44 @@ li span:first-child{color:#668b70}
   .activity{margin-top:10px}
 }
 
+
+/* Plain, high-clarity system log: monochrome and static */
+.activity .panel{
+  background:#080808!important;
+  border:1px solid #777!important;
+  box-shadow:none!important;
+}
+.activity-head,.activity-head h2,.live-tag,
+.metric small,.metric b,.feed-time,.feed-title,.feed-detail,.feed-empty,.activity-foot{
+  color:#e5e5e5!important;
+}
+.activity-head h2{letter-spacing:.04em!important}
+.live-tag:before,.feed-dot{display:none!important}
+.metric-strip{border-bottom:1px solid #666!important}
+.feed-item,
+.feed-item.decision,.feed-item.trade,.feed-item.result,.feed-item.warning,.feed-item.tick{
+  color:#e5e5e5!important;
+  background:transparent!important;
+  border:0!important;
+  border-bottom:1px solid #444!important;
+  box-shadow:none!important;
+  animation:none!important;
+  transition:none!important;
+}
+.feed-item .feed-title,
+.feed-item.decision .feed-title,.feed-item.trade .feed-title,
+.feed-item.result .feed-title,.feed-item.warning .feed-title,
+.feed-item.tick .feed-title{color:#fff!important;background:transparent!important}
+.feed-detail{color:#e5e5e5!important;font-size:11px!important;line-height:1.55!important}
+.feed-time{font-size:10px!important}
+.feed{scrollbar-color:#777 #111!important}
+.activity *,.activity *:before,.activity *:after{
+  animation:none!important;
+  transition:none!important;
+  text-shadow:none!important;
+  box-shadow:none!important;
+}
+
 </style>
 </head>
 <body>
