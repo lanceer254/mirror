@@ -425,6 +425,7 @@ li span:first-child{color:#668b70}
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var tradingSocket=null,tradingRequestId=100,tradingBuySubmitted=false,tradingBuyRequestId=0,tradingAccount=null;
   var tradingReconnectTimer=null,tradingReconnectDelay=1000,tradingMonitorStopped=false;
+  var tradingPingTimer=null,tradingPingTimeout=null,tradingPingRequestId=0;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -754,7 +755,27 @@ li span:first-child{color:#668b70}
     $('#derivDisconnect').disabled=lock||!sessionStorage.getItem(oauthSessionKey);
   }
 
+  function stopTradingHeartbeat(){
+    if(tradingPingTimer){clearInterval(tradingPingTimer);tradingPingTimer=null;}
+    if(tradingPingTimeout){clearTimeout(tradingPingTimeout);tradingPingTimeout=null;}
+  }
+  function startTradingHeartbeat(ws){
+    stopTradingHeartbeat();
+    tradingPingTimer=setInterval(function(){
+      if(tradingSocket!==ws||ws.readyState!==WebSocket.OPEN)return;
+      if(tradingPingTimeout){try{ws.close(4000,'Deriv ping timeout')}catch(e){}return;}
+      tradingPingRequestId=++tradingRequestId;
+      try{
+        ws.send(JSON.stringify({ping:1,req_id:tradingPingRequestId}));
+        tradingPingTimeout=setTimeout(function(){
+          tradingPingTimeout=null;
+          if(tradingSocket===ws&&ws.readyState===WebSocket.OPEN){try{ws.close(4000,'Deriv ping timeout')}catch(e){}}
+        },15000);
+      }catch(error){try{ws.close()}catch(e){}}
+    },30000);
+  }
   function releaseTradingSocket(){
+    stopTradingHeartbeat();
     tradingMonitorStopped=true;
     if(tradingReconnectTimer){clearTimeout(tradingReconnectTimer);tradingReconnectTimer=null;}
     var ws=tradingSocket;tradingSocket=null;
@@ -814,6 +835,7 @@ li span:first-child{color:#668b70}
       var ws=new WebSocket(auth.url);tradingSocket=ws;tradingAccount=account;
       ws.onopen=function(){
         if(tradingSocket!==ws||tradingMonitorStopped)return;
+        startTradingHeartbeat(ws);
         tradingReconnectDelay=1000;
         $('#engineState').textContent='Deriv contract open';
         $('#status').textContent='Reconnected · monitoring Deriv contract #'+contractId+'.';
@@ -823,6 +845,7 @@ li span:first-child{color:#668b70}
       ws.onmessage=function(message){
         if(tradingSocket!==ws)return;
         var data;try{data=JSON.parse(message.data)}catch(e){return}
+        if(data.msg_type==='ping'&&Number(data.req_id)===Number(tradingPingRequestId)){if(tradingPingTimeout){clearTimeout(tradingPingTimeout);tradingPingTimeout=null;}return;}
         if(data.error){event('warning','CONTRACT MONITOR ERROR',(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error'));try{ws.close()}catch(e){}return;}
         if(data.msg_type==='proposal_open_contract'&&data.proposal_open_contract&&trade){
           var contract=data.proposal_open_contract;
@@ -835,7 +858,7 @@ li span:first-child{color:#668b70}
       ws.onerror=function(){if(tradingSocket===ws)try{ws.close()}catch(e){}};
       ws.onclose=function(){
         if(tradingSocket!==ws)return;
-        tradingSocket=null;
+        stopTradingHeartbeat();tradingSocket=null;
         scheduleTradeMonitorReconnect(account,contractId);
       };
     }catch(error){
@@ -877,10 +900,11 @@ li span:first-child{color:#668b70}
       if(!busy)return;
       if(auth.account_id!==account.account_id||auth.account_type!==account.account_type)throw new Error('Trading authorization account does not match the selected account.');
       var ws=new WebSocket(auth.url);tradingSocket=ws;tradingBuySubmitted=false;tradingAccount=account;
-      ws.onopen=function(){if(!busy||tradingSocket!==ws)return;try{sendTradingProposal(ws,config,id,account)}catch(error){tradingFailure('Could not send the Deriv quote request: '+error.message,false)}};
+      ws.onopen=function(){if(!busy||tradingSocket!==ws)return;startTradingHeartbeat(ws);try{sendTradingProposal(ws,config,id,account)}catch(error){tradingFailure('Could not send the Deriv quote request: '+error.message,false)}};
       ws.onmessage=function(message){
         if(tradingSocket!==ws)return;
         var data;try{data=JSON.parse(message.data)}catch(e){return}
+        if(data.msg_type==='ping'&&Number(data.req_id)===Number(tradingPingRequestId)){if(tradingPingTimeout){clearTimeout(tradingPingTimeout);tradingPingTimeout=null;}return;}
         if(data.error){
           if(trade&&trade.contractId){event('warning','CONTRACT MONITOR INTERRUPTED',(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error'));try{ws.close()}catch(e){}return;}
           var messageText=(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error');
@@ -919,7 +943,7 @@ li span:first-child{color:#668b70}
         else tradingFailure('Deriv trading WebSocket connection failed before purchase.',false);
       };
       ws.onclose=function(){
-        if(tradingSocket!==ws)return;tradingSocket=null;
+        if(tradingSocket!==ws)return;stopTradingHeartbeat();tradingSocket=null;
         if(trade&&trade.contractId)scheduleTradeMonitorReconnect(account,trade.contractId);
         else if(busy)tradingFailure(tradingBuySubmitted?'Connection closed after buy submission; purchase status is uncertain.':'Connection closed before a purchase was made.',tradingBuySubmitted);
       };
