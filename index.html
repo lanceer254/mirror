@@ -240,6 +240,26 @@ li span:first-child{color:#668b70}
 .tick-digit{display:flex;align-items:center;justify-content:center;min-height:24px;border:1px solid rgba(31,83,52,.48);border-radius:3px;background:#07110b;color:#c9f7d5;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
 .tick-digit:first-child{border-color:#55f59a;color:#55f59a;background:#0a1a10}
 @media(max-width:600px){.tick-window{margin-top:10px}.tick-window-toggle{padding:9px 10px}.tick-digit-grid{gap:3px;max-height:210px}.tick-digit{min-height:22px;font-size:10px}}
+
+.account-panel{margin:0 0 18px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.10)}
+.account-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.account-head h2{font-size:.82rem;letter-spacing:.12em;margin:0;color:var(--mute)}
+.account-actions{display:flex;gap:8px;flex-wrap:wrap}
+.account-actions button,.account-card{font:inherit}
+.account-actions button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.76rem;cursor:pointer}
+.account-actions button.primary{border-color:var(--accent);background:var(--accent);color:#fff}
+.account-actions button:disabled{opacity:.45;cursor:not-allowed}
+.account-status{font-size:.75rem;color:var(--mute);min-height:18px;margin:0 0 10px}
+.account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.account-card{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0}
+.account-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.account-card:disabled{cursor:default;opacity:.85}
+.account-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
+.account-card-balance{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:8px;overflow-wrap:anywhere}
+.account-card-id{font-size:.68rem;color:var(--mute);margin-top:5px;overflow-wrap:anywhere}
+.account-empty{font-size:.78rem;color:var(--mute);padding:12px 0}
+@media(max-width:600px){.account-panel{padding:13px}.account-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -251,6 +271,20 @@ li span:first-child{color:#668b70}
     </div>
     <div class="price" id="price" aria-label="Latest price">0000.00</div>
   </header>
+
+
+  <section class="account-panel" aria-label="Deriv account connection">
+    <div class="account-head">
+      <h2>DERIV ACCOUNT</h2>
+      <div class="account-actions">
+        <button class="primary" id="derivConnect" type="button">CONNECT TO DERIV</button>
+        <button id="derivRefresh" type="button" disabled>REFRESH</button>
+        <button id="derivDisconnect" type="button" disabled>DISCONNECT</button>
+      </div>
+    </div>
+    <p class="account-status" id="derivAccountStatus" aria-live="polite">Not connected · Connect your Deriv account to view Demo and Real balances.</p>
+    <div class="account-grid" id="derivAccountGrid"><div class="account-empty">Demo and Real accounts will appear here after authorization.</div></div>
+  </section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -781,6 +815,139 @@ li span:first-child{color:#668b70}
   setInterval(tradeLine,250);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
+
+  // Deriv OAuth account panel. Set this to the deployed Cloudflare Worker origin.
+  var OAUTH_WORKER_URL = '';
+  var oauthSessionKey = 'zyntrix_session_token';
+  var accountSockets = {};
+  var derivAccounts = [];
+  var selectedDerivAccount = sessionStorage.getItem('zyntrix_selected_account') || '';
+  function accountStatus(message){$('#derivAccountStatus').textContent=message}
+  function oauthHeaders(){return {'Authorization':'Bearer '+sessionStorage.getItem(oauthSessionKey),'Content-Type':'application/json'}}
+  function moneyBalance(value,currency){
+    if(!Number.isFinite(Number(value)))return 'Balance loading…';
+    try{return new Intl.NumberFormat(undefined,{style:'currency',currency:currency||'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value))}
+    catch(e){return Number(value).toFixed(2)+' '+(currency||'')}
+  }
+  function renderDerivAccounts(){
+    var box=$('#derivAccountGrid');
+    if(!derivAccounts.length){box.innerHTML='<div class="account-empty">No Demo or Real Options accounts were returned for this Deriv login.</div>';return}
+    box.replaceChildren();
+    derivAccounts.forEach(function(a){
+      var card=document.createElement('button');card.type='button';card.className='account-card'+(a.account_id===selectedDerivAccount?' selected':'');
+      card.setAttribute('aria-pressed',String(a.account_id===selectedDerivAccount));
+      var top=document.createElement('div');top.className='account-card-top';
+      var type=document.createElement('b');type.textContent=a.account_type==='real'?'REAL ACCOUNT':'DEMO ACCOUNT';
+      var state=document.createElement('span');state.textContent=a.account_id===selectedDerivAccount?'SELECTED':(a.status||'AVAILABLE').toUpperCase();
+      top.append(type,state);
+      var balance=document.createElement('div');balance.className='account-card-balance';balance.id='balance-'+a.account_id;balance.textContent=moneyBalance(a.balance,a.currency);
+      var id=document.createElement('div');id.className='account-card-id';id.textContent=a.account_id+(a.currency?' · '+a.currency:'');
+      card.append(top,balance,id);
+      card.addEventListener('click',function(){selectDerivAccount(a.account_id)});
+      box.appendChild(card);
+    });
+  }
+  function selectDerivAccount(accountId){
+    selectedDerivAccount=accountId;sessionStorage.setItem('zyntrix_selected_account',accountId);renderDerivAccounts();
+    var account=derivAccounts.find(function(a){return a.account_id===accountId});
+    accountStatus((account&&account.account_type==='real'?'Real':'Demo')+' account selected · '+accountId);
+  }
+  function closeAccountSockets(){
+    Object.keys(accountSockets).forEach(function(id){try{accountSockets[id].close()}catch(e){}});
+    accountSockets={};
+  }
+  function updateAccountBalance(accountId,value,currency){
+    var account=derivAccounts.find(function(a){return a.account_id===accountId});
+    if(account){account.balance=Number(value);if(currency)account.currency=currency}
+    var target=document.getElementById('balance-'+accountId);
+    if(target)target.textContent=moneyBalance(value,currency||(account&&account.currency));
+  }
+  async function openAccountBalance(account){
+    try{
+      var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts/'+encodeURIComponent(account.account_id)+'/balance-otp',{method:'POST',headers:oauthHeaders()});
+      var data=await response.json();
+      if(!response.ok||!data.url)throw new Error(data.error||'Could not authorize account balance');
+      var ws=new WebSocket(data.url);accountSockets[account.account_id]=ws;
+      ws.onopen=function(){ws.send(JSON.stringify({balance:1,subscribe:1,req_id:1}))};
+      ws.onmessage=function(eventMessage){
+        var data;
+        try{data=JSON.parse(eventMessage.data)}catch(e){return}
+        if(data.error){accountStatus('Balance unavailable for '+account.account_id+': '+(data.error.message||'Deriv error'));return}
+        if(data.msg_type==='balance'&&data.balance){
+          updateAccountBalance(account.account_id,data.balance.balance,data.balance.currency);
+          if(account.account_id===selectedDerivAccount)accountStatus((account.account_type==='real'?'Real':'Demo')+' account selected · balance live');
+        }
+      };
+      ws.onerror=function(){if(account.account_id===selectedDerivAccount)accountStatus('Balance connection error · '+account.account_id)};
+      ws.onclose=function(){if(accountSockets[account.account_id]===ws)delete accountSockets[account.account_id]};
+    }catch(error){
+      var target=document.getElementById('balance-'+account.account_id);
+      if(target)target.textContent='Balance unavailable';
+      if(account.account_id===selectedDerivAccount)accountStatus('Could not load selected account balance. '+error.message);
+    }
+  }
+  async function loadDerivAccounts(){
+    var response=await fetch(OAUTH_WORKER_URL+'/oauth/accounts',{headers:oauthHeaders()});
+    var data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Account retrieval failed');
+    closeAccountSockets();
+    derivAccounts=(data.accounts||[]).filter(function(a){return a.account_id&&['demo','real'].includes(a.account_type)});
+    if(!derivAccounts.some(function(a){return a.account_id===selectedDerivAccount}))selectedDerivAccount=derivAccounts.length?derivAccounts[0].account_id:'';
+    renderDerivAccounts();
+    if(selectedDerivAccount)sessionStorage.setItem('zyntrix_selected_account',selectedDerivAccount);
+    if(!derivAccounts.length){accountStatus('Connected to Deriv, but no Demo or Real Options accounts were returned.');return}
+    accountStatus('Connected · retrieving live balances for '+derivAccounts.length+' account(s)…');
+    derivAccounts.forEach(openAccountBalance);
+    $('#derivRefresh').disabled=false;$('#derivDisconnect').disabled=false;
+  }
+  async function exchangeOAuthHandoff(){
+    if(!OAUTH_WORKER_URL)return;
+    var params=new URLSearchParams(location.hash.replace(/^#/,''));
+    var handoff=params.get('oauth_handoff');
+    if(!handoff)return;
+    history.replaceState(null,'',location.pathname+location.search);
+    accountStatus('Completing secure Deriv connection…');
+    var response=await fetch(OAUTH_WORKER_URL+'/oauth/session/exchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handoff:handoff})});
+    var data=await response.json();
+    if(!response.ok||!data.sessionToken)throw new Error(data.error||'Secure session exchange failed');
+    sessionStorage.setItem(oauthSessionKey,data.sessionToken);
+    await loadDerivAccounts();
+  }
+  async function restoreOAuthSession(){
+    if(!OAUTH_WORKER_URL)return;
+    var token=sessionStorage.getItem(oauthSessionKey);
+    if(!token)return;
+    var response=await fetch(OAUTH_WORKER_URL+'/oauth/session',{headers:oauthHeaders()});
+    var data=await response.json();
+    if(!response.ok||!data.connected){sessionStorage.removeItem(oauthSessionKey);accountStatus('Deriv session expired · reconnect required.');return}
+    await loadDerivAccounts();
+  }
+  $('#derivConnect').addEventListener('click',function(){
+    if(!OAUTH_WORKER_URL){accountStatus('OAuth backend URL is not configured yet. The Cloudflare Worker must be deployed first.');return}
+    window.location.href=OAUTH_WORKER_URL+'/oauth/start';
+  });
+  $('#derivRefresh').addEventListener('click',function(){
+    if(!sessionStorage.getItem(oauthSessionKey))return;
+    accountStatus('Refreshing Deriv accounts…');loadDerivAccounts().catch(function(e){accountStatus('Refresh failed: '+e.message)});
+  });
+  $('#derivDisconnect').addEventListener('click',async function(){
+    var token=sessionStorage.getItem(oauthSessionKey);
+    closeAccountSockets();
+    if(token&&OAUTH_WORKER_URL){try{await fetch(OAUTH_WORKER_URL+'/oauth/disconnect',{method:'POST',headers:oauthHeaders()})}catch(e){}}
+    sessionStorage.removeItem(oauthSessionKey);derivAccounts=[];selectedDerivAccount='';sessionStorage.removeItem('zyntrix_selected_account');
+    renderDerivAccounts();$('#derivRefresh').disabled=true;$('#derivDisconnect').disabled=true;
+    accountStatus('Disconnected from Zyntrix. Your Deriv account remains unaffected.');
+  });
+  (async function initDerivAccounts(){
+    if(!OAUTH_WORKER_URL){accountStatus('Account connection UI is ready. Waiting for the Cloudflare Worker deployment URL.');return}
+    try{
+      var oauthState=new URLSearchParams(location.search).get('oauth');
+      if(oauthState==='failed')accountStatus('Deriv authorization was not completed. Please try connecting again.');
+      await exchangeOAuthHandoff();
+      if(!sessionStorage.getItem(oauthSessionKey))await restoreOAuthSession();
+    }catch(error){accountStatus('Deriv connection error: '+error.message)}
+  })();
+
   applyContract();render();renderPnl();tradeLine();
   $('#activeMarket').textContent=mk.n;
   connectMarketSocket();
