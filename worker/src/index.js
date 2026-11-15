@@ -452,7 +452,7 @@ export default {
     if (url.pathname === "/oauth/accounts" && request.method === "GET") {
       return listAccounts(request, env, headers);
     }
-    const resetDemoMatch = url.pathname.match(/^\\/oauth\\/accounts\\/([^/]+)\\/reset-demo-balance$/);
+    const resetDemoMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/reset-demo-balance$/);
     if (resetDemoMatch && request.method === "POST") {
       return resetDemoBalance(request, env, headers, decodeURIComponent(resetDemoMatch[1]));
     }
