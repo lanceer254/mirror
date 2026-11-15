@@ -49,16 +49,16 @@ function stateCookie(value, maxAge) {
 function randomToken(bytes = 32) {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
   return btoa(String.fromCharCode(...data))
-    .replace(/\\+/g, "-")
-    .replace(/\\//g, "_")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
     .replace(/=+$/g, "");
 }
 
 async function sha256Base64Url(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\\+/g, "-")
-    .replace(/\\//g, "_")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
     .replace(/=+$/g, "");
 }
 
