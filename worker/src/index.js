@@ -74,10 +74,14 @@ function appRedirect(env, status, handoff) {
     // The fragment is not sent to the web server in HTTP requests or Referer headers.
     url.hash = new URLSearchParams({ oauth_handoff: handoff }).toString();
   }
-  const response = Response.redirect(url.toString(), 302);
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("Referrer-Policy", "no-referrer");
-  return response;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "Location": url.toString(),
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer"
+    }
+  });
 }
 
 function validConfiguration(env) {
@@ -124,10 +128,14 @@ async function startOAuth(request, env) {
   authorize.searchParams.set("code_challenge", challenge);
   authorize.searchParams.set("code_challenge_method", "S256");
 
-  const response = Response.redirect(authorize.toString(), 302);
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.append("Set-Cookie", stateCookie(state, STATE_TTL));
-  return response;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      "Location": authorize.toString(),
+      "Cache-Control": "no-store",
+      "Set-Cookie": stateCookie(state, STATE_TTL)
+    }
+  });
 }
 
 async function oauthCallback(request, env) {
