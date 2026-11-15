@@ -315,9 +315,27 @@ li span:first-child{color:#668b70}
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
-    events.unshift({time:stamp(),type:type,title:title,detail:detail});if(events.length>120)events.length=120;
+    var visibleTitle='',visibleDetail='',visibleType='system';
+    if(title==='Scanner ready'){
+      visibleTitle='CONNECTED';
+      visibleDetail='Scanner ready · local paper simulation';
+    }else if(title==='TAKING TRADE...'){
+      visibleTitle='TAKING TRADE...';
+      visibleDetail='Simulated trade initiation';
+      visibleType='trade';
+    }else if(title.indexOf('Trade opened')===0){
+      visibleTitle='TRADE OPENED';
+      visibleDetail=detail.split(' · ').slice(0,2).join(' · ');
+      visibleType='trade';
+    }else{
+      return;
+    }
+    events.unshift({time:stamp(),type:visibleType,title:visibleTitle,detail:visibleDetail});
+    if(events.length>120)events.length=120;
     $('#eventCount').textContent=events.length;
-    $('#eventFeed').innerHTML=events.map(function(e){return '<div class="feed-item '+e.type+'"><div class="feed-time">'+e.time+'</div><div class="feed-title"><i class="feed-dot"></i>'+e.title+'</div><div class="feed-detail">'+e.detail+'</div></div>'}).join('');
+    $('#eventFeed').innerHTML=events.map(function(e){
+      return '<div class="feed-item '+e.type+'"><div class="feed-time">'+e.time+'</div><div class="feed-title"><i class="feed-dot"></i>'+e.title+'</div><div class="feed-detail">'+e.detail+'</div></div>';
+    }).join('');
   }
 
   for(var i=0;i<10;i++){
@@ -451,6 +469,7 @@ li span:first-child{color:#668b70}
       var t=CT[id];
       var decisionBasis=why||'Configured contract selection; no additional directional filter.';
       event('decision','Decision recorded · '+t.n,'Observed sample: 25 ticks ('+ups+' rising / '+downs+' falling). Decision basis: '+decisionBasis+'. Selected '+t.n+(c.b===null?'':' at barrier '+c.b)+'. Stake $'+c.stake.toFixed(2)+', duration '+c.n+' '+c.unit+'.');
+      event('trade','TAKING TRADE...','Simulated trade initiation.');
       trade={id:id,b:c.b,run:!!t.run,p:t.p(c.b,c.n),stake:c.stake,unit:c.unit,left:c.n,duration:c.n,market:mk.n,expiry:Date.now()+c.n*60000,entry:+lastPrice,last:+lastPrice,label:t.n+(c.b===null?'':' '+c.b)};
       busy=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
       $('#status').textContent=trade.label+' opened'+(why?' ('+why+')':'')+'.';
