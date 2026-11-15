@@ -403,17 +403,17 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var CT={
-    DIGITMATCH:{n:'Matches',bar:'any',p:function(){return .1}},
-    DIGITDIFF:{n:'Differs',bar:'any',p:function(){return .9}},
-    DIGITOVER:{n:'Over',bar:'over',p:function(b){return(9-b)/10}},
-    DIGITUNDER:{n:'Under',bar:'under',p:function(b){return b/10}},
-    DIGITEVEN:{n:'Even',p:function(){return .5}},
-    DIGITODD:{n:'Odd',p:function(){return .5}},
-    RUNHIGH:{n:'Only Ups',run:1,p:function(b,n){return Math.pow(.5,n)}},
-    RUNLOW:{n:'Only Downs',run:1,p:function(b,n){return Math.pow(.5,n)}},
-    CALL:{n:'Rise',p:function(){return .5}},
-    PUT:{n:'Fall',p:function(){return .5}},
-    UPORDOWN:{n:'Up or Down',p:function(){return .95}}
+    DIGITMATCH:{n:'Matches',bar:'any'},
+    DIGITDIFF:{n:'Differs',bar:'any'},
+    DIGITOVER:{n:'Over',bar:'over'},
+    DIGITUNDER:{n:'Under',bar:'under'},
+    DIGITEVEN:{n:'Even'},
+    DIGITODD:{n:'Odd'},
+    RUNHIGH:{n:'Only Ups',run:1},
+    RUNLOW:{n:'Only Downs',run:1},
+    CALL:{n:'Rise'},
+    PUT:{n:'Fall'},
+    UPORDOWN:{n:'Up or Down'}
   };
   var PR={DIGITMATCH:['DIGITMATCH','DIGITDIFF'],DIGITOVER:['DIGITOVER','DIGITUNDER'],DIGITEVEN:['DIGITEVEN','DIGITODD'],RUNHIGH:['RUNHIGH','RUNLOW'],CALL:['CALL','PUT'],UPORDOWN:['UPORDOWN']};
   var mSel=$('#market'),og={};
@@ -692,19 +692,6 @@ li span:first-child{color:#668b70}
       sel.value=(prev!==''&&+prev>=lo&&+prev<=hi)?prev:String(Math.min(Math.max(5,lo),hi));
     }
     applyLimits(!keep);
-  }
-  function result(t,d,pn){
-    switch(t.id){
-      case 'DIGITMATCH':return d===t.b;
-      case 'DIGITDIFF':return d!==t.b;
-      case 'DIGITOVER':return d>t.b;
-      case 'DIGITUNDER':return d<t.b;
-      case 'DIGITEVEN':return d%2===0;
-      case 'DIGITODD':return d%2===1;
-      case 'CALL':return pn>t.entry;
-      case 'PUT':return pn<t.entry;
-      default:return pn!==t.entry;
-    }
   }
   $('#unit').addEventListener('change',function(){applyLimits(true)});
   $('#contract').addEventListener('change',function(){applyContract()});
