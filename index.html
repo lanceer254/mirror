@@ -423,7 +423,7 @@ li span:first-child{color:#668b70}
     var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o);
   });
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
-  var tradingSocket=null,tradingRequestId=100,tradingBuySubmitted=false,tradingAccount=null;
+  var tradingSocket=null,tradingRequestId=100,tradingBuySubmitted=false,tradingBuyRequestId=0,tradingAccount=null;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
@@ -810,7 +810,8 @@ li span:first-child{color:#668b70}
         var data;try{data=JSON.parse(message.data)}catch(e){return}
         if(data.error){
           var messageText=(data.error.code?data.error.code+': ':'')+(data.error.message||'Deriv API error');
-          tradingFailure(messageText,tradingBuySubmitted);return;
+          var rejectedBuy=tradingBuySubmitted&&Number(data.req_id)===Number(tradingBuyRequestId);
+          tradingFailure(messageText,tradingBuySubmitted&&!rejectedBuy);return;
         }
         if(data.msg_type==='proposal'&&data.proposal&&!tradingBuySubmitted){
           var quote=data.proposal,ask=Number(quote.ask_price),payout=Number(quote.payout);
@@ -818,7 +819,8 @@ li span:first-child{color:#668b70}
           trade={id:id,b:config.b,stake:ask,quotedStake:config.stake,unit:config.unit,left:config.n,duration:config.n,market:mk.n,entry:+lastPrice,label:label,phase:'BUYING',proposalId:quote.id,contractId:null,currency:account.currency,accountId:account.account_id,accountType:account.account_type,potentialPayout:payout};
           event('trade','DERIV QUOTE RECEIVED',label+' · ask '+moneyBalance(ask,account.currency)+' · potential payout '+moneyBalance(payout,account.currency));
           $('#status').textContent='Quote received · buying the Deriv contract…';tradeLine();tradingBuySubmitted=true;
-          try{ws.send(JSON.stringify({buy:quote.id,price:ask,req_id:++tradingRequestId}))}catch(error){tradingFailure('The buy request could not be sent; its execution status may be uncertain.',true)}
+          tradingBuyRequestId=++tradingRequestId;
+          try{ws.send(JSON.stringify({buy:quote.id,price:ask,req_id:tradingBuyRequestId}))}catch(error){tradingFailure('The buy request could not be sent; its execution status may be uncertain.',true)}
           return;
         }
         if(data.msg_type==='buy'&&data.buy&&trade){
