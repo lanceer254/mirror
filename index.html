@@ -35,6 +35,37 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 @media(max-width:600px){.wrap{padding:22px 14px 32px}header{align-items:flex-start;margin-bottom:18px}.price{font-size:1.45rem;padding:10px 13px}.panel{padding:17px;border-radius:15px}.stage{padding:20px 15px;min-height:0}.digits{gap:5px}.d small{font-size:.6rem}.actions{gap:14px;margin-top:20px;padding-top:17px}.brain{width:72px;height:72px;border-radius:18px}.brain svg{width:40px;height:40px}.stats{gap:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
+/* Compact scan bar: keep the original SCAN control; inline P/L and settings */
+.actions.scanbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:13px}
+.actions.scanbar .brain{flex:0 0 68px}
+.actions.scanbar .say{flex:1 1 105px;min-width:100px}
+.pnl-inline{flex:1 1 190px;min-width:175px;padding-left:12px;border-left:1px solid #153323}
+.pnl-inline-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.pnl-inline .total{font:700 1.25rem ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.15}
+.pnl-inline .stats{gap:9px;margin:4px 0 5px;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
+.pnl-inline #log{max-height:48px;overflow:auto;scrollbar-width:thin;scrollbar-color:#245b3a #07110b;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
+.pnl-inline #log li{padding:3px 0;gap:5px}
+.pnl-inline #log li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pnl-inline .ghost{margin:4px 0 0;padding:4px 7px;font-size:8px}
+.settings-toggle{flex:0 0 auto;margin:0;white-space:nowrap;border-color:#287447;color:#8bdba2}
+.settings-dropdown{margin-top:12px}
+.settings-dropdown[hidden]{display:none!important}
+.settings-dropdown .panel{padding:13px}
+.settings-dropdown h2{margin-bottom:10px}
+.settings-dropdown .field input,.settings-dropdown .field select{min-height:34px;padding:7px 9px}
+@media(max-width:700px){
+  .actions.scanbar{gap:10px}
+  .actions.scanbar .brain{flex-basis:60px;width:60px;height:60px}
+  .actions.scanbar .say{flex:1 1 calc(100% - 75px)}
+  .pnl-inline{order:3;flex:1 1 190px;margin-left:70px;padding-left:10px}
+  .settings-toggle{order:4;align-self:flex-start}
+}
+@media(max-width:430px){
+  .pnl-inline{margin-left:0;flex-basis:100%;border-left:0;border-top:1px solid #153323;padding:8px 0 0}
+  .settings-toggle{margin-left:auto}
+}
+
+
 /* Compact hacker-style terminal log */
 .activity{width:100%;max-width:760px;margin:18px auto 0;padding:0 10px}
 .activity .panel{background:#050b09;border:1px solid #17452e;border-radius:9px;padding:10px 12px;box-shadow:0 0 18px rgba(0,255,120,.06),inset 0 0 22px rgba(0,255,120,.025)}
@@ -167,7 +198,7 @@ li span:first-child{color:#668b70}
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
-      <div class="actions">
+      <div class="actions scanbar">
         <button class="brain" id="scan" aria-label="Scan the last 25 ticks">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M31 10c-4-3-11-1-13 4-5 0-9 5-7 10-3 3-3 8 0 11-1 5 3 10 8 10 2 5 9 6 12 2z"/>
@@ -181,58 +212,55 @@ li span:first-child{color:#668b70}
           <strong id="status">Ready to scan</strong>
           <span id="tline">No open trade</span>
         </div>
+        <section class="pnl-inline" aria-label="Profit and loss">
+          <div class="pnl-inline-head"><span class="sub">SESSION PNL</span><div class="total" id="total">0.00</div></div>
+          <div class="stats">
+            <span><b id="wins">0</b> W</span>
+            <span><b id="losses">0</b> L</span>
+            <span><b id="rate">0%</b> RATE</span>
+          </div>
+          <ul id="log"><li class="empty" style="border:0;padding:0">No trades yet.</li></ul>
+          <button class="ghost" id="reset">Reset PnL</button>
+        </section>
+        <button class="ghost settings-toggle" id="settingsToggle" type="button" aria-expanded="false" aria-controls="tradeSettings">TRADE SETTINGS ▾</button>
       </div>
-    </section>
-
-    <div class="side">
-      <section class="panel" aria-label="Duration settings">
-        <h2>Trade settings</h2>
-        <label class="field" style="margin-bottom:10px">Market
-          <select id="market"></select>
-        </label>
-        <label class="field" style="margin-bottom:10px">Contract
-          <select id="contract">
-            <option value="DIGITMATCH" disabled>Matches / Differs</option>
-            <option value="DIGITOVER">Over / Under</option>
-            <option value="DIGITEVEN" selected>Even / Odd</option>
-            <option value="RUNHIGH">Only Ups / Only Downs</option>
-            <option value="CALL">Rise / Fall</option>
-            <option value="UPORDOWN">Up or Down</option>
-          </select>
-        </label>
-        <label class="field" id="barrierBox" style="margin-bottom:10px">Barrier digit
-          <select id="barrier"></select>
-        </label>
-        <div class="row">
-          <label class="field">Duration
-            <input id="dur" type="number" min="1" max="10" value="5" inputmode="numeric">
+      <div class="settings-dropdown" id="tradeSettings" hidden>
+        <section class="panel" aria-label="Trade settings">
+          <h2>Trade settings</h2>
+          <label class="field" style="margin-bottom:10px">Market
+            <select id="market"></select>
           </label>
-          <label class="field">Unit
-            <select id="unit">
-              <option value="ticks">Ticks</option>
-              <option value="minutes">Minutes</option>
+          <label class="field" style="margin-bottom:10px">Contract
+            <select id="contract">
+              <option value="DIGITMATCH" disabled>Matches / Differs</option>
+              <option value="DIGITOVER">Over / Under</option>
+              <option value="DIGITEVEN" selected>Even / Odd</option>
+              <option value="RUNHIGH">Only Ups / Only Downs</option>
+              <option value="CALL">Rise / Fall</option>
+              <option value="UPORDOWN">Up or Down</option>
             </select>
           </label>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <label class="field">Stake
-            <input id="stake" type="number" min="0.35" step="0.01" value="1" inputmode="decimal">
+          <label class="field" id="barrierBox" style="margin-bottom:10px">Barrier digit
+            <select id="barrier"></select>
           </label>
-        </div>
-      </section>
-
-      <section class="panel" aria-label="Profit and loss">
-        <h2>PnL</h2>
-        <div class="total" id="total">0.00</div>
-        <div class="stats">
-          <span><b id="wins">0</b> wins</span>
-          <span><b id="losses">0</b> losses</span>
-          <span><b id="rate">0%</b> win rate</span>
-        </div>
-        <ul id="log"><li class="empty" style="border:0;padding:0">No trades yet.</li></ul>
-        <button class="ghost" id="reset">Reset PnL</button>
-      </section>
-    </div>
+          <div class="row">
+            <label class="field">Duration
+              <input id="dur" type="number" min="1" max="10" value="5" inputmode="numeric">
+            </label>
+            <label class="field">Unit
+              <select id="unit">
+                <option value="ticks">Ticks</option>
+                <option value="minutes">Minutes</option>
+              </select>
+            </label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="field">Stake
+              <input id="stake" type="number" min="0.35" step="0.01" value="1" inputmode="decimal">
+            </label>
+          </div>
+        </section>
+      </div>
   </div>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -431,6 +459,12 @@ li span:first-child{color:#668b70}
       tradeLine();
     },2600);
   }
+  $('#settingsToggle').addEventListener('click',function(){
+    var open=this.getAttribute('aria-expanded')==='true';
+    this.setAttribute('aria-expanded',String(!open));
+    this.textContent=open?'TRADE SETTINGS ▾':'TRADE SETTINGS ▴';
+    $('#tradeSettings').hidden=open;
+  });
   $('#scan').addEventListener('click',scan);
   $('#reset').addEventListener('click',function(){pnl=0;wins=0;losses=0;log=[];renderPnl();event('warning','Session P/L reset','Trade totals and session ledger cleared by user.');});
 
