@@ -1,6 +1,6 @@
-# Zyntrix OAuth Worker — Milestones 2.1 and 2.2
+# Zyntrix OAuth and Deriv Trading Worker — Milestones 2.1–2.3
 
-This Worker is the server-side OAuth foundation for the Zyntrix GitHub Pages dashboard. It does not change the dashboard UI and does not place trades.
+This Worker provides OAuth sessions, account-scoped WebSocket authorization, and secure Deriv trading connectivity for the Zyntrix GitHub Pages dashboard.
 
 ## Routes
 
@@ -10,7 +10,8 @@ This Worker is the server-side OAuth foundation for the Zyntrix GitHub Pages das
 - `POST /oauth/session/exchange` — exchanges a short-lived, one-time browser handoff for an opaque Zyntrix session token.
 - `GET /oauth/session` — validates the Zyntrix session token and returns connection metadata only.
 - `GET /oauth/accounts` — retrieves the authenticated user's Demo and Real Options accounts; returns only account metadata and never the Deriv access token.
-- `POST /oauth/accounts/{accountId}/balance-otp` — verifies that the requested account belongs to the authenticated user, then requests a short-lived, one-time authenticated WebSocket URL for balance updates.
+- `POST /oauth/accounts/{accountId}/balance-otp` — verifies account ownership and returns a short-lived WebSocket URL for balance updates.
+- `POST /oauth/accounts/{accountId}/trading-otp` — verifies account ownership and returns a short-lived, account-specific WebSocket URL for trading. The dashboard uses it to request proposals, buy contracts, and monitor settlement.
 - `POST /oauth/disconnect` — invalidates the Zyntrix session.
 
 ## Required Cloudflare setup
@@ -57,7 +58,7 @@ The callback no longer depends on a cross-site session cookie. This avoids brows
 5. The dashboard should keep the opaque session token in `sessionStorage` (not a URL, localStorage, or source code) and send it as `Authorization: Bearer <sessionToken>` when calling `/oauth/session` or `/oauth/disconnect`.
 6. The handoff expires after 90 seconds and can be exchanged once. The session token expires with the Deriv access token.
 
-The dashboard now consumes the one-time handoff, stores only the opaque Worker session token in sessionStorage, lists Demo and Real accounts, and obtains one-time balance WebSocket authorization for each account. The account cards let the user select the active account. Set `OAUTH_WORKER_URL` in `index.html` to the deployed Worker origin before using the connection UI.
+The dashboard consumes the one-time handoff, stores only the opaque Worker session token in sessionStorage, lists Demo and Real accounts, obtains balance WebSocket authorization, and lets the user select the active trading account. Set `OAUTH_WORKER_URL` in `index.html` to the deployed Worker origin before using the connection UI.
 
 ## Security and current boundary
 
@@ -70,7 +71,9 @@ The dashboard now consumes the one-time handoff, stores only the opaque Worker s
 - No refresh token is assumed; reauthorization is required after expiry.
 - Only the already-approved `trade` scope is requested.
 - Account discovery is read-only. Balance streams use Deriv's short-lived, one-time WebSocket OTP; the long-lived Deriv access token remains in Worker KV.
-- No account creation, deposits, withdrawals, quotes, contract purchases, or trade execution are included.
+- Trading authorization is issued only for Demo or Real Options accounts belonging to the authenticated Deriv identity. The Deriv access token remains in Worker KV.
+- The dashboard obtains a fresh trading OTP for each trade connection; OTP URLs are not stored in the repository or browser storage.
+- No account creation, deposits, or withdrawals are included.
 - The Worker and dashboard source are committed, but there is no production deployment until the Worker is deployed in the user's Cloudflare account, the KV binding and variables are configured, `OAUTH_WORKER_URL` is set to the deployed Worker origin, and the exact Worker callback URL is registered in the Deriv application's Redirect URLs.
 
 ## Dashboard configuration
