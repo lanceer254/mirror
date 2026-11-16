@@ -56,7 +56,7 @@ async function analysisRank(request,env,headers){
  }
  if(!ranked.length)return json({error:"no_markets_with_sufficient_history"},422,headers);
  ranked.sort((a,b)=>b.score-a.score||b.sampleSize-a.sampleSize||a.marketName.localeCompare(b.marketName));
- const best=ranked[0],skippedMarkets=markets.length-ranked.length;
+ const best=ranked[0],attempted=Math.max(markets.length,Math.min(10,Number(body.attemptedMarkets)||markets.length)),skippedMarkets=Math.max(0,attempted-ranked.length);
  let commentary=best.marketName+" has the highest observed "+contract+" alignment score in the available sample.";
  let aiStatus="UNAVAILABLE",groqLatencyMs=0;
  if(env.GROQ_API_KEY){
