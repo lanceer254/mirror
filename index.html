@@ -701,23 +701,3 @@ li span:first-child{color:#668b70}
 </script>
 </body>
 </html>
-  $('#tickWindowToggle').addEventListener('click',function(){
-    var open=this.getAttribute('aria-expanded')==='true';
-    this.setAttribute('aria-expanded',String(!open));
-    $('#tickWindowBody').hidden=open;
-    $('#tickWindowChevron').textContent=open?'▾':'▴';
-    if(!open)renderTickWindowDigits();
-  });
-    $('#scan').addEventListener('click',scan);
-  function processMarketTick(d,pn){}
-  window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
-  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
-
-  var OAUTH_WORKER_URL='https://zyntrix-oauth.fiverlancer51.workers.dev';
-  render();updateParityStrength();
-  $('#activeMarket').textContent=mk.n;
-  connectMarketSocket();
-})();
-</script>
-</body>
-</html>
