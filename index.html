@@ -1050,7 +1050,7 @@ li span:first-child{color:#668b70}
       if(allowed.indexOf(decision.signal)<0){event('warning','SIGNAL REJECTED','Groq returned an outcome outside the selected contract. No purchase sent.');return}
       if(busy||trade){
         $('#geminiState').textContent='MONITORING · TRADE OPEN';
-        $('#status').textContent='Gemini identified another signal while a Deriv contract is open · no overlapping purchase will be placed.';
+        $('#status').textContent='Groq identified a signal while a Deriv contract is open · no overlapping purchase will be placed.';
         event('decision','GROQ SIGNAL HELD · TRADE OPEN',decision.signal+' · '+decision.confidence_percent+'% confidence · '+decision.pattern_summary);
         return;
       }
