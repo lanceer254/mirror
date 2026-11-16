@@ -6,9 +6,3 @@ compatibility_date = "2026-11-15"
 # Set GROQ_API_KEY as a Worker secret; never commit the value.
 # Groq model: openai/gpt-oss-20b.
 APP_ORIGIN = "https://lanceer254.github.io"
-APP_URL = "https://lanceer254.github.io/mirror/"
-# Set DERIV_CLIENT_ID in Cloudflare Worker Variables after creating the Worker.
-
-[[kv_namespaces]]
-binding = "ZYNTRIX_KV"
-id = "e8a685deda7f4889812d723e873038fd"
