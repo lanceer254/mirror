@@ -398,7 +398,7 @@ li span:first-child{color:#668b70}
     </div>
     <div class="gemini-signal"><strong id="geminiSignal">NO SIGNAL</strong><b id="geminiConfidence">—</b></div>
     <div class="gemini-summary" id="geminiSummary">Press SCAN to analyse the last 50 digits once. Local tick tracking continues; AI runs only on click.</div>
-    <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for Gemini analysis.</li></ul>
+    <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for a SCAN request.</li></ul>
   </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -453,7 +453,7 @@ li span:first-child{color:#668b70}
   var trade=null,busy=false,pnl=0,wins=0,losses=0,log=[],events=[],lastDigit=0;
   var aiMonitoring=false,aiRequestInFlight=false,aiLastAnalyzedCount=0,aiGeneration=0,aiSignalCount=0,aiSettledWins=0,aiSettledLosses=0;
   var aiLastRequestAt=0,aiAnalysisStartedAt=0,aiSignalReceivedAt=0,aiLastAnalysisMs=0,aiLastModelMs=0,aiSignalToBuyMs=0;
-  var AI_TICK_BATCH=3,AI_MIN_REQUEST_INTERVAL_MS=3500;
+  var AI_TICK_BATCH=3;
   function renderGeminiLatency(){
     $('#geminiAnalysisLatency').textContent=aiLastAnalysisMs?Math.round(aiLastAnalysisMs)+' ms':'—';
     $('#geminiModelLatency').textContent=aiLastModelMs?Math.round(aiLastModelMs)+' ms':'—';
@@ -933,15 +933,15 @@ li span:first-child{color:#668b70}
     $('#geminiState').textContent='STOPPED';
     $('#status').textContent=message||'Groq on-demand analysis stopped. Any already-open Deriv contract will continue to settlement.';
     $('#scan').classList.toggle('scanning',!!busy);$('#stage').classList.toggle('scanning',!!busy);
-    event('system','GEMINI MONITOR STOPPED','No further AI signals will be requested. An already submitted trade is not cancelled.');
+    event('system','AI SCAN STOPPED','No further AI signals will be requested. An already submitted trade is not cancelled.');
     tradeLine();
   }
   function executeGeminiTrade(id,config,account,decision,snapshot){
     if(busy||trade)return;
     var allowed=PR[config.id]||[];
-    if(allowed.indexOf(id)<0){event('warning','INVALID GEMINI SIGNAL','Groq returned a contract outside the selected contract family. No trade sent.');return}
+    if(allowed.indexOf(id)<0){event('warning','INVALID GROQ SIGNAL','Groq returned a contract outside the selected contract family. No trade sent.');return}
     if(snapshot.symbol!==mk.symbol||snapshot.selectedContract!==$('#contract').value||snapshot.accountId!==selectedDerivAccount){
-      event('warning','STALE GEMINI SIGNAL','Market, contract or account changed while Gemini was analyzing. Signal discarded.');
+      event('warning','STALE GROQ SIGNAL','Market, contract or account changed while Groq was analysing. Signal discarded.');
       return;
     }
     tradingMonitorStopped=false;tradingReconnectDelay=1000;
@@ -972,7 +972,7 @@ li span:first-child{color:#668b70}
           var quote=data.proposal,ask=Number(quote.ask_price),payout=Number(quote.payout);
           if(!quote.id||!Number.isFinite(ask)||ask<=0||!Number.isFinite(payout)||payout<0){tradingFailure('Deriv returned an incomplete or invalid proposal. No purchase was sent.',false);return}
           trade={id:id,b:config.b,stake:ask,quotedStake:config.stake,unit:config.unit,left:config.n,duration:config.n,market:mk.n,entry:+lastPrice,label:label,phase:'BUYING',proposalId:quote.id,contractId:null,currency:account.currency,accountId:account.account_id,accountType:account.account_type,potentialPayout:payout,potentialProfit:+(payout-ask).toFixed(8),signalConfidence:decision.confidence_percent,signalEvidence:decision.evidence,signalSummary:decision.pattern_summary};
-          event('trade','DERIV QUOTE RECEIVED',label+' · '+decision.confidence_percent+'% Gemini confidence · ask '+moneyBalance(ask,account.currency)+' · potential payout '+moneyBalance(payout,account.currency));
+          event('trade','DERIV QUOTE RECEIVED',label+' · '+decision.confidence_percent+'% Groq confidence · ask '+moneyBalance(ask,account.currency)+' · potential payout '+moneyBalance(payout,account.currency));
           $('#status').textContent='Groq signal validated · buying the Deriv contract…';tradeLine();tradingBuySubmitted=true;
           tradingBuyRequestId=++tradingRequestId;
           try{ws.send(JSON.stringify({buy:quote.id,price:ask,req_id:tradingBuyRequestId}))}catch(error){tradingFailure('The buy request could not be sent; its execution status may be uncertain.',true)}
@@ -984,8 +984,8 @@ li span:first-child{color:#668b70}
           trade.contractId=contractId;trade.phase='OPEN';trade.stake=Number(data.buy.buy_price||trade.stake);
           aiSignalCount++;updateGeminiStats();
           if(aiSignalReceivedAt){aiSignalToBuyMs=performance.now()-aiSignalReceivedAt;renderGeminiLatency();aiSignalReceivedAt=0;}
-          $('#engineState').textContent='Deriv contract open';$('#status').textContent=label+' purchased on Deriv · Gemini confidence '+decision.confidence_percent+'% · monitoring settlement.';
-          event('trade','DERIV CONTRACT PURCHASED','Contract #'+contractId+' · '+account.account_type.toUpperCase()+' · '+decision.confidence_percent+'% Gemini confidence · '+moneyBalance(trade.stake,account.currency));tradeLine();
+          $('#engineState').textContent='Deriv contract open';$('#status').textContent=label+' purchased on Deriv · Groq confidence '+decision.confidence_percent+'% · monitoring settlement.';
+          event('trade','DERIV CONTRACT PURCHASED','Contract #'+contractId+' · '+account.account_type.toUpperCase()+' · '+decision.confidence_percent+'% Groq confidence · '+moneyBalance(trade.stake,account.currency));tradeLine();
           try{ws.send(JSON.stringify({proposal_open_contract:1,contract_id:contractId,subscribe:1,req_id:++tradingRequestId}))}catch(error){tradingFailure('Contract #'+contractId+' was purchased but monitoring could not start. Check Deriv before taking another trade.',true)}
           return;
         }
@@ -1036,7 +1036,7 @@ li span:first-child{color:#668b70}
       if(!aiMonitoring||generation!==aiGeneration)return;
       aiMonitoring=false;
       if(snapshot.symbol!==mk.symbol||snapshot.selectedContract!==$('#contract').value||snapshot.barrier!==cfg().b||snapshot.duration!==cfg().n||snapshot.durationUnit!==cfg().unit||snapshot.stake!==cfg().stake||snapshot.accountId!==selectedDerivAccount){
-        event('warning','STALE GEMINI ANALYSIS','The selected market, contract, trade settings or account changed during analysis. Result discarded.');
+        event('warning','STALE GROQ ANALYSIS','The selected market, contract, trade settings or account changed during analysis. Result discarded.');
         return;
       }
       renderGeminiDecision(decision);
@@ -1051,7 +1051,7 @@ li span:first-child{color:#668b70}
       if(busy||trade){
         $('#geminiState').textContent='MONITORING · TRADE OPEN';
         $('#status').textContent='Gemini identified another signal while a Deriv contract is open · no overlapping purchase will be placed.';
-        event('decision','GEMINI SIGNAL HELD · TRADE OPEN',decision.signal+' · '+decision.confidence_percent+'% confidence · '+decision.pattern_summary);
+        event('decision','GROQ SIGNAL HELD · TRADE OPEN',decision.signal+' · '+decision.confidence_percent+'% confidence · '+decision.pattern_summary);
         return;
       }
       $('#geminiState').textContent='SIGNAL READY';
