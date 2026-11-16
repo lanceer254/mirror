@@ -397,7 +397,7 @@ li span:first-child{color:#668b70}
       <div class="gemini-metric"><span>SIGNAL → BUY:</span><b id="geminiExecutionLatency">—</b></div>
     </div>
     <div class="gemini-signal"><strong id="geminiSignal">NO SIGNAL</strong><b id="geminiConfidence">—</b></div>
-    <div class="gemini-summary" id="geminiSummary">Press SCAN to analyse the last 50 digits once. Local tick tracking continues; AI runs only on click.</div>
+    <div class="gemini-summary" id="geminiSummary">Press SCAN to analyse the last 100 digits once. Local tick tracking continues; AI runs only on click.</div>
     <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for a SCAN request.</li></ul>
   </section>
   <section class="activity" aria-label="Compact live system log">
@@ -920,9 +920,17 @@ li span:first-child{color:#668b70}
     $('#geminiAccuracy').textContent=settled?Math.round(aiSettledWins/settled*100)+'%':'—';
   }
   function renderGeminiDecision(decision){
-    $('#geminiSignal').textContent=decision.signal==='WAIT'?'WAIT':(CT[decision.signal]&&CT[decision.signal].n||decision.signal);
-    $('#geminiConfidence').textContent=decision.confidence_percent+'% CONFIDENCE';
-    $('#geminiSummary').textContent=decision.pattern_summary+(decision.caution?' · '+decision.caution:'');
+    if(decision.action==='WAIT'||decision.signal==='WAIT'){
+      var settled=aiSettledWins+aiSettledLosses;
+      var accuracy=settled?Math.round(aiSettledWins/settled*100):null;
+      $('#geminiSignal').textContent='SESSION ACCURACY';
+      $('#geminiConfidence').textContent=accuracy===null?'— ACCURACY':accuracy+'% ACCURACY';
+      $('#geminiSummary').textContent='No trade signal met the criteria. Accuracy is calculated from '+settled+' settled trades.'+(decision.pattern_summary?' '+decision.pattern_summary:'')+(decision.caution?' · '+decision.caution:'');
+    }else{
+      $('#geminiSignal').textContent=CT[decision.signal]&&CT[decision.signal].n||decision.signal;
+      $('#geminiConfidence').textContent=decision.confidence_percent+'% MODEL CONFIDENCE';
+      $('#geminiSummary').textContent=decision.pattern_summary+(decision.caution?' · '+decision.caution:'');
+    }
     $('#geminiEvidence').replaceChildren();
     decision.evidence.forEach(function(item){
       var li=document.createElement('li');li.textContent=item;$('#geminiEvidence').appendChild(li);
@@ -1009,7 +1017,7 @@ li span:first-child{color:#668b70}
     }).catch(function(error){if(busy)tradingFailure('Trading authorization failed: '+error.message,false)});
   }
   function runGeminiAnalysis(){
-    if(!aiMonitoring||aiRequestInFlight||ds.length<25)return;
+    if(!aiMonitoring||aiRequestInFlight||ds.length<100)return;
     var now=Date.now();
     
     var token=sessionStorage.getItem(oauthSessionKey);
@@ -1019,7 +1027,7 @@ li span:first-child{color:#668b70}
     if(!Number.isFinite(config.stake)||config.stake<=0){stopGeminiMonitoring('Enter a valid stake before automatic trading can continue.');return}
     var generation=aiGeneration;
     var snapshot={symbol:mk.symbol,marketName:mk.n,selectedContract:config.id,barrier:config.b,duration:config.n,durationUnit:config.unit,stake:config.stake,accountId:account.account_id,accountType:account.account_type};
-    var digits=ds.slice(-50),prices=ps.slice(-50);
+    var digits=ds.slice(-100),prices=ps.slice(-100);
     aiLastAnalyzedCount=ds.length;aiLastRequestAt=now;aiAnalysisStartedAt=performance.now();aiRequestInFlight=true;
     $('#geminiState').textContent='ANALYZING';
     $('#geminiSummary').textContent='Examining '+digits.length+' chronological ticks, transitions, repetitions, sequences and price changes…';
@@ -1041,9 +1049,9 @@ li span:first-child{color:#668b70}
       }
       renderGeminiDecision(decision);
       if(decision.action==='WAIT'){
-        $('#geminiState').textContent='WAIT';
-        $('#status').textContent='Groq found no clear pattern · no trade placed. Press SCAN to analyse again.';
-        event('decision','GROQ · WAIT',decision.confidence_percent+'% confidence · '+decision.pattern_summary);
+        $('#geminiState').textContent='NO TRADE';
+        $('#status').textContent='Groq found no sufficiently clear pattern · no trade placed. Press SCAN to analyse again.';
+        event('decision','GROQ · NO TRADE',decision.pattern_summary);
         return;
       }
       var allowed=PR[config.id]||[];
@@ -1072,7 +1080,7 @@ li span:first-child{color:#668b70}
   function scan(){
     if(aiMonitoring||aiRequestInFlight)return;
     if(busy||trade)return;
-    if(ds.length<25){$('#status').textContent='Waiting for at least 25 live Deriv ticks.';return}
+    if(ds.length<100){$('#status').textContent='Waiting for at least 100 live Deriv ticks.';return}
     var token=sessionStorage.getItem(oauthSessionKey),account=derivAccounts.find(function(a){return a.account_id===selectedDerivAccount});
     if(!token||!account){$('#status').textContent='Connect to Deriv and select a Demo or Real account before trading.';accountStatus('Trading unavailable · select an authenticated account.');return}
     var config=cfg();
@@ -1081,8 +1089,8 @@ li span:first-child{color:#668b70}
     $('#geminiState').textContent='ANALYSING';
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
     $('#engineState').textContent='Analysing';$('#activeMarket').textContent=mk.n;
-    $('#status').textContent='Analysing the last 50 digits…';
-    event('system','AI ANALYSIS REQUESTED',mk.n+' · '+config.id+' · last 50 digits · one request only.');
+    $('#status').textContent='Analysing the last 100 digits…';
+    event('system','AI ANALYSIS REQUESTED',mk.n+' · '+config.id+' · last 100 digits · one request only.');
     tradeLine();runGeminiAnalysis();
   }
 
