@@ -354,37 +354,55 @@ async function accountBalanceOtp(request, env, headers, accountId) {
   return json({ url: wsUrl }, 200, headers);
 }
 
-async function tradingOtp(request, env, headers, accountId) {
+async function tradingAccountOtp(request, env, headers, accountId) {
   if (!requireAllowedOrigin(request, env)) return json({ error: "origin_not_allowed" }, 403, headers);
-  if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) return json({ error: "invalid_account_request" }, 400, headers);
+  if (request.method !== "POST" || !/^[A-Za-z0-9_-]{4,64}$/.test(accountId)) {
+    return json({ error: "invalid_account_request" }, 400, headers);
+  }
   const auth = await getValidSession(request, env);
   if (!auth) return json({ error: "session_expired", connected: false }, 401, headers);
+
+  // The selected account must belong to this authenticated Deriv identity.
   let accountResponse;
   try {
     accountResponse = await fetch("https://api.derivws.com/trading/v1/options/accounts", {
       headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
     });
-  } catch { return json({ error: "deriv_unavailable" }, 502, headers); }
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
   const accountPayload = await accountResponse.json().catch(() => null);
   const accountList = Array.isArray(accountPayload?.data) ? accountPayload.data :
     Array.isArray(accountPayload?.data?.accounts) ? accountPayload.data.accounts :
     Array.isArray(accountPayload?.accounts) ? accountPayload.accounts : [];
-  const account = accountList.find((a) => String(a?.account_id || a?.accountId || "") === accountId);
+  const account = accountList.find((item) =>
+    String(item?.account_id || item?.accountId || "") === accountId
+  );
   const accountType = String(account?.account_type || account?.accountType || "").toLowerCase();
-  if (!accountResponse.ok || !account || !["demo", "real"].includes(accountType)) return json({ error: "account_not_available" }, 404, headers);
+  if (!accountResponse.ok || !account || !["demo", "real"].includes(accountType)) {
+    return json({ error: "account_not_available" }, 404, headers);
+  }
+
   let otpResponse;
   try {
     otpResponse = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${encodeURIComponent(accountId)}/otp`, {
-      method: "POST", headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
+      method: "POST",
+      headers: { "Authorization": `Bearer ${auth.session.accessToken}`, "Accept": "application/json" }
     });
-  } catch { return json({ error: "deriv_unavailable" }, 502, headers); }
+  } catch {
+    return json({ error: "deriv_unavailable" }, 502, headers);
+  }
   const otpPayload = await otpResponse.json().catch(() => null);
   const wsUrl = otpPayload?.data?.url;
-  if (!otpResponse.ok || typeof wsUrl !== "string") return json({ error: "trading_connection_unavailable", upstreamStatus: otpResponse.status }, otpResponse.status || 502, headers);
+  if (!otpResponse.ok || typeof wsUrl !== "string") {
+    return json({ error: "trading_connection_unavailable", upstreamStatus: otpResponse.status, details: otpPayload?.errors || null }, otpResponse.status || 502, headers);
+  }
   let parsed;
   try { parsed = new URL(wsUrl); } catch { return json({ error: "invalid_trading_socket_url" }, 502, headers); }
-  if (parsed.protocol !== "wss:" || parsed.hostname !== "api.derivws.com") return json({ error: "invalid_trading_socket_url" }, 502, headers);
-  return json({ url: wsUrl, account_id: accountId, account_type: accountType, currency: account.currency || null }, 200, headers);
+  if (parsed.protocol !== "wss:" || parsed.hostname !== "api.derivws.com") {
+    return json({ error: "invalid_trading_socket_url" }, 502, headers);
+  }
+  return json({ url: wsUrl, account_id: accountId, account_type: accountType }, 200, headers);
 }
 
 async function resetDemoBalance(request, env, headers, accountId) {
@@ -439,6 +457,48 @@ async function resetDemoBalance(request, env, headers, accountId) {
   return json({ success: true, account_id: accountId }, 200, headers);
 }
 
+
+const GROQ_MODEL = "openai/gpt-oss-20b";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_CONTRACTS = {DIGITMATCH:["DIGITMATCH","DIGITDIFF"],DIGITOVER:["DIGITOVER","DIGITUNDER"],DIGITEVEN:["DIGITEVEN","DIGITODD"],RUNHIGH:["RUNHIGH","RUNLOW"],CALL:["CALL","PUT"],UPORDOWN:["UPORDOWN"]};
+function groqDigitStats(d,p,barrier) {
+ const n=d.length,last=d[n-1],freq=Array(10).fill(0); d.forEach(x=>freq[x]++);
+ const even=d.filter(x=>x%2===0).length; let parityStreak=1,repeatStreak=1;
+ for(let i=n-2;i>=0&&d[i]%2===last%2;i--)parityStreak++;
+ for(let i=n-2;i>=0&&d[i]===last;i--)repeatStreak++;
+ const grams={}; for(let k=2;k<=3;k++)for(let i=0;i+k<=n;i++){const g=d.slice(i,i+k).join("");grams[g]=(grams[g]||0)+1;}
+ const repeating=Object.entries(grams).filter(([g,c])=>c>=(g.length===2?4:3)).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([g,c])=>g+"x"+c);
+ const after=Array(10).fill(0);for(let i=0;i<n-1;i++)if(d[i]===last)after[d[i+1]]++;
+ const out={window:n,last20:d.slice(-20).join(""),freq,even,odd:n-even,lastDigit:last,parityStreak,repeatStreak,repeatingSequences:repeating,nextDigitAfterLastDigitBefore:after};
+ if(barrier!==null){out.barrier=barrier;out.over=d.filter(x=>x>barrier).length;out.under=d.filter(x=>x<barrier).length;out.equal=d.filter(x=>x===barrier).length;}
+ if(p.length>1){let up=0,down=0;for(let i=1;i<p.length;i++){if(p[i]>p[i-1])up++;else if(p[i]<p[i-1])down++;}let run=1,dir=Math.sign(p[p.length-1]-p[p.length-2]);for(let i=p.length-2;i>0&&Math.sign(p[i]-p[i-1])===dir;i--)run++;out.priceMoves={up,down,currentRun:run,runDirection:dir>0?"up":dir<0?"down":"flat"};}
+ return out;
+}
+async function groqSignal(request,env,headers) {
+ const requestStartedAt=Date.now();
+ if(!requireAllowedOrigin(request,env))return json({error:"origin_not_allowed"},403,headers);
+ const auth=await getValidSession(request,env);
+ if(!auth)return json({error:"session_expired",connected:false},401,headers);
+ if(!env.GROQ_API_KEY)return json({error:"groq_not_configured"},503,headers);
+ if(!(request.headers.get("Content-Type")||"").toLowerCase().startsWith("application/json"))return json({error:"content_type_must_be_json"},415,headers);
+ let body;try{body=await request.json();}catch{return json({error:"invalid_json"},400,headers);}
+ const symbol=typeof body?.symbol==="string"?body.symbol:"";
+ const selectedContract=typeof body?.selectedContract==="string"?body.selectedContract:"";
+ const allowed=GROQ_CONTRACTS[selectedContract],digits=body?.digits,prices=body?.prices;
+ if(!/^(1HZ10V|1HZ25V|1HZ50V|1HZ75V|1HZ100V|R_10|R_25|R_50|R_75|R_100)$/.test(symbol)||!allowed||!Array.isArray(digits)||digits.length<25||digits.length>50||!digits.every(d=>Number.isInteger(d)&&d>=0&&d<=9)||!Array.isArray(prices)||prices.length!==digits.length||!prices.every(p=>Number.isFinite(p)&&p>0))return json({error:"invalid_analysis_payload"},400,headers);
+ const barrier=body.barrier===null?null:Number(body.barrier),duration=Number(body.duration),durationUnit=body.durationUnit;
+ if(!["ticks","minutes"].includes(durationUnit)||(barrier!==null&&(!Number.isInteger(barrier)||barrier<0||barrier>9))||!Number.isInteger(duration)||duration<1||duration>60)return json({error:"invalid_contract_settings"},400,headers);
+ const stats=groqDigitStats(digits,prices,barrier);
+ const system="Analyse the supplied last 50 Deriv synthetic-index digits and computed evidence. Look for frequency skew, streaks, repeating sequences and observed transitions. These digits are generated randomly; past patterns do not guarantee future outcomes. Choose TRADE only if the window supports one permitted signal; otherwise WAIT. Return JSON only with action (TRADE or WAIT), signal (permitted outcome or WAIT), confidence_percent (0-100), pattern_summary (max 160 chars), caution (max 120 chars), evidence (up to 3 short strings citing observed numbers). Never invent evidence or overstate confidence.";
+ const user=JSON.stringify({market:{symbol,name:String(body.marketName||symbol)},selectedContract,permittedOutcomes:allowed,userSettings:{barrier,duration,durationUnit},tickCount:digits.length,digitsOldestToNewest:digits,pricesOldestToNewest:prices,computedEvidence:stats});
+ let response;
+ try{response=await fetch(GROQ_URL,{method:"POST",headers:{"Authorization":"Bearer "+env.GROQ_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({model:GROQ_MODEL,messages:[{role:"system",content:system},{role:"user",content:user}],max_completion_tokens:600,reasoning_effort:"low",response_format:{type:"json_object"}}),signal:AbortSignal.timeout(15000)});}
+ catch(e){return json({error:"groq_failed",details:String(e&&e.message||e)},502,headers);}
+ if(!response.ok){const data=await response.json().catch(()=>null);return json({error:"groq_failed",upstreamStatus:response.status,details:data?.error?.message||"Groq request failed",retryAfterSeconds:Number(response.headers.get("retry-after"))||null},response.status===429?429:502,headers);}
+ const data=await response.json();let decision;try{decision=JSON.parse(data.choices[0].message.content);}catch{return json({error:"groq_invalid_response"},502,headers);}
+ if(!["TRADE","WAIT"].includes(decision.action)||!Number.isInteger(decision.confidence_percent)||decision.confidence_percent<0||decision.confidence_percent>100||!Array.isArray(decision.evidence)||(decision.action==="TRADE"&&!allowed.includes(decision.signal))||(decision.action==="WAIT"&&decision.signal!=="WAIT"))return json({error:"groq_invalid_signal"},502,headers);
+ return json({action:decision.action,signal:decision.signal,confidence_percent:decision.confidence_percent,pattern_summary:String(decision.pattern_summary||"").slice(0,1200),evidence:decision.evidence.slice(0,3).map(x=>String(x).slice(0,160)),caution:String(decision.caution||"").slice(0,160),model:GROQ_MODEL,analyzedTicks:digits.length,groqLatencyMs:Date.now()-requestStartedAt,workerLatencyMs:Date.now()-requestStartedAt},200,headers);
+}
 async function sessionStatus(request, env, headers) {
   if (!requireAllowedOrigin(request, env)) {
     return json({ error: "origin_not_allowed" }, 403, headers);
@@ -475,7 +535,10 @@ export default {
     }
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return json({ ok: true, service: "zyntrix-oauth", stage: "2.3" }, 200, headers);
+      return json({ ok: true, service: "zyntrix-oauth", stage: "2.2" }, 200, headers);
+    }
+    if ((url.pathname === "/gemini/signal" || url.pathname === "/groq/signal") && request.method === "POST") {
+      return groqSignal(request, env, headers);
     }
     if (url.pathname === "/oauth/start" && request.method === "GET") return startOAuth(request, env);
     if (url.pathname === "/oauth/callback" && request.method === "GET") return oauthCallback(request, env);
@@ -485,11 +548,13 @@ export default {
     if (url.pathname === "/oauth/accounts" && request.method === "GET") {
       return listAccounts(request, env, headers);
     }
-    const tradingOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/trading-otp$/);
-    if (tradingOtpMatch && request.method === "POST") return tradingOtp(request, env, headers, decodeURIComponent(tradingOtpMatch[1]));
     const resetDemoMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/reset-demo-balance$/);
     if (resetDemoMatch && request.method === "POST") {
       return resetDemoBalance(request, env, headers, decodeURIComponent(resetDemoMatch[1]));
+    }
+    const tradingOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/trading-otp$/);
+    if (tradingOtpMatch && request.method === "POST") {
+      return tradingAccountOtp(request, env, headers, decodeURIComponent(tradingOtpMatch[1]));
     }
     const balanceOtpMatch = url.pathname.match(/^\/oauth\/accounts\/([^/]+)\/balance-otp$/);
     if (balanceOtpMatch && request.method === "POST") {
