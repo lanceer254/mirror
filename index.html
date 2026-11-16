@@ -669,7 +669,7 @@ li span:first-child{color:#668b70}
     if(!usable.length){finishPortfolioUi('No supported market returned enough history.');return;}
     $('#geminiState').textContent='SCORING';
     $('#geminiSummary').textContent='Scoring '+usable.length+' of '+MK.length+' available markets for '+state.contract+'.';
-    fetch(ANALYSIS_WORKER_URL+'/analysis/rank',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contract:state.contract,markets:usable})})
+    fetch(ANALYSIS_WORKER_URL+'/analysis/rank',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contract:state.contract,markets:usable,attemptedMarkets:MK.length})})
       .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Ranking failed');return d})})
       .then(function(d){
         $('#geminiState').textContent=d.aiStatus==='COMPLETE'?'COMPLETE':'RANKED · AI NOTE UNAVAILABLE';
