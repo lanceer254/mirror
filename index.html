@@ -299,7 +299,7 @@ li span:first-child{color:#668b70}
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
       <div class="actions scanbar">
-        <button class="brain" id="scan" aria-label="Run on-demand analysis">
+        <button class="brain" id="scan" type="button" aria-label="Run on-demand analysis">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M31 10c-4-3-11-1-13 4-5 0-9 5-7 10-3 3-3 8 0 11-1 5 3 10 8 10 2 5 9 6 12 2z"/>
             <path d="M33 10c4-3 11-1 13 4 5 0 9 5 7 10 3 3 3 8 0 11 1 5-3 10-8 10-2 5-9 6-12 2z"/>
@@ -308,16 +308,12 @@ li span:first-child{color:#668b70}
             <circle class="n" cx="19" cy="38" r="1.8"/><circle class="n" cx="45" cy="38" r="1.8"/>
           </svg>
         </button>
-        <div class="say" aria-live="polite">
-          <strong id="status">Ready to scan</strong>
-          <span id="tline">Analysis runs only when SCAN is clicked</span>
-        </div>
+        <div class="say" aria-live="polite"><strong id="status">Ready to scan</strong><span id="tline">Analysis runs only when SCAN is clicked</span></div>
         <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
       </div>
-      <div class="settings-dropdown"      </div>
-      <div class="settings-dropdown" id="tradeSettings" hidden></div>
+    </section>
   </div>
-  <section class="tick-window" aria-label="Deriv rolling tick window">
+    <section class="tick-window" aria-label="Deriv rolling tick window">
     <button class="tick-window-toggle" id="tickWindowToggle" type="button" aria-expanded="false" aria-controls="tickWindowBody">
       <span class="tick-window-heading">TICK ROLLING WINDOW</span>
       <span class="tick-window-latest"><small>LATEST DIGIT</small><b id="latestDigit">—</b></span>
@@ -658,44 +654,14 @@ li span:first-child{color:#668b70}
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
   function updateParityStrength(){var n=ds.length,even=0;for(var i=0;i<n;i++)if(ds[i]%2===0)even++;var odd=n-even;if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});$('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';return}var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);$('#parityCount').textContent=n+' / 1000 DIGITS · '+even+' EVEN · '+odd+' ODD'}
   function renderGeminiDecision(d){var bias=String(d.bias||'NEUTRAL').toUpperCase();$('#geminiSignal').textContent=bias+' BIAS';$('#geminiConfidence').textContent=d.confidence_percent+'% MODEL CONFIDENCE';$('#geminiSummary').textContent=(d.pattern_summary||'Analysis completed.')+(d.caution?' · '+d.caution:'');$('#geminiEvidence').replaceChildren();(d.evidence||[]).forEach(function(x){var li=document.createElement('li');li.textContent=x;$('#geminiEvidence').appendChild(li)})}
-  function updateGeminiStats(){
-    var settled=aiSettledWins+aiSettledLosses;
-    $('#geminiSettled').textContent=String(settled);
-    $('#geminiAccuracy').textContent=settled?Math.round(aiSettledWins/settled*100)+'%':'—';
-  }
-  function renderGeminiDecision(decision){
-    if(decision.action==='WAIT'||decision.signal==='WAIT'){
-      var settled=aiSettledWins+aiSettledLosses;
-      var accuracy=settled?Math.round(aiSettledWins/settled*100):null;
-      $('#geminiSignal').textContent='SESSION ACCURACY';
-      $('#geminiConfidence').textContent=accuracy===null?'— ACCURACY':accuracy+'% ACCURACY';
-      $('#geminiSummary').textContent='No trade signal met the criteria. Accuracy is calculated from '+settled+' settled trades.'+(decision.pattern_summary?' '+decision.pattern_summary:'')+(decision.caution?' · '+decision.caution:'');
-    }else{
-      $('#geminiSignal').textContent=CT[decision.signal]&&CT[decision.signal].n||decision.signal;
-      $('#geminiConfidence').textContent=decision.confidence_percent+'% MODEL CONFIDENCE';
-      $('#geminiSummary').textContent=decision.pattern_summary+(decision.caution?' · '+decision.caution:'');
-    }
-    $('#geminiEvidence').replaceChildren();
-    decision.evidence.forEach(function(item){
-      var li=document.createElement('li');li.textContent=item;$('#geminiEvidence').appendChild(li);
-    });
-  }
-  function stopGeminiMonitoring(message){
-    aiMonitoring=false;aiGeneration++;
-    $('#geminiState').textContent='STOPPED';
-    $('#status').textContent=message||'Groq on-demand analysis stopped. Any already-open Deriv contract will continue to settlement.';
-    $('#scan').classList.toggle('scanning',!!busy);$('#stage').classList.toggle('scanning',!!busy);
-    event('system','AI SCAN STOPPED','No further AI signals will be requested. An already submitted trade is not cancelled.');
-    tradeLine();
-  }
-  function runGeminiAnalysis(){if(aiRequestInFlight||ds.length<100)return;var digits=ds.slice(-100),prices=ps.slice(-100);aiLastAnalysisStarted=performance.now();aiRequestInFlight=true;$('#geminiState').textContent='ANALYZING';$('#geminiSummary').textContent='Examining the latest 100 chronological ticks, parity distribution, transitions and price changes…';fetch(OAUTH_WORKER_URL+'/analysis/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:mk.symbol,marketName:mk.n,digits:digits,prices:prices})}).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Groq analysis failed');return d})}).then(function(d){aiLastAnalysisMs=performance.now()-aiLastAnalysisStarted;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();renderGeminiDecision(d);$('#geminiState').textContent='COMPLETE';$('#status').textContent='Analysis complete · no trades are placed by Zyntrix.';event('decision','GROQ ANALYSIS COMPLETE',d.bias+' bias · '+d.pattern_summary)}).catch(function(e){$('#geminiState').textContent='API ERROR';$('#status').textContent='Analysis failed: '+e.message;event('warning','GROQ ANALYSIS FAILED',e.message)}).finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')})}
+    function runGeminiAnalysis(){if(aiRequestInFlight||ds.length<100)return;var digits=ds.slice(-100),prices=ps.slice(-100);aiLastAnalysisStarted=performance.now();aiRequestInFlight=true;$('#geminiState').textContent='ANALYZING';$('#geminiSummary').textContent='Examining the latest 100 chronological ticks, parity distribution, transitions and price changes…';fetch(ANALYSIS_WORKER_URL+'/analysis/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:mk.symbol,marketName:mk.n,digits:digits,prices:prices})}).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Groq analysis failed');return d})}).then(function(d){aiLastAnalysisMs=performance.now()-aiLastAnalysisStarted;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();renderGeminiDecision(d);$('#geminiState').textContent='COMPLETE';$('#status').textContent='Analysis complete · no trades are placed by Zyntrix.';event('decision','GROQ ANALYSIS COMPLETE',d.bias+' bias · '+d.pattern_summary)}).catch(function(e){$('#geminiState').textContent='API ERROR';$('#status').textContent='Analysis failed: '+e.message;event('warning','GROQ ANALYSIS FAILED',e.message)}).finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')})}
   function scan(){if(aiRequestInFlight)return;if(ds.length<100){$('#status').textContent='Waiting for at least 100 live Deriv ticks.';return}$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineState').textContent='Analysing';$('#activeMarket').textContent=mk.n;$('#status').textContent='Analysing the last 100 digits…';event('system','AI ANALYSIS REQUESTED',mk.n+' · last 100 digits · one request only.');runGeminiAnalysis()}
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
   function processMarketTick(d,pn){}
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
-  var OAUTH_WORKER_URL='https://zyntrix-oauth.fiverlancer51.workers.dev';
+  var ANALYSIS_WORKER_URL='https://zyntrix-oauth.fiverlancer51.workers.dev';
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;connectMarketSocket();
 })();
 </script>
