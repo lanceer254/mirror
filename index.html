@@ -292,7 +292,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><label class="field">MARKET TO ANALYSE<select id="market"></select></label><p class="analysis-note">Public Deriv market data only · Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><label class="field">CONTRACT TO ANALYSE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">SCAN compares all supported volatility indices for the selected contract. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -333,7 +333,7 @@ li span:first-child{color:#668b70}
 <div class="parity-item"><div class="parity-head"><span>EVEN STRENGTH</span><b id="evenStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenStrengthBar"></div></div></div>
 <div class="parity-item"><div class="parity-head"><span>ODD STRENGTH</span><b id="oddStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddStrengthBar"></div></div></div>
 <div class="parity-item"><div class="parity-head"><span>FLAT / BALANCE</span><b id="parityFlat">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-flat" id="parityFlatBar"></div></div></div></div><div class="parity-caption" id="parityCount">0 / 1000 DIGITS · WAITING FOR DATA</div></section>
-  <section class="gemini-panel" aria-label="AI digit analysis">
+  <section class="gemini-panel" aria-label="Cross-volatility contract analysis">
     <h2>GROQ INTELLIGENCE // ANALYSE ON CLICK</h2>
     <div class="gemini-metrics">
       <div class="gemini-metric"><span>AI:</span><b id="geminiState">IDLE</b></div>
@@ -346,6 +346,7 @@ li span:first-child{color:#668b70}
     <div class="gemini-signal"><strong id="geminiSignal">NO SIGNAL</strong><b id="geminiConfidence">—</b></div>
     <div class="gemini-summary" id="geminiSummary">Press SCAN to analyse the last 100 digits once. Local tick tracking continues; AI runs only on click.</div>
     <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for a SCAN request.</li></ul>
+    <div id="rankedResults" style="margin-top:12px"></div>
   </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -655,7 +656,90 @@ li span:first-child{color:#668b70}
   function updateParityStrength(){var n=ds.length,even=0;for(var i=0;i<n;i++)if(ds[i]%2===0)even++;var odd=n-even;if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});$('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';return}var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);$('#parityCount').textContent=n+' / 1000 DIGITS · '+even+' EVEN · '+odd+' ODD'}
   function renderGeminiDecision(d){var bias=String(d.bias||'NEUTRAL').toUpperCase();$('#geminiSignal').textContent=bias+' BIAS';$('#geminiConfidence').textContent=d.confidence_percent+'% MODEL CONFIDENCE';$('#geminiSummary').textContent=(d.pattern_summary||'Analysis completed.')+(d.caution?' · '+d.caution:'');$('#geminiEvidence').replaceChildren();(d.evidence||[]).forEach(function(x){var li=document.createElement('li');li.textContent=x;$('#geminiEvidence').appendChild(li)})}
     function runGeminiAnalysis(){if(aiRequestInFlight||ds.length<100)return;var digits=ds.slice(-100),prices=ps.slice(-100);aiLastAnalysisStarted=performance.now();aiRequestInFlight=true;$('#geminiState').textContent='ANALYZING';$('#geminiSummary').textContent='Examining the latest 100 chronological ticks, parity distribution, transitions and price changes…';fetch(ANALYSIS_WORKER_URL+'/analysis/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:mk.symbol,marketName:mk.n,digits:digits,prices:prices})}).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Groq analysis failed');return d})}).then(function(d){aiLastAnalysisMs=performance.now()-aiLastAnalysisStarted;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();renderGeminiDecision(d);$('#geminiState').textContent='COMPLETE';$('#status').textContent='Analysis complete · no trades are placed by Zyntrix.';event('decision','GROQ ANALYSIS COMPLETE',d.bias+' bias · '+d.pattern_summary)}).catch(function(e){$('#geminiState').textContent='API ERROR';$('#status').textContent='Analysis failed: '+e.message;event('warning','GROQ ANALYSIS FAILED',e.message)}).finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')})}
-  function scan(){if(aiRequestInFlight)return;if(ds.length<100){$('#status').textContent='Waiting for at least 100 live Deriv ticks.';return}$('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineState').textContent='Analysing';$('#activeMarket').textContent=mk.n;$('#status').textContent='Analysing the last 100 digits…';event('system','AI ANALYSIS REQUESTED',mk.n+' · last 100 digits · one request only.');runGeminiAnalysis()}
+
+  var portfolioScanSocket=null,portfolioScanTimer=null,portfolioScanState=null;
+  function finishPortfolioUi(message){$('#geminiState').textContent='NO DATA';$('#status').textContent=message;$('#rankedResults').textContent=message;aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
+  function finishPortfolioScan(error){
+    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}
+    var state=portfolioScanState;portfolioScanState=null;
+    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}
+    if(!state)return;
+    if(error){finishPortfolioUi(error);$('#geminiState').textContent='SCAN ERROR';return;}
+    var usable=state.results.filter(function(x){return x.digits.length>=100;});
+    if(!usable.length){finishPortfolioUi('No supported market returned enough history.');return;}
+    $('#geminiState').textContent='SCORING';
+    $('#geminiSummary').textContent='Scoring '+usable.length+' of '+MK.length+' available markets for '+state.contract+'.';
+    fetch(ANALYSIS_WORKER_URL+'/analysis/rank',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contract:state.contract,markets:usable})})
+      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Ranking failed');return d})})
+      .then(function(d){
+        $('#geminiState').textContent=d.aiStatus==='COMPLETE'?'COMPLETE':'RANKED · AI NOTE UNAVAILABLE';
+        $('#geminiSignal').textContent=d.contract+' CONTRACT';
+        $('#geminiConfidence').textContent='TOP SCORE '+Number(d.best.score).toFixed(1)+'/100';
+        $('#geminiSummary').textContent=d.commentary||'Ranking completed from the latest available digit history.';
+        $('#geminiEvidence').replaceChildren();
+        (d.best.evidence||[]).forEach(function(x){var li=document.createElement('li');li.textContent=x;$('#geminiEvidence').appendChild(li)});
+        var box=$('#rankedResults');box.replaceChildren();
+        var heading=document.createElement('div');heading.textContent='VOLATILITY RANKING · '+d.contract;heading.style.cssText='font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf';box.appendChild(heading);
+        d.ranking.forEach(function(item,index){
+          var row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px';
+          var rank=document.createElement('b');rank.textContent=String(index+1).padStart(2,'0');
+          var name=document.createElement('span');name.textContent=item.marketName+' · '+item.sampleSize+' ticks'+(item.dataQuality==='LIMITED'?' · LIMITED DATA':'');
+          var score=document.createElement('b');score.textContent=Number(item.score).toFixed(1)+'/100';score.style.color=index===0?'#55f59a':'#c9f7d5';
+          row.append(rank,name,score);box.appendChild(row);
+        });
+        var note=document.createElement('p');note.style.cssText='font-size:9px;line-height:1.5;color:#8ca6a0;margin:9px 0 0';note.textContent='Score measures observed historical parity alignment and consistency in this sample. It is not a win probability or a prediction of the next digit. '+d.skippedMarkets+' market(s) could not provide enough data.';box.appendChild(note);
+        $('#status').textContent='Cross-market analysis complete · '+d.best.marketName+' ranked highest for '+d.contract+'.';
+        $('#activeMarket').textContent=mk.n;
+        event('decision','CROSS-VOLATILITY RANKING',d.best.marketName+' ranked #1 for '+d.contract+' · '+Number(d.best.score).toFixed(1)+'/100');
+        aiLastAnalysisMs=performance.now()-state.started;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();
+      })
+      .catch(function(e){$('#geminiState').textContent='RANKING ERROR';$('#status').textContent='Ranking failed: '+e.message;$('#rankedResults').textContent='Ranking failed: '+e.message;event('warning','RANKING FAILED',e.message)})
+      .finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')});
+  }
+  function requestNextPortfolioHistory(){
+    var state=portfolioScanState;if(!state||!portfolioScanSocket||portfolioScanSocket.readyState!==WebSocket.OPEN)return;
+    if(state.index>=MK.length){finishPortfolioScan(null);return;}
+    var market=MK[state.index],req=state.nextReq++;
+    state.pending[req]=market;
+    $('#status').textContent='Collecting '+market.n+' history ('+(state.index+1)+'/'+MK.length+')…';
+    portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
+  }
+  function runPortfolioScan(){
+    if(aiRequestInFlight)return;
+    aiRequestInFlight=true;
+    var contract=$('#contract').value;
+    portfolioScanState={contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
+    $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
+    $('#engineState').textContent='Comparing markets';$('#geminiState').textContent='COLLECTING DATA';
+    $('#geminiSignal').textContent=contract+' CONTRACT';$('#geminiConfidence').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#geminiSummary').textContent='Fetching comparable recent tick history for every supported volatility index. No trades are placed.';
+    $('#geminiEvidence').replaceChildren();$('#rankedResults').textContent='';
+    event('system','CROSS-VOLATILITY SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · 1000 historical ticks requested per market.');
+    try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}
+    catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
+    portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
+    portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
+    portfolioScanSocket.onmessage=function(message){
+      var data;try{data=JSON.parse(message.data)}catch(e){return;}
+      var state=portfolioScanState;if(!state)return;
+      var market=state.pending[data.req_id];if(!market)return;
+      delete state.pending[data.req_id];
+      if(data.error){state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],error:data.error.message||'History unavailable'});}
+      else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
+        var prices=data.history.prices,times=data.history.times||[],pip=Number(data.pip_size!==undefined?data.pip_size:data.history.pip_size);
+        if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){pip=Math.max(pip,quoteDecimals(v));});}
+        var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?i:Number(times[i])};});
+        rows.sort(function(a,b){return a.epoch-b.epoch;});
+        var digits=rows.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
+        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:rows.map(function(x){return x.price;})});
+      }
+      state.index++;requestNextPortfolioHistory();
+    };
+    portfolioScanSocket.onerror=function(){finishPortfolioScan('Deriv history WebSocket connection failed.');};
+    portfolioScanSocket.onclose=function(){if(portfolioScanState&&portfolioScanState.index<MK.length&&Object.keys(portfolioScanState.pending).length===0&&portfolioScanState.results.length<MK.length)finishPortfolioScan('Deriv history connection closed before all markets were checked.');};
+  }
+  function scan(){if(aiRequestInFlight)return;$('#status').textContent='Starting cross-volatility analysis…';runPortfolioScan()}
+
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
   function processMarketTick(d,pn){}
