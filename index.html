@@ -664,7 +664,15 @@ li span:first-child{color:#668b70}
     var best=ranked.best;$('#signalLabel').textContent=best.status==='STRONG HISTORICAL DEVIATION'?state.contract+' HISTORICAL DEVIATION':best.status==='WATCH'?state.contract+' WATCH':'NO CLEAR EDGE';
     $('#signalScore').textContent='EVIDENCE '+best.evidenceScore.toFixed(1)+'/100';
     $('#engineSummary').textContent=(ranked.hasClearSignal?'A candidate passed the conservative historical-deviation threshold. ':'No market passed the conservative historical-deviation threshold. ')+best.marketName+' is the highest relative candidate for '+state.contract+' in '+best.sampleSize+' ticks. Adjusted p-value: '+best.adjustedPValue+'. This describes the sampled past and does not predict the next digit.';
-    $('#engineEvidence').replaceChildren();best.evidence.forEach(function(item){var li=document.createElement('li');li.textContent=item;$('#engineEvidence').appendChild(li);});
+    $('#engineEvidence').replaceChildren();
+    var diagnostics=best.evidence.slice();
+    diagnostics.push('DIGIT COUNTS 0–9: '+best.distribution.counts.map(function(count,digit){return digit+': '+count;}).join(' · ')+'.');
+    diagnostics.push('DISTRIBUTION: entropy '+best.distribution.entropyBits+' bits; normalized entropy '+best.distribution.normalizedEntropy+'; chi-square vs uniform '+best.distribution.chiSquareUniform+'.');
+    diagnostics.push('TRANSITIONS [EVEN→EVEN, EVEN→ODD; ODD→EVEN, ODD→ODD]: '+JSON.stringify(best.transitions.counts)+'.');
+    diagnostics.push('RUNS: parity current '+best.parityRuns.current+', longest '+best.parityRuns.longest+'; same-digit current '+best.digitRuns.current+', longest '+best.digitRuns.longest+'.');
+    diagnostics.push('RECENT SHIFT: '+(best.changeDetection.available?'previous 100 ticks '+best.changeDetection.priorRate+'% → latest 100 ticks '+best.changeDetection.recentRate+'% ('+best.changeDetection.direction+', z '+best.changeDetection.zScore+').':'not enough ticks yet')+'.');
+    diagnostics.push('PRICE CONTEXT ONLY: '+best.priceMovement.upTicks+' up / '+best.priceMovement.downTicks+' down / '+best.priceMovement.flatTicks+' flat; return dispersion '+best.priceMovement.returnStdDev+'. This does not predict parity.');
+    diagnostics.forEach(function(item){var li=document.createElement('li');li.textContent=item;$('#engineEvidence').appendChild(li);});
     var diag=$('#marketDiagnostics');diag.replaceChildren();
     var diagTitle=document.createElement('div');diagTitle.className='diagnostic-heading';diagTitle.textContent='BEST MARKET DATA DIAGNOSTICS · '+best.dataQuality+' SAMPLE';diag.appendChild(diagTitle);
     var digitGrid=document.createElement('div');digitGrid.className='digit-frequency-grid';
