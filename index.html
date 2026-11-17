@@ -237,7 +237,7 @@ li span:first-child{color:#668b70}
 .window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
 @media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(3,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
-.analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
+.analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.stable-market-results{margin-top:12px}.stable-market-card{padding:10px 0;border-top:1px solid #17452e}.stable-market-card-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:10px}.stable-market-card-head strong{color:#aaf8bf}.stable-market-score{color:#c9f7d5;font-weight:700;white-space:nowrap}.stable-digit-circles{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;margin-top:8px}.stable-digit-circle{aspect-ratio:1;min-width:0;border:1px solid #245b3a;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#07110b;text-align:center}.stable-digit-circle b{font-size:10px;line-height:1;color:#c9f7d5}.stable-digit-circle small{font-size:8px;line-height:1.2;margin-top:3px;color:#8ca6a0;font-variant-numeric:tabular-nums}.stable-market-gaps{margin-top:7px;color:#8ca6a0;font-size:9px;line-height:1.6;overflow-wrap:anywhere}.stable-market-gaps b{color:#c9f7d5}@media(max-width:600px){.stable-digit-circles{gap:2px}.stable-digit-circle b{font-size:9px}.stable-digit-circle small{font-size:7px}}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -251,7 +251,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><label class="field">CONTRACT TO ANALYZE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">ANALYZE compares all supported volatility indices for the selected contract. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><label class="field">SCANNING MODE<select id="scanMode"><option value="PARITY">EVEN / ODD STRENGTH</option><option value="STABLE">STABLE MARKET</option></select></label><label class="field" id="contractField" style="margin-top:10px">CONTRACT TO ANALYZE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">Choose EVEN/ODD Strength or Stable Market. Stable Market uses only the ten percentages shown in each digit circle (0–9). Analysis only · No account connection or trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -310,7 +310,7 @@ li span:first-child{color:#668b70}
     <div class="engine-summary" id="engineSummary">Choose EVEN or ODD, then press ANALYZE. Zyntrix will compare all supported volatility indices using local statistical calculations.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
     <div id="marketDiagnostics" class="market-diagnostics"></div>
-    <div id="rankedResults" class="ranked-results"></div>
+    <div id="rankedResults" class="ranked-results"></div><div id="stableMarketResults" class="stable-market-results" hidden></div>
     <div id="validationSummary" class="validation-summary">Forward validation begins after the first recorded analysis and is resolved when later timestamped market history becomes available.</div>
   </section>
   <section class="activity" aria-label="Compact live system log">
@@ -346,6 +346,7 @@ li span:first-child{color:#668b70}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
   var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0;
+  var scanMode=$('#scanMode'),contractField=$('#contractField');
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var portfolioScanTimer=null,portfolioScanState=null;
@@ -618,6 +619,7 @@ li span:first-child{color:#668b70}
     };
   }
 
+  function formatDigitCirclePercentage(count,total){return (count/(total||1)*100).toFixed(1)+'%';}
   function render(){
     var counts=Array(10).fill(0),n=ds.length||1,hi=0,lo=0;
     ds.forEach(function(x){counts[x]++});
@@ -628,7 +630,7 @@ li span:first-child{color:#668b70}
       var p=counts[i]/n;
       c.querySelector('.fg').style.strokeDasharray=C;
       c.querySelector('.fg').style.strokeDashoffset=C*(1-Math.min(1,p*5));
-      c.querySelector('small').textContent=(p*100).toFixed(1)+'%';
+      c.querySelector('small').textContent=formatDigitCirclePercentage(counts[i],n);
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===thirdMost);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
@@ -671,11 +673,59 @@ li span:first-child{color:#668b70}
     var ten=summary.tenTickAverage===null?'10-tick follow-through pending':summary.tenTickAverage+'% average target parity across '+summary.tenTickResolved+' observations';
     $('#validationSummary').textContent='LOCAL FORWARD VALIDATION · '+summary.recorded+' recorded · '+next+' · '+five+' · '+ten+'. Descriptive sample only; compare next-tick results with the 50% baseline.';
   }
+  function finishStableMarketScan(state){
+    var usable=state.results.filter(function(item){return Array.isArray(item.digits)&&item.digits.length>=50;});
+    if(!usable.length){finishPortfolioUi('No supported market returned enough valid data to populate its digit circles.');return;}
+    var host=$('#stableMarketResults');host.replaceChildren();host.hidden=false;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();
+    var cards={},inputs=[];
+    usable.forEach(function(market){
+      var counts=Array(10).fill(0);market.digits.forEach(function(digit){if(Number.isInteger(digit)&&digit>=0&&digit<=9)counts[digit]++;});
+      var card=document.createElement('div');card.className='stable-market-card';card.dataset.symbol=market.symbol;
+      var head=document.createElement('div');head.className='stable-market-card-head';
+      var name=document.createElement('strong');name.textContent=market.marketName;
+      var score=document.createElement('span');score.className='stable-market-score';score.textContent='CALCULATING';
+      head.append(name,score);card.appendChild(head);
+      var circles=document.createElement('div');circles.className='stable-digit-circles';circles.setAttribute('aria-label',market.marketName+' digit percentages 0 to 9');
+      counts.forEach(function(count,digit){
+        var circle=document.createElement('div');circle.className='stable-digit-circle';
+        var digitLabel=document.createElement('b');digitLabel.textContent=String(digit);
+        var percentage=document.createElement('small');percentage.textContent=formatDigitCirclePercentage(count,market.digits.length);
+        circle.append(digitLabel,percentage);circles.appendChild(circle);
+      });
+      card.appendChild(circles);host.appendChild(card);cards[market.symbol]=card;
+      var displayedPercentages=Array.from(circles.querySelectorAll('.stable-digit-circle small')).map(function(node){return node.textContent;});
+      inputs.push({symbol:market.symbol,marketName:market.marketName,circlePercentages:displayedPercentages});
+    });
+    var ranked=ZyntrixEngine.rankStableMarkets(inputs);
+    if(!ranked.best){finishPortfolioUi('No market supplied ten readable digit-circle percentages.');return;}
+    ranked.ranking.forEach(function(item,index){
+      var card=cards[item.symbol];if(!card)return;
+      card.querySelector('.stable-market-score').textContent='MEAN GAP '+item.separationScore.toFixed(2)+' pp';
+      var gaps=document.createElement('div');gaps.className='stable-market-gaps';
+      gaps.innerHTML='<b>NINE CONSECUTIVE GAPS:</b> '+item.gaps.map(function(gap,i){return item.sortedPercentages[i].digit+'→'+item.sortedPercentages[i+1].digit+' '+gap.toFixed(1)+' pp';}).join(' · ');
+      card.appendChild(gaps);
+      var rank=document.createElement('span');rank.textContent='#'+(index+1)+' ';
+      card.querySelector('.stable-market-card-head').insertBefore(rank,card.querySelector('.stable-market-card-head').firstChild);
+      host.appendChild(card);
+    });
+    var best=ranked.best;
+    $('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=ranked.ranking.length+' / '+MK.length;
+    $('#signalLabel').textContent='STABLE MARKET RANKING';$('#signalScore').textContent='MEAN GAP '+best.separationScore.toFixed(2)+' pp';
+    $('#engineSummary').textContent=best.marketName+' ranks first by the mean of its nine consecutive gaps after sorting the ten displayed digit-circle percentages from highest to lowest. The score uses no other input.';
+    ['INPUT: the ten displayed circle percentages for digits 0–9.','METHOD: sort descending, calculate all nine adjacent percentage-point gaps, then take their unweighted mean.','EXCLUSIONS: no bars, entropy, chi-square, price movement, tick patterns, parity metrics, or other indicators enter this ranking.'].forEach(function(message){var li=document.createElement('li');li.textContent=message;$('#engineEvidence').appendChild(li);});
+    var note=document.createElement('p');note.className='analysis-note';note.textContent=ranked.skippedMarkets+' market(s) could not be ranked because ten valid circle percentages were unavailable.';host.appendChild(note);
+    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
+    $('#status').textContent='Stable Market scan complete · '+best.marketName+' ranked first.';
+    event('decision','STABLE MARKET RANKING',best.marketName+' ranked #1 · mean adjacent gap '+best.separationScore.toFixed(2)+' percentage points.');
+    analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+  }
   function finishPortfolioUi(message){$('#engineStateLabel').textContent='NO DATA';$('#engineSummary').textContent=message;$('#rankedResults').textContent=message;analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
   function finishPortfolioScan(error){
     if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}var state=portfolioScanState;portfolioScanState=null;
     if(!state)return;
     if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
+    if(state.mode==='STABLE'){finishStableMarketScan(state);return;}
+    $('#stableMarketResults').hidden=true;
     var usable=state.results.filter(function(x){return x.digits.length>=50;});if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
     $('#engineStateLabel').textContent='PROCESSING LOCALLY';var ranked=ZyntrixEngine.rankMarkets(usable,state.contract,MK.length);
     if(!ranked.best){finishPortfolioUi('No market had sufficient valid history to rank.');return;}
@@ -736,12 +786,12 @@ li span:first-child{color:#668b70}
     socket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
-    if(analysisInFlight)return;analysisInFlight=true;var contract=$('#contract').value;
-    portfolioScanState={contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
+    if(analysisInFlight)return;analysisInFlight=true;var mode=scanMode.value,contract=$('#contract').value;
+    portfolioScanState={mode:mode,contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    $('#signalLabel').textContent=contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Statistical processing and ranking run locally; no AI or account service is contacted.';
-    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · up to 1,000 historical ticks per market.');
+    $('#stableMarketResults').hidden=true;$('#signalLabel').textContent=mode==='STABLE'?'STABLE MARKET COMPARISON':contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#engineSummary').textContent=mode==='STABLE'?'Collecting market data to populate the ten digit-circle percentages. Stable Market ranks only the displayed percentages and their nine adjacent gaps.':'Collecting up to 1,000 chronological ticks per supported market. Statistical processing and ranking run locally; no AI or account service is contacted.';
+    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',(mode==='STABLE'?'Stable Market percentage-only scan':'Contract '+contract)+' · '+MK.length+' markets.');
     portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Check the Deriv connection and try again.');},90000);
     if(socket&&socket.readyState===WebSocket.OPEN)requestNextPortfolioHistory();
     else if(!socket||socket.readyState===WebSocket.CLOSED||socket.readyState===WebSocket.CLOSING)connectMarketSocket();
@@ -751,6 +801,8 @@ li span:first-child{color:#668b70}
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
   $('#contract').addEventListener('change',updateWindowMatrix);
+  scanMode.addEventListener('change',function(){contractField.hidden=this.value==='STABLE';$('#stableMarketResults').hidden=true;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();$('#signalLabel').textContent=this.value==='STABLE'?'STABLE MARKET MODE':'NO ANALYSIS';$('#signalScore').textContent='—';$('#engineSummary').textContent=this.value==='STABLE'?'Stable Market uses only the ten percentages displayed in each digit circle.':'Choose EVEN or ODD, then press ANALYZE to compare markets.';});
+  contractField.hidden=scanMode.value==='STABLE';
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
