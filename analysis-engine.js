@@ -28,9 +28,9 @@ var values=input.circlePercentages;
 if(!Array.isArray(values)||values.length!==10)throw new TypeError("Exactly ten digit-circle percentages (0-9) are required.");
 var sorted=values.map(function(raw,digit){
 var text=String(raw).trim();
-var match=text.match(/^([0-9]+(?:\\.[0-9]+)?)%?$/);
-if(!match)throw new TypeError("Each digit-circle percentage must be a displayed percentage.");
-var percentage=Number(match[1]);
+var numericText=text.endsWith("%")?text.slice(0,-1):text;
+if(!/^[0-9]+(?:[.][0-9]+)?$/.test(numericText))throw new TypeError("Each digit-circle percentage must be a displayed percentage.");
+var percentage=Number(numericText);
 if(!Number.isFinite(percentage)||percentage<0||percentage>100)throw new TypeError("Digit-circle percentages must be between 0 and 100.");
 return{digit:digit,percentage:percentage};
 }).sort(function(a,b){return b.percentage-a.percentage||a.digit-b.digit;});
