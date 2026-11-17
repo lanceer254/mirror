@@ -114,6 +114,7 @@ h2{font:700 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spaci
 .d.lo .fg{stroke:#a65b52}
 .d.hi small{color:#55f59a;font-weight:600}
 .d.lo small{color:#ff806f;font-weight:600}
+.d.third .fg{stroke:#a78bfa!important}.d.third small{color:#a78bfa!important;font-weight:700}
 .cursor::before{border-color:#55f59a;box-shadow:0 0 14px rgba(0,255,120,.14),inset 0 0 10px rgba(0,255,120,.1)}
 .cursor::after{background:#55f59a;box-shadow:0 0 10px #55f59a}
 .sweep{background:linear-gradient(90deg,transparent,rgba(0,255,120,.12),transparent)}
@@ -621,12 +622,14 @@ li span:first-child{color:#668b70}
     var counts=Array(10).fill(0),n=ds.length||1,hi=0,lo=0;
     ds.forEach(function(x){counts[x]++});
     for(var i=1;i<10;i++){if(counts[i]>counts[hi])hi=i;if(counts[i]<counts[lo])lo=i}
+    var rankedDigits=counts.map(function(count,digit){return {digit:digit,count:count};}).sort(function(a,b){return b.count-a.count||a.digit-b.digit;});
+    var thirdMost=rankedDigits[2].digit;
     cells.forEach(function(c,i){
       var p=counts[i]/n;
       c.querySelector('.fg').style.strokeDasharray=C;
       c.querySelector('.fg').style.strokeDashoffset=C*(1-Math.min(1,p*5));
       c.querySelector('small').textContent=(p*100).toFixed(1)+'%';
-      c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);
+      c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===thirdMost);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
     updateTickWindow();updateParityStrength();
