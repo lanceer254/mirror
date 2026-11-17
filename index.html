@@ -251,7 +251,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><label class="field">SCANNING MODE<select id="scanMode"><option value="PARITY">EVEN / ODD STRENGTH</option><option value="STABLE">STABLE MARKET</option></select></label><label class="field" id="contractField" style="margin-top:10px">CONTRACT TO ANALYZE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">Choose EVEN/ODD Strength or Stable Market. Stable Market uses only the ten percentages shown in each digit circle (0–9). Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><label class="field">MODE<select id="scanMode"><option value="EVEN">EVEN</option><option value="ODD">ODD</option><option value="STABLE">STABLE MARKET</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">Choose EVEN, ODD, or STABLE MARKET. Stable Market uses only the ten percentages shown in each digit circle (0–9). Analysis only · No account connection or trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -346,7 +346,7 @@ li span:first-child{color:#668b70}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
   var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0;
-  var scanMode=$('#scanMode'),contractField=$('#contractField');
+  var scanMode=$('#scanMode');
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var portfolioScanTimer=null,portfolioScanState=null;
@@ -658,7 +658,7 @@ li span:first-child{color:#668b70}
   }
   function updateWindowMatrix(){
     var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
-    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:$('#contract').value});holder.replaceChildren();
+    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:scanMode.value==='ODD'?'ODD':'EVEN'});holder.replaceChildren();
     var header=document.createElement('div');header.className='window-row header';
     ['WINDOW','EVEN','ODD','SELECTED'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
     result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
@@ -788,7 +788,7 @@ li span:first-child{color:#668b70}
     socket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
-    if(analysisInFlight)return;analysisInFlight=true;var mode=scanMode.value,contract=$('#contract').value;
+    if(analysisInFlight)return;analysisInFlight=true;var selectedMode=scanMode.value,mode=selectedMode==='STABLE'?'STABLE':'PARITY',contract=selectedMode==='ODD'?'ODD':'EVEN';
     portfolioScanState={mode:mode,contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
     $('#stableMarketResults').hidden=true;$('#signalLabel').textContent=mode==='STABLE'?'STABLE MARKET COMPARISON':contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
@@ -802,9 +802,8 @@ li span:first-child{color:#668b70}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
-  $('#contract').addEventListener('change',updateWindowMatrix);
-  function applyScanModeUi(){var stable=scanMode.value==='STABLE';contractField.hidden=stable;$('#parityPanel').hidden=stable;$('#tickWindow').hidden=stable;$('#validationSummary').hidden=stable;}
-  scanMode.addEventListener('change',function(){applyScanModeUi();$('#stableMarketResults').hidden=true;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();$('#signalLabel').textContent=this.value==='STABLE'?'STABLE MARKET MODE':'NO ANALYSIS';$('#signalScore').textContent='—';$('#engineSummary').textContent=this.value==='STABLE'?'Stable Market uses only the ten percentages displayed in each digit circle.':'Choose EVEN or ODD, then press ANALYZE to compare markets.';});
+  function applyScanModeUi(){var stable=scanMode.value==='STABLE';$('#parityPanel').hidden=stable;$('#tickWindow').hidden=stable;$('#validationSummary').hidden=stable;}
+  scanMode.addEventListener('change',function(){applyScanModeUi();$('#stableMarketResults').hidden=true;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();$('#signalLabel').textContent=this.value==='STABLE'?'STABLE MARKET MODE':this.value+' MODE';$('#signalScore').textContent='—';$('#engineSummary').textContent=this.value==='STABLE'?'Stable Market uses only the ten percentages displayed in each digit circle.':'Choose '+this.value+', then press ANALYZE to compare markets.';if(this.value!=='STABLE')updateWindowMatrix();});
   applyScanModeUi();
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
