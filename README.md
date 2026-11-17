@@ -7,7 +7,7 @@ Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. I
 - **Data source:** Deriv public market-data WebSocket. No account login, OAuth, trading token, or order execution is used.
 - **Live monitor:** One selected market streams ticks continuously and keeps a rolling 1,000-tick display buffer.
 - **On-demand comparison:** ANALYZE requests up to 1,000 recent ticks from each of the ten configured volatility indices, one history request at a time on a separate public WebSocket.
-- **Analysis engine:** \`analysis-engine.js\` is deterministic, dependency-free JavaScript and runs locally in the browser.
+- **Analysis engine:** analysis-engine.js is deterministic, dependency-free JavaScript and runs locally in the browser.
 - **Validation ledger:** Signal snapshots and subsequently observed outcomes are kept in this browser's localStorage. They are not uploaded to a server and do not sync between devices.
 - **Deployment:** GitHub Pages serves the static app. No Cloudflare Worker or AI service is required.
 
@@ -24,9 +24,9 @@ Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. I
 - Tick-return movement and dispersion, reported as context rather than a parity predictor.
 - Cross-market ranking for the selected contract using target-parity deviation, multi-window agreement, sample coverage, and stability.
 - A diagnostic panel exposing digit counts, entropy, uniformity chi-square, parity transitions, streaks, recent-window shifts, and tick-return dispersion.
-
-Only measured target-parity deviation and stability contribute to the ranking score. Transition, entropy, streak, and price-movement features remain visible diagnostics until forward validation demonstrates that they add predictive value.
 - Forward outcome tracking at the next tick and the next 5/10 ticks where timestamped future observations are available.
+
+Only measured target-parity deviation and rolling stability contribute to the ranking score. Transition, entropy, streak, and price-movement features remain visible diagnostics until forward validation demonstrates that they add predictive value.
 
 ## Interpretation
 
@@ -38,9 +38,9 @@ The local outcome ledger is an empirical check. A next-tick hit rate is only mea
 
 Requires Node.js 20 or later; no third-party packages are needed.
 
-\`\`\`sh
+~~~sh
 node --test analysis-engine.test.cjs
-\`\`\`
+~~~
 
 ## Privacy and operating boundaries
 
