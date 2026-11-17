@@ -26,7 +26,7 @@ Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. I
 - A diagnostic panel exposing digit counts, entropy, uniformity chi-square, parity transitions, streaks, recent-window shifts, and tick-return dispersion.
 - Forward outcome tracking at the next tick and the next 5/10 ticks where timestamped future observations are available.
 
-Only measured target-parity deviation and rolling stability contribute to the ranking score. Transition, entropy, streak, and price-movement features remain visible diagnostics until forward validation demonstrates that they add predictive value.
+Only measured target-parity deviation, rolling-window agreement/stability, and sample coverage contribute to the ranking score. Transition, entropy, streak, and price-movement features remain visible diagnostics until forward validation demonstrates that they add predictive value.
 
 ## Interpretation
 
