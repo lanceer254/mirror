@@ -22,7 +22,10 @@ Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. I
 - EVEN/ODD transition matrix and conditional transition sample support.
 - Adjacent-window change detection.
 - Tick-return movement and dispersion, reported as context rather than a parity predictor.
-- Cross-market ranking for the selected contract.
+- Cross-market ranking for the selected contract using target-parity deviation, multi-window agreement, sample coverage, and stability.
+- A diagnostic panel exposing digit counts, entropy, uniformity chi-square, parity transitions, streaks, recent-window shifts, and tick-return dispersion.
+
+Only measured target-parity deviation and stability contribute to the ranking score. Transition, entropy, streak, and price-movement features remain visible diagnostics until forward validation demonstrates that they add predictive value.
 - Forward outcome tracking at the next tick and the next 5/10 ticks where timestamped future observations are available.
 
 ## Interpretation
