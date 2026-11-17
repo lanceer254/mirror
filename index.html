@@ -40,31 +40,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .actions.scanbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:13px}
 .actions.scanbar .brain{flex:0 0 68px}
 .actions.scanbar .say{flex:1 1 105px;min-width:100px}
-.pnl-inline{flex:1 1 190px;min-width:175px;padding-left:12px;border-left:1px solid #153323}
-.pnl-inline-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.pnl-inline .total{font:700 1.25rem ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.15}
-.pnl-inline .stats{gap:9px;margin:4px 0 5px;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
-.pnl-inline #log{max-height:48px;overflow:auto;scrollbar-width:thin;scrollbar-color:#245b3a #07110b;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
-.pnl-inline #log li{padding:3px 0;gap:5px}
-.pnl-inline #log li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pnl-inline .ghost{margin:4px 0 0;padding:4px 7px;font-size:8px}
-.settings-toggle{flex:0 0 auto;margin:0;white-space:nowrap;border-color:#287447;color:#8bdba2}
-.settings-dropdown{margin-top:12px}
-.settings-dropdown[hidden]{display:none!important}
-.settings-dropdown .panel{padding:13px}
-.settings-dropdown h2{margin-bottom:10px}
-.settings-dropdown .field input,.settings-dropdown .field select{min-height:34px;padding:7px 9px}
-@media(max-width:700px){
-  .actions.scanbar{gap:10px}
-  .actions.scanbar .brain{flex-basis:60px;width:60px;height:60px}
-  .actions.scanbar .say{flex:1 1 calc(100% - 75px)}
-  .pnl-inline{order:3;flex:1 1 190px;margin-left:70px;padding-left:10px}
-  .settings-toggle{order:4;align-self:flex-start}
-}
-@media(max-width:430px){
-  .pnl-inline{margin-left:0;flex-basis:100%;border-left:0;border-top:1px solid #153323;padding:8px 0 0}
-  .settings-toggle{margin-left:auto}
-}
+
 
 
 /* Compact hacker-style terminal log */
@@ -86,7 +62,6 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .feed-title{display:flex;align-items:center;gap:5px;color:#7beaa3;font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap}
 .feed-dot{width:5px;height:5px;border-radius:50%;flex:none;background:#55f59a}
 .feed-item.decision .feed-title,.feed-item.decision .feed-dot{color:#b9a0ff;background:#a78bfa}
-.feed-item.trade .feed-title,.feed-item.trade .feed-dot{color:#65f4a1;background:#55f59a}
 .feed-item.result .feed-title,.feed-item.result .feed-dot{color:#70caff;background:#48b9ff}
 .feed-item.warning .feed-title,.feed-item.warning .feed-dot{color:#ff9b82;background:#ff765f}
 .feed-item.tick .feed-title,.feed-item.tick .feed-dot{color:#5b9b70;background:#387d50}
@@ -200,7 +175,7 @@ li span:first-child{color:#668b70}
 .live-tag:before,.feed-dot{display:none!important}
 .metric-strip{border-bottom:1px solid #666!important}
 .feed-item,
-.feed-item.decision,.feed-item.trade,.feed-item.result,.feed-item.warning,.feed-item.tick{
+.feed-item.decision,.feed-item.result,.feed-item.warning,.feed-item.tick{
   color:#e5e5e5!important;
   background:transparent!important;
   border:0!important;
@@ -210,7 +185,7 @@ li span:first-child{color:#668b70}
   transition:none!important;
 }
 .feed-item .feed-title,
-.feed-item.decision .feed-title,.feed-item.trade .feed-title,
+.feed-item.decision .feed-title,
 .feed-item.result .feed-title,.feed-item.warning .feed-title,
 .feed-item.tick .feed-title{color:#fff!important;background:transparent!important}
 .feed-detail{color:#e5e5e5!important;font-size:11px!important;line-height:1.55!important}
@@ -247,11 +222,19 @@ li span:first-child{color:#668b70}
 .engine-metric{display:flex;gap:6px;align-items:baseline;font-size:10px}.engine-metric span{color:#668b70}.engine-metric b{color:#b4f8c8}
 .engine-signal{display:flex;align-items:baseline;gap:12px;margin:10px 0 5px;flex-wrap:wrap}.engine-signal strong{font-size:17px;color:#55f59a}.engine-signal b{font-size:13px;color:#c9f7d5}
 .engine-summary{font-size:10px;line-height:1.6;color:#a9cbb2}.engine-evidence{margin-top:8px;padding-left:16px;list-style:disc;font-size:10px;color:#c9f7d5}.engine-evidence li{display:list-item;border:0;padding:3px 0;color:#c9f7d5}
+.market-diagnostics{margin-top:10px;padding-top:9px;border-top:1px solid #153323}
+.diagnostic-heading{font-size:9px;color:#aaf8bf;font-weight:700;letter-spacing:.1em;margin-bottom:7px}
+.digit-frequency-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+.digit-frequency{min-width:0;padding:5px 2px;text-align:center;border:1px solid #17452e;background:#07110b;border-radius:3px}
+.digit-frequency span{display:block;color:#668b70;font-size:9px}.digit-frequency b{display:block;color:#c9f7d5;font-size:10px}.digit-frequency small{display:block;color:#8ca6a0;font-size:8px}
+.diagnostic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;margin-top:8px}
+.diagnostic-item{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(23,69,46,.55);padding:4px 0;font-size:9px}
+.diagnostic-item span{color:#668b70}.diagnostic-item b{color:#c9f7d5;text-align:right;font-weight:600}
 .ranked-results{margin-top:12px}.ranking-heading{font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf}
 .ranking-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px}.ranking-row small{display:block;color:#789681;font-size:9px;margin-top:2px}.ranking-score{font-weight:700;white-space:nowrap}
 .validation-summary{margin-top:10px;padding-top:8px;border-top:1px solid #153323;color:#8ca6a0;font-size:9px;line-height:1.6}
 .window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
-@media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(3,minmax(0,1fr));gap:5px}}
+@media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(3,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
 </style>
@@ -274,7 +257,7 @@ li span:first-child{color:#668b70}
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
       <div class="actions scanbar">
-        <button class="brain" id="scan" type="button" aria-label="Analyze all supported markets">
+        <button class="brain" id="scan" type="button" title="ANALYZE ALL MARKETS" aria-label="Analyze all supported markets">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M31 10c-4-3-11-1-13 4-5 0-9 5-7 10-3 3-3 8 0 11-1 5 3 10 8 10 2 5 9 6 12 2z"/>
             <path d="M33 10c4-3 11-1 13 4 5 0 9 5 7 10 3 3 3 8 0 11 1 5-3 10-8 10-2 5-9 6-12 2z"/>
@@ -283,7 +266,7 @@ li span:first-child{color:#668b70}
             <circle class="n" cx="19" cy="38" r="1.8"/><circle class="n" cx="45" cy="38" r="1.8"/>
           </svg>
         </button>
-        <div class="say" aria-live="polite"><strong id="status">Ready to scan</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
+        <div class="say" aria-live="polite"><strong id="status">Ready to analyze</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
         <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
       </div>
     </section>
@@ -325,6 +308,7 @@ li span:first-child{color:#668b70}
     <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
     <div class="engine-summary" id="engineSummary">Choose EVEN or ODD, then press ANALYZE. Zyntrix will compare all supported volatility indices using local statistical calculations.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
+    <div id="marketDiagnostics" class="market-diagnostics"></div>
     <div id="rankedResults" class="ranked-results"></div>
     <div id="validationSummary" class="validation-summary">Forward validation begins after the first recorded analysis and is resolved when later timestamped market history becomes available.</div>
   </section>
@@ -681,6 +665,26 @@ li span:first-child{color:#668b70}
     $('#signalScore').textContent='EVIDENCE '+best.evidenceScore.toFixed(1)+'/100';
     $('#engineSummary').textContent=(ranked.hasClearSignal?'A candidate passed the conservative historical-deviation threshold. ':'No market passed the conservative historical-deviation threshold. ')+best.marketName+' is the highest relative candidate for '+state.contract+' in '+best.sampleSize+' ticks. Adjusted p-value: '+best.adjustedPValue+'. This describes the sampled past and does not predict the next digit.';
     $('#engineEvidence').replaceChildren();best.evidence.forEach(function(item){var li=document.createElement('li');li.textContent=item;$('#engineEvidence').appendChild(li);});
+    var diag=$('#marketDiagnostics');diag.replaceChildren();
+    var diagTitle=document.createElement('div');diagTitle.className='diagnostic-heading';diagTitle.textContent='BEST MARKET DATA DIAGNOSTICS · '+best.dataQuality+' SAMPLE';diag.appendChild(diagTitle);
+    var digitGrid=document.createElement('div');digitGrid.className='digit-frequency-grid';
+    best.distribution.counts.forEach(function(count,digit){var cell=document.createElement('div');cell.className='digit-frequency';var label=document.createElement('span');label.textContent=String(digit);var value=document.createElement('b');value.textContent=String(count);var pct=document.createElement('small');pct.textContent=best.distribution.percentages[digit].toFixed(1)+'%';cell.append(label,value,pct);digitGrid.appendChild(cell);});
+    diag.appendChild(digitGrid);
+    var diagGrid=document.createElement('div');diagGrid.className='diagnostic-grid';
+    function addDiagnostic(label,value){var item=document.createElement('div');item.className='diagnostic-item';var a=document.createElement('span');a.textContent=label;var b=document.createElement('b');b.textContent=value;item.append(a,b);diagGrid.appendChild(item);}
+    var tm=best.transitions.counts,shift=best.changeDetection;
+    addDiagnostic('Digit entropy',best.distribution.entropyBits+' / 3.3219 bits');
+    addDiagnostic('Uniformity chi-square',String(best.distribution.chiSquareUniform));
+    addDiagnostic('Parity streak current / max',best.parityRuns.current+' / '+best.parityRuns.longest);
+    addDiagnostic('Same-digit streak current / max',best.digitRuns.current+' / '+best.digitRuns.longest);
+    addDiagnostic('Parity transitions EE / EO',tm[0][0]+' / '+tm[0][1]);
+    addDiagnostic('Parity transitions OE / OO',tm[1][0]+' / '+tm[1][1]);
+    addDiagnostic('Last parity → selected contract',best.transitions.previousParity+' → '+(best.transitions.nextTargetRate===null?'N/A':best.transitions.nextTargetRate+'%')+' ('+best.transitions.previousParitySupport+' cases)');
+    addDiagnostic('Recent-window change',shift.available?shift.direction+' · z '+shift.zScore:'Not enough history');
+    addDiagnostic('Price moves up / down / flat',best.priceMovement.upTicks+' / '+best.priceMovement.downTicks+' / '+best.priceMovement.flatTicks);
+    addDiagnostic('Log-return dispersion',String(best.priceMovement.returnStdDev));
+    diag.appendChild(diagGrid);
+    var diagNote=document.createElement('p');diagNote.className='analysis-note';diagNote.textContent='Entropy, transitions, streaks and price movement are diagnostic context. They are not treated as proven predictive features in the ranking score.';diag.appendChild(diagNote);
     var box=$('#rankedResults');box.replaceChildren();var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent='CROSS-VOLATILITY RANKING · '+state.contract;box.appendChild(heading);
     ranked.ranking.forEach(function(item,index){var row=document.createElement('div');row.className='ranking-row';var rank=document.createElement('b');rank.textContent=String(index+1).padStart(2,'0');
       var detail=document.createElement('div'),name=document.createElement('span');name.textContent=item.marketName;var meta=document.createElement('small');
