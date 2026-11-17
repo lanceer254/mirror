@@ -13,7 +13,7 @@ test("ledger leaves records pending when future timestamps are unavailable",()=>
 test("stable market sorts the ten displayed circle percentages and measures all nine gaps",()=>{
  const r=Engine.analyzeStableMarket({symbol:"A",circlePercentages:["10.0%","20.0%","5.0%","15.0%","8.0%","7.0%","6.0%","4.0%","3.0%","22.0%"]});
  assert.deepEqual(r.sortedPercentages.map(x=>x.digit),[9,1,3,0,4,5,6,2,7,8]);
- assert.deepEqual(r.gaps,[2,2,5,5,1,1,1,1,1]);
+ assert.deepEqual(r.gaps,[2,5,5,2,1,1,1,1,1]);
  assert.equal(r.separationScore,2.1111);
 });
 test("stable market ranking uses only circle percentage separation",()=>{
