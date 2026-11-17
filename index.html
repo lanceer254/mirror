@@ -472,6 +472,25 @@ li span:first-child{color:#668b70}
     flushPendingLiveTicks();
     updateTickWindow();
   }
+  function handlePortfolioHistoryResponse(data){
+    var state=portfolioScanState;
+    if(!state||!Object.prototype.hasOwnProperty.call(state.pending,String(data.req_id)))return false;
+    var market=state.pending[String(data.req_id)];delete state.pending[String(data.req_id)];
+    if(data.error){
+      state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:data.error.message||'History unavailable'});
+    }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
+      var prices=data.history.prices,times=data.history.times||[],pip=Number(data.pip_size!==undefined?data.pip_size:data.history.pip_size);
+      if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){var decimals=quoteDecimals(v);if(decimals>pip)pip=decimals;});}
+      var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?null:Number(times[i]),index:i};}).filter(function(row){return Number.isFinite(row.price)&&row.price>0;});
+      if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)}))rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index;});
+      var clean=[];rows.forEach(function(row){var previous=clean.length?clean[clean.length-1]:null;if(previous&&row.epoch!==null&&previous.epoch===row.epoch&&previous.price===row.price)return;clean.push(row);});
+      var digits=clean.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
+      state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:clean.map(function(x){return x.price;}),epochs:clean.map(function(x){return x.epoch;})});
+    }else{
+      state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:'Unexpected history response'});
+    }
+    state.index++;requestNextPortfolioHistory();return true;
+  }
   function sendSocket(payload){
     if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(payload));
   }
@@ -535,10 +554,12 @@ li span:first-child{color:#668b70}
       event('system','Scanner ready','Deriv public market-data WebSocket connected.');
       sendSocket({active_symbols:'brief',req_id:requestId++});
       subscribeMarket();
+      if(portfolioScanState)requestNextPortfolioHistory();
     };
     socket.onmessage=function(message){
       var data;
       try{data=JSON.parse(message.data)}catch(error){return}
+      if(handlePortfolioHistoryResponse(data))return;
       if(data.msg_type==='ping'&&Number(data.req_id)===Number(marketPingRequestId)){
         if(marketPingTimeout){clearTimeout(marketPingTimeout);marketPingTimeout=null;}
         return;
@@ -587,6 +608,7 @@ li span:first-child{color:#668b70}
     socket.onclose=function(){
       stopMarketHeartbeat();
       socket=null;tickSubscriptionId=null;
+      if(portfolioScanState)finishPortfolioScan('Deriv disconnected before the market-history scan completed. Reconnecting…');
       $('#feedState').textContent='DERIV FEED DISCONNECTED';
       $('#engineState').textContent='Disconnected';
       $('#status').textContent='Deriv feed disconnected. Reconnecting…';
@@ -649,7 +671,7 @@ li span:first-child{color:#668b70}
   function finishPortfolioUi(message){$('#engineStateLabel').textContent='NO DATA';$('#engineSummary').textContent=message;$('#rankedResults').textContent=message;analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
   function finishPortfolioScan(error){
     if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}var state=portfolioScanState;portfolioScanState=null;
-    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}if(!state)return;
+    if(!state)return;
     if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
     var usable=state.results.filter(function(x){return x.digits.length>=50;});if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
     $('#engineStateLabel').textContent='PROCESSING LOCALLY';var ranked=ZyntrixEngine.rankMarkets(usable,state.contract,MK.length);
@@ -703,12 +725,12 @@ li span:first-child{color:#668b70}
     analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
   }
   function requestNextPortfolioHistory(){
-    var state=portfolioScanState;if(!state||!portfolioScanSocket||portfolioScanSocket.readyState!==WebSocket.OPEN)return;
+    var state=portfolioScanState;if(!state||!socket||socket.readyState!==WebSocket.OPEN)return;
     if(state.index>=MK.length){finishPortfolioScan(null);return;}
     var market=MK[state.index],req=state.nextReq++;
     state.pending[req]=market;
     $('#status').textContent='Collecting '+market.n+' history ('+(state.index+1)+'/'+MK.length+')…';
-    portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
+    socket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
     if(analysisInFlight)return;analysisInFlight=true;var contract=$('#contract').value;
@@ -717,26 +739,9 @@ li span:first-child{color:#668b70}
     $('#signalLabel').textContent=contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
     $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Statistical processing and ranking run locally; no AI or account service is contacted.';
     $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · up to 1,000 historical ticks per market.');
-    try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
-    portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
-    portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
-    portfolioScanSocket.onmessage=function(message){
-      var data;try{data=JSON.parse(message.data)}catch(e){return;}var state=portfolioScanState;if(!state)return;
-      var market=state.pending[data.req_id];if(!market)return;delete state.pending[data.req_id];
-      if(data.error)state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:data.error.message||'History unavailable'});
-      else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
-        var prices=data.history.prices,times=data.history.times||[],pip=Number(data.pip_size!==undefined?data.pip_size:data.history.pip_size);
-        if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){var decimals=quoteDecimals(v);if(decimals>pip)pip=decimals;});}
-        var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?null:Number(times[i]),index:i};}).filter(function(row){return Number.isFinite(row.price)&&row.price>0;});
-        if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)}))rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index;});
-        var clean=[];rows.forEach(function(row){var previous=clean.length?clean[clean.length-1]:null;if(previous&&row.epoch!==null&&previous.epoch===row.epoch&&previous.price===row.price)return;clean.push(row);});
-        var digits=clean.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
-        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:clean.map(function(x){return x.price;}),epochs:clean.map(function(x){return x.epoch;})});
-      }else state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:'Unexpected history response'});
-      state.index++;requestNextPortfolioHistory();
-    };
-    portfolioScanSocket.onerror=function(){finishPortfolioScan('Deriv history WebSocket connection failed.');};
-    portfolioScanSocket.onclose=function(){if(portfolioScanState&&portfolioScanState.index<MK.length&&Object.keys(portfolioScanState.pending).length===0&&portfolioScanState.results.length<MK.length)finishPortfolioScan('Deriv history connection closed before all markets were checked.');};
+    portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Check the Deriv connection and try again.');},90000);
+    if(socket&&socket.readyState===WebSocket.OPEN)requestNextPortfolioHistory();
+    else if(!socket||socket.readyState===WebSocket.CLOSED||socket.readyState===WebSocket.CLOSING)connectMarketSocket();
   }
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
