@@ -22,5 +22,32 @@ return{symbol:String(input.symbol||""),marketName:String(input.marketName||input
 function rankMarkets(markets,contract,attemptedMarkets){if(!Array.isArray(markets))throw new TypeError("Markets must be an array.");contract=String(contract||"EVEN").toUpperCase();var tested=Math.max(1,Math.min(10,Number(attemptedMarkets)||markets.length||1)),ranking=[];markets.forEach(function(m){if(!m||!Array.isArray(m.digits)||m.digits.length<50)return;try{ranking.push(analyzeMarket({symbol:m.symbol,marketName:m.marketName,digits:m.digits,prices:m.prices,contract:contract,marketsTested:tested}));}catch(e){}});ranking.sort(function(a,b){return b.evidenceScore-a.evidenceScore||a.adjustedPValue-b.adjustedPValue||b.sampleSize-a.sampleSize||a.marketName.localeCompare(b.marketName);});var best=ranking.length?ranking[0]:null;return{contract:contract,best:best,ranking:ranking,skippedMarkets:Math.max(0,tested-ranking.length),hasClearSignal:!!best&&best.status==="STRONG HISTORICAL DEVIATION"};}
 function resolveSignalLedger(ledger,marketResults){return(Array.isArray(ledger)?ledger:[]).map(function(record){var copy=Object.assign({},record);copy.outcomes=Object.assign({nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null},record.outcomes||{});if(copy.outcomes.nextTickHit!==null&&copy.outcomes.after5Rate!==null&&copy.outcomes.after10Rate!==null)return copy;var market=(Array.isArray(marketResults)?marketResults:[]).find(function(item){return item&&item.symbol===copy.marketSymbol;});if(!market||!Array.isArray(market.epochs)||!Array.isArray(market.digits))return copy;var future=[];for(var i=0;i<market.epochs.length;i++){var epoch=market.epochs[i];if(epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch))&&Number(epoch)>Number(copy.afterEpoch)&&Number.isInteger(market.digits[i]))future.push(market.digits[i]);}var parity=copy.contract==="EVEN"?0:1;if(copy.outcomes.nextTickHit===null&&future.length>=1){copy.outcomes.nextTickDigit=future[0];copy.outcomes.nextTickHit=future[0]%2===parity;}if(copy.outcomes.after5Rate===null&&future.length>=5)copy.outcomes.after5Rate=round(future.slice(0,5).filter(function(d){return d%2===parity;}).length/5*100,1);if(copy.outcomes.after10Rate===null&&future.length>=10)copy.outcomes.after10Rate=round(future.slice(0,10).filter(function(d){return d%2===parity;}).length/10*100,1);return copy;});}
 function summarizeSignalLedger(ledger){var records=Array.isArray(ledger)?ledger:[],resolved=records.filter(function(r){return r.outcomes&&typeof r.outcomes.nextTickHit==="boolean";}),hits=resolved.filter(function(r){return r.outcomes.nextTickHit;}).length,five=records.filter(function(r){return r.outcomes&&Number.isFinite(r.outcomes.after5Rate);}),ten=records.filter(function(r){return r.outcomes&&Number.isFinite(r.outcomes.after10Rate);});return{recorded:records.length,nextTickResolved:resolved.length,nextTickHits:hits,nextTickHitRate:resolved.length?round(hits/resolved.length*100,1):null,fiveTickResolved:five.length,fiveTickAverage:five.length?round(mean(five.map(function(r){return r.outcomes.after5Rate;})),1):null,tenTickResolved:ten.length,tenTickAverage:ten.length?round(mean(ten.map(function(r){return r.outcomes.after10Rate;})),1):null};}
-return{WINDOWS:WINDOWS.slice(),analyzeMarket:analyzeMarket,rankMarkets:rankMarkets,resolveSignalLedger:resolveSignalLedger,summarizeSignalLedger:summarizeSignalLedger};
+function analyzeStableMarket(input){
+input=input||{};
+var values=input.circlePercentages;
+if(!Array.isArray(values)||values.length!==10)throw new TypeError("Exactly ten digit-circle percentages (0-9) are required.");
+var sorted=values.map(function(raw,digit){
+var text=String(raw).trim();
+var match=text.match(/^([0-9]+(?:\\.[0-9]+)?)%?$/);
+if(!match)throw new TypeError("Each digit-circle percentage must be a displayed percentage.");
+var percentage=Number(match[1]);
+if(!Number.isFinite(percentage)||percentage<0||percentage>100)throw new TypeError("Digit-circle percentages must be between 0 and 100.");
+return{digit:digit,percentage:percentage};
+}).sort(function(a,b){return b.percentage-a.percentage||a.digit-b.digit;});
+var gaps=[];
+for(var i=0;i<sorted.length-1;i++)gaps.push(round(sorted[i].percentage-sorted[i+1].percentage,1));
+var separationScore=round(gaps.reduce(function(total,gap){return total+gap;},0)/gaps.length,4);
+return{symbol:String(input.symbol||""),marketName:String(input.marketName||input.symbol||"Unknown market"),sortedPercentages:sorted,gaps:gaps,separationScore:separationScore};
+}
+function rankStableMarkets(markets){
+if(!Array.isArray(markets))throw new TypeError("Markets must be an array.");
+var ranking=[];
+markets.forEach(function(m){
+if(!m)return;
+try{ranking.push(analyzeStableMarket({symbol:m.symbol,marketName:m.marketName,circlePercentages:m.circlePercentages}));}catch(e){}
+});
+ranking.sort(function(a,b){return b.separationScore-a.separationScore||a.marketName.localeCompare(b.marketName);});
+return{best:ranking.length?ranking[0]:null,ranking:ranking,skippedMarkets:markets.length-ranking.length};
+}
+return{WINDOWS:WINDOWS.slice(),analyzeMarket:analyzeMarket,rankMarkets:rankMarkets,resolveSignalLedger:resolveSignalLedger,summarizeSignalLedger:summarizeSignalLedger,analyzeStableMarket:analyzeStableMarket,rankStableMarkets:rankStableMarkets};
 });
