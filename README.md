@@ -11,7 +11,12 @@ Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. I
 - **Validation ledger:** Signal snapshots and subsequently observed outcomes are kept in this browser's localStorage. They are not uploaded to a server and do not sync between devices.
 - **Deployment:** GitHub Pages serves the static app. No Cloudflare Worker or AI service is required.
 
-## Scanning modes\n\n- **EVEN/ODD Strength:** the existing statistical analysis mode.\n- **Stable Market:** reads only the ten percentages rendered inside each market's digit circles (0–9), sorts them, calculates the nine adjacent percentage-point gaps, and ranks markets by the mean of those nine gaps. No bars, entropy, chi-square, price movement, tick-pattern features, or other indicators enter this score.\n\n## Statistical features
+## Scanning modes
+
+- **EVEN/ODD Strength:** the existing statistical analysis mode.
+- **Stable Market:** reads only the ten percentages rendered inside each market's digit circles (0–9), sorts them, calculates the nine adjacent percentage-point gaps, and ranks markets by the mean of those nine gaps. No bars, entropy, chi-square, price movement, tick-pattern features, or other indicators enter this score.
+
+## Statistical features
 
 - Last-digit frequency distribution for digits 0–9.
 - Shannon entropy and chi-square distance from a uniform ten-digit distribution.
