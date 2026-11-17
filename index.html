@@ -272,7 +272,7 @@ li span:first-child{color:#668b70}
       </div>
     </section>
   </div>
-    <section class="tick-window" aria-label="Deriv rolling tick window">
+    <section class="tick-window" id="tickWindow" aria-label="Deriv rolling tick window">
     <button class="tick-window-toggle" id="tickWindowToggle" type="button" aria-expanded="false" aria-controls="tickWindowBody">
       <span class="tick-window-heading">TICK ROLLING WINDOW</span>
       <span class="tick-window-latest"><small>LATEST DIGIT</small><b id="latestDigit">—</b></span>
@@ -286,7 +286,7 @@ li span:first-child{color:#668b70}
       <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest 1000 tick digits, newest first"></div>
     </div>
   </section>
-  <section class="parity-panel" aria-label="Even and odd data analysis">
+  <section class="parity-panel" id="parityPanel" aria-label="Even and odd data analysis">
     <h2>PARITY STRENGTH // LIVE + ROLLING WINDOWS</h2>
     <div class="parity-grid">
       <div class="parity-item"><div class="parity-head"><span>EVEN FREQUENCY</span><b id="evenFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenFrequencyBar"></div></div></div>
@@ -803,8 +803,9 @@ li span:first-child{color:#668b70}
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
   $('#contract').addEventListener('change',updateWindowMatrix);
-  scanMode.addEventListener('change',function(){contractField.hidden=this.value==='STABLE';$('#stableMarketResults').hidden=true;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();$('#signalLabel').textContent=this.value==='STABLE'?'STABLE MARKET MODE':'NO ANALYSIS';$('#signalScore').textContent='—';$('#engineSummary').textContent=this.value==='STABLE'?'Stable Market uses only the ten percentages displayed in each digit circle.':'Choose EVEN or ODD, then press ANALYZE to compare markets.';});
-  contractField.hidden=scanMode.value==='STABLE';
+  function applyScanModeUi(){var stable=scanMode.value==='STABLE';contractField.hidden=stable;$('#parityPanel').hidden=stable;$('#tickWindow').hidden=stable;$('#validationSummary').hidden=stable;}
+  scanMode.addEventListener('change',function(){applyScanModeUi();$('#stableMarketResults').hidden=true;$('#rankedResults').replaceChildren();$('#marketDiagnostics').replaceChildren();$('#engineEvidence').replaceChildren();$('#signalLabel').textContent=this.value==='STABLE'?'STABLE MARKET MODE':'NO ANALYSIS';$('#signalScore').textContent='—';$('#engineSummary').textContent=this.value==='STABLE'?'Stable Market uses only the ten percentages displayed in each digit circle.':'Choose EVEN or ODD, then press ANALYZE to compare markets.';});
+  applyScanModeUi();
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
