@@ -4,7 +4,7 @@
 <meta name="deriv-site-verification" content="cfdf931684c898052966374e5f85c760b274f505eaf1b642f2f237f76b2291a1">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Digit Scanner</title>
+<title>Zyntrix | Market Data Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -40,31 +40,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .actions.scanbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:13px}
 .actions.scanbar .brain{flex:0 0 68px}
 .actions.scanbar .say{flex:1 1 105px;min-width:100px}
-.pnl-inline{flex:1 1 190px;min-width:175px;padding-left:12px;border-left:1px solid #153323}
-.pnl-inline-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.pnl-inline .total{font:700 1.25rem ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.15}
-.pnl-inline .stats{gap:9px;margin:4px 0 5px;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
-.pnl-inline #log{max-height:48px;overflow:auto;scrollbar-width:thin;scrollbar-color:#245b3a #07110b;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}
-.pnl-inline #log li{padding:3px 0;gap:5px}
-.pnl-inline #log li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pnl-inline .ghost{margin:4px 0 0;padding:4px 7px;font-size:8px}
-.settings-toggle{flex:0 0 auto;margin:0;white-space:nowrap;border-color:#287447;color:#8bdba2}
-.settings-dropdown{margin-top:12px}
-.settings-dropdown[hidden]{display:none!important}
-.settings-dropdown .panel{padding:13px}
-.settings-dropdown h2{margin-bottom:10px}
-.settings-dropdown .field input,.settings-dropdown .field select{min-height:34px;padding:7px 9px}
-@media(max-width:700px){
-  .actions.scanbar{gap:10px}
-  .actions.scanbar .brain{flex-basis:60px;width:60px;height:60px}
-  .actions.scanbar .say{flex:1 1 calc(100% - 75px)}
-  .pnl-inline{order:3;flex:1 1 190px;margin-left:70px;padding-left:10px}
-  .settings-toggle{order:4;align-self:flex-start}
-}
-@media(max-width:430px){
-  .pnl-inline{margin-left:0;flex-basis:100%;border-left:0;border-top:1px solid #153323;padding:8px 0 0}
-  .settings-toggle{margin-left:auto}
-}
+
 
 
 /* Compact hacker-style terminal log */
@@ -86,7 +62,6 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .feed-title{display:flex;align-items:center;gap:5px;color:#7beaa3;font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap}
 .feed-dot{width:5px;height:5px;border-radius:50%;flex:none;background:#55f59a}
 .feed-item.decision .feed-title,.feed-item.decision .feed-dot{color:#b9a0ff;background:#a78bfa}
-.feed-item.trade .feed-title,.feed-item.trade .feed-dot{color:#65f4a1;background:#55f59a}
 .feed-item.result .feed-title,.feed-item.result .feed-dot{color:#70caff;background:#48b9ff}
 .feed-item.warning .feed-title,.feed-item.warning .feed-dot{color:#ff9b82;background:#ff765f}
 .feed-item.tick .feed-title,.feed-item.tick .feed-dot{color:#5b9b70;background:#387d50}
@@ -200,7 +175,7 @@ li span:first-child{color:#668b70}
 .live-tag:before,.feed-dot{display:none!important}
 .metric-strip{border-bottom:1px solid #666!important}
 .feed-item,
-.feed-item.decision,.feed-item.trade,.feed-item.result,.feed-item.warning,.feed-item.tick{
+.feed-item.decision,.feed-item.result,.feed-item.warning,.feed-item.tick{
   color:#e5e5e5!important;
   background:transparent!important;
   border:0!important;
@@ -210,7 +185,7 @@ li span:first-child{color:#668b70}
   transition:none!important;
 }
 .feed-item .feed-title,
-.feed-item.decision .feed-title,.feed-item.trade .feed-title,
+.feed-item.decision .feed-title,
 .feed-item.result .feed-title,.feed-item.warning .feed-title,
 .feed-item.tick .feed-title{color:#fff!important;background:transparent!important}
 .feed-detail{color:#e5e5e5!important;font-size:11px!important;line-height:1.55!important}
@@ -241,42 +216,25 @@ li span:first-child{color:#668b70}
 .tick-digit:first-child{border-color:#55f59a;color:#55f59a;background:#0a1a10}
 @media(max-width:600px){.tick-window{margin-top:10px}.tick-window-toggle{padding:9px 10px}.tick-digit-grid{gap:3px;max-height:210px}.tick-digit{min-height:22px;font-size:10px}}
 
-.account-panel{margin:0 0 18px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.10)}
-.account-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.account-head h2{font-size:.82rem;letter-spacing:.12em;margin:0;color:var(--mute)}
-.account-actions{display:flex;gap:8px;flex-wrap:wrap}
-.account-actions button,.account-card{font:inherit}
-.account-actions button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.76rem;cursor:pointer}
-.account-actions button.primary{border-color:var(--accent);background:var(--accent);color:#fff}
-.account-actions button:disabled{opacity:.45;cursor:not-allowed}
-.account-status{font-size:.75rem;color:var(--mute);min-height:18px;margin:0 0 10px}
-.account-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.account-card-wrap{display:flex;flex-direction:column;gap:7px;min-width:0}
-.account-card{display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-width:0;font:inherit}
-.account-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.account-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.reset-demo-btn{border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink);padding:5px 7px;font:inherit;font-size:.62rem;font-weight:700;letter-spacing:.03em;cursor:pointer;white-space:nowrap}
-.reset-demo-btn:disabled{opacity:.4;cursor:not-allowed}
-.reset-demo-btn:not(:disabled){border-color:var(--accent);color:var(--accent)}
-.account-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
-.account-card-balance{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:8px;overflow-wrap:anywhere}
-.account-card-id{font-size:.68rem;color:var(--mute);margin-top:5px;overflow-wrap:anywhere}
-.account-empty{font-size:.78rem;color:var(--mute);padding:12px 0}
-@media(max-width:600px){.account-panel{padding:13px}.account-grid{grid-template-columns:1fr}}
-
-
-.gemini-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-.gemini-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}
-.gemini-metrics{display:flex;gap:16px;flex-wrap:wrap;padding-bottom:9px;border-bottom:1px solid #153323}
-.gemini-metric{display:flex;gap:6px;align-items:baseline;font-size:10px}
-.gemini-metric span{color:#668b70}.gemini-metric b{color:#b4f8c8}
-.gemini-signal{display:flex;align-items:baseline;gap:12px;margin:10px 0 5px}
-.gemini-signal strong{font-size:18px;color:#55f59a}
-.gemini-signal b{font-size:15px;color:#c9f7d5}
-.gemini-summary{font-size:10px;line-height:1.6;color:#a9cbb2}
-.gemini-evidence{margin-top:8px;padding-left:16px;list-style:disc;font-size:10px;color:#c9f7d5}
-.gemini-evidence li{display:list-item;border:0;padding:3px 0;color:#c9f7d5}
-@media(max-width:600px){.gemini-panel{padding:10px}.gemini-metrics{gap:9px}.gemini-metric{font-size:9px}}
+.engine-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.engine-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}
+.engine-metrics{display:flex;gap:14px;flex-wrap:wrap;padding-bottom:9px;border-bottom:1px solid #153323}
+.engine-metric{display:flex;gap:6px;align-items:baseline;font-size:10px}.engine-metric span{color:#668b70}.engine-metric b{color:#b4f8c8}
+.engine-signal{display:flex;align-items:baseline;gap:12px;margin:10px 0 5px;flex-wrap:wrap}.engine-signal strong{font-size:17px;color:#55f59a}.engine-signal b{font-size:13px;color:#c9f7d5}
+.engine-summary{font-size:10px;line-height:1.6;color:#a9cbb2}.engine-evidence{margin-top:8px;padding-left:16px;list-style:disc;font-size:10px;color:#c9f7d5}.engine-evidence li{display:list-item;border:0;padding:3px 0;color:#c9f7d5}
+.market-diagnostics{margin-top:10px;padding-top:9px;border-top:1px solid #153323}
+.diagnostic-heading{font-size:9px;color:#aaf8bf;font-weight:700;letter-spacing:.1em;margin-bottom:7px}
+.digit-frequency-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+.digit-frequency{min-width:0;padding:5px 2px;text-align:center;border:1px solid #17452e;background:#07110b;border-radius:3px}
+.digit-frequency span{display:block;color:#668b70;font-size:9px}.digit-frequency b{display:block;color:#c9f7d5;font-size:10px}.digit-frequency small{display:block;color:#8ca6a0;font-size:8px}
+.diagnostic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;margin-top:8px}
+.diagnostic-item{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(23,69,46,.55);padding:4px 0;font-size:9px}
+.diagnostic-item span{color:#668b70}.diagnostic-item b{color:#c9f7d5;text-align:right;font-weight:600}
+.ranked-results{margin-top:12px}.ranking-heading{font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf}
+.ranking-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px}.ranking-row small{display:block;color:#789681;font-size:9px;margin-top:2px}.ranking-score{font-weight:700;white-space:nowrap}
+.validation-summary{margin-top:10px;padding-top:8px;border-top:1px solid #153323;color:#8ca6a0;font-size:9px;line-height:1.6}
+.window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
+@media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(3,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
 </style>
@@ -285,21 +243,21 @@ li span:first-child{color:#668b70}
 <div class="wrap">
   <header>
     <div>
-      <h1>Digit scanner</h1>
-      <p class="sub">DERIV LIVE MARKET DATA · ANALYSIS ONLY.</p>
+      <h1>Zyntrix data engine</h1>
+      <p class="sub">DERIV LIVE MARKET DATA · STATISTICAL ANALYSIS ONLY.</p>
     </div>
     <div class="price" id="price" aria-label="Latest price">0000.00</div>
   </header>
 
 
-  <section class="analysis-market panel"><label class="field">CONTRACT TO ANALYSE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">SCAN compares all supported volatility indices for the selected contract. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><label class="field">CONTRACT TO ANALYZE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">ANALYZE compares all supported volatility indices for the selected contract. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
       <div class="actions scanbar">
-        <button class="brain" id="scan" type="button" aria-label="Run on-demand analysis">
+        <button class="brain" id="scan" type="button" title="ANALYZE ALL MARKETS" aria-label="Analyze all supported markets">
           <svg viewBox="0 0 64 64" aria-hidden="true">
             <path d="M31 10c-4-3-11-1-13 4-5 0-9 5-7 10-3 3-3 8 0 11-1 5 3 10 8 10 2 5 9 6 12 2z"/>
             <path d="M33 10c4-3 11-1 13 4 5 0 9 5 7 10 3 3 3 8 0 11 1 5-3 10-8 10-2 5-9 6-12 2z"/>
@@ -308,7 +266,7 @@ li span:first-child{color:#668b70}
             <circle class="n" cx="19" cy="38" r="1.8"/><circle class="n" cx="45" cy="38" r="1.8"/>
           </svg>
         </button>
-        <div class="say" aria-live="polite"><strong id="status">Ready to scan</strong><span id="tline">Analysis runs only when SCAN is clicked</span></div>
+        <div class="say" aria-live="polite"><strong id="status">Ready to analyze</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
         <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
       </div>
     </section>
@@ -327,26 +285,32 @@ li span:first-child{color:#668b70}
       <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest 1000 tick digits, newest first"></div>
     </div>
   </section>
-  <section class="parity-panel" aria-label="Even and odd digit strength"><h2>PARITY STRENGTH // LAST 1000 DIGITS</h2><div class="parity-grid">
-<div class="parity-item"><div class="parity-head"><span>EVEN FREQUENCY</span><b id="evenFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenFrequencyBar"></div></div></div>
-<div class="parity-item"><div class="parity-head"><span>ODD FREQUENCY</span><b id="oddFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddFrequencyBar"></div></div></div>
-<div class="parity-item"><div class="parity-head"><span>EVEN STRENGTH</span><b id="evenStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenStrengthBar"></div></div></div>
-<div class="parity-item"><div class="parity-head"><span>ODD STRENGTH</span><b id="oddStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddStrengthBar"></div></div></div>
-<div class="parity-item"><div class="parity-head"><span>FLAT / BALANCE</span><b id="parityFlat">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-flat" id="parityFlatBar"></div></div></div></div><div class="parity-caption" id="parityCount">0 / 1000 DIGITS · WAITING FOR DATA</div></section>
-  <section class="gemini-panel" aria-label="Cross-volatility contract analysis">
-    <h2>GROQ INTELLIGENCE // ANALYSE ON CLICK</h2>
-    <div class="gemini-metrics">
-      <div class="gemini-metric"><span>AI:</span><b id="geminiState">IDLE</b></div>
-      
-      
-      <div class="gemini-metric"><span>ANALYSIS:</span><b id="geminiAnalysisLatency">—</b></div>
-      <div class="gemini-metric"><span>MODEL:</span><b id="geminiModelLatency">—</b></div>
-      
+  <section class="parity-panel" aria-label="Even and odd data analysis">
+    <h2>PARITY STRENGTH // LIVE + ROLLING WINDOWS</h2>
+    <div class="parity-grid">
+      <div class="parity-item"><div class="parity-head"><span>EVEN FREQUENCY</span><b id="evenFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenFrequencyBar"></div></div></div>
+      <div class="parity-item"><div class="parity-head"><span>ODD FREQUENCY</span><b id="oddFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddFrequencyBar"></div></div></div>
+      <div class="parity-item"><div class="parity-head"><span>EVEN STRENGTH</span><b id="evenStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenStrengthBar"></div></div></div>
+      <div class="parity-item"><div class="parity-head"><span>ODD STRENGTH</span><b id="oddStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddStrengthBar"></div></div></div>
+      <div class="parity-item"><div class="parity-head"><span>FLAT / BALANCE</span><b id="parityFlat">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-flat" id="parityFlatBar"></div></div></div>
     </div>
-    <div class="gemini-signal"><strong id="geminiSignal">NO SIGNAL</strong><b id="geminiConfidence">—</b></div>
-    <div class="gemini-summary" id="geminiSummary">Press SCAN to analyse the last 100 digits once. Local tick tracking continues; AI runs only on click.</div>
-    <ul class="gemini-evidence" id="geminiEvidence"><li>Waiting for a SCAN request.</li></ul>
-    <div id="rankedResults" style="margin-top:12px"></div>
+    <div class="window-matrix" id="windowMatrix"><div class="window-empty">Collecting enough ticks for rolling-window analysis…</div></div>
+    <div class="parity-caption" id="parityCount">0 / 1000 DIGITS · WAITING FOR DATA</div>
+  </section>
+  <section class="engine-panel" aria-label="Local statistical signal analysis">
+    <h2>LOCAL SIGNAL INTELLIGENCE // NO AI DEPENDENCY</h2>
+    <div class="engine-metrics">
+      <div class="engine-metric"><span>ENGINE:</span><b id="engineStateLabel">READY</b></div>
+      <div class="engine-metric"><span>SCAN TIME:</span><b id="analysisLatency">—</b></div>
+      <div class="engine-metric"><span>MARKETS:</span><b id="marketCoverage">0 / 10</b></div>
+      <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
+    </div>
+    <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
+    <div class="engine-summary" id="engineSummary">Choose EVEN or ODD, then press ANALYZE. Zyntrix will compare all supported volatility indices using local statistical calculations.</div>
+    <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
+    <div id="marketDiagnostics" class="market-diagnostics"></div>
+    <div id="rankedResults" class="ranked-results"></div>
+    <div id="validationSummary" class="validation-summary">Forward validation begins after the first recorded analysis and is resolved when later timestamped market history becomes available.</div>
   </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -362,6 +326,7 @@ li span:first-child{color:#668b70}
   </section>
 </div>
 
+<script src="analysis-engine.js"></script>
 <script>
 (function(){
   var $=function(s){return document.querySelector(s)};
@@ -379,8 +344,8 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,aiRequestInFlight=false,aiLastAnalysisMs=0,aiLastModelMs=0,aiLastAnalysisStarted=0;
-  function renderGeminiLatency(){$('#geminiAnalysisLatency').textContent=aiLastAnalysisMs?Math.round(aiLastAnalysisMs)+' ms':'—';$('#geminiModelLatency').textContent=aiLastModelMs?Math.round(aiLastModelMs)+' ms':'—'}
+  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0;
+  function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -653,48 +618,81 @@ li span:first-child{color:#668b70}
   }
 
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
-  function updateParityStrength(){var n=ds.length,even=0;for(var i=0;i<n;i++)if(ds[i]%2===0)even++;var odd=n-even;if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});$('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';return}var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);$('#parityCount').textContent=n+' / 1000 DIGITS · '+even+' EVEN · '+odd+' ODD'}
-  function renderGeminiDecision(d){var bias=String(d.bias||'NEUTRAL').toUpperCase();$('#geminiSignal').textContent=bias+' BIAS';$('#geminiConfidence').textContent=d.confidence_percent+'% MODEL CONFIDENCE';$('#geminiSummary').textContent=(d.pattern_summary||'Analysis completed.')+(d.caution?' · '+d.caution:'');$('#geminiEvidence').replaceChildren();(d.evidence||[]).forEach(function(x){var li=document.createElement('li');li.textContent=x;$('#geminiEvidence').appendChild(li)})}
-    function runGeminiAnalysis(){if(aiRequestInFlight||ds.length<100)return;var digits=ds.slice(-100),prices=ps.slice(-100);aiLastAnalysisStarted=performance.now();aiRequestInFlight=true;$('#geminiState').textContent='ANALYZING';$('#geminiSummary').textContent='Examining the latest 100 chronological ticks, parity distribution, transitions and price changes…';fetch(ANALYSIS_WORKER_URL+'/analysis/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:mk.symbol,marketName:mk.n,digits:digits,prices:prices})}).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Groq analysis failed');return d})}).then(function(d){aiLastAnalysisMs=performance.now()-aiLastAnalysisStarted;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();renderGeminiDecision(d);$('#geminiState').textContent='COMPLETE';$('#status').textContent='Analysis complete · no trades are placed by Zyntrix.';event('decision','GROQ ANALYSIS COMPLETE',d.bias+' bias · '+d.pattern_summary)}).catch(function(e){$('#geminiState').textContent='API ERROR';$('#status').textContent='Analysis failed: '+e.message;event('warning','GROQ ANALYSIS FAILED',e.message)}).finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')})}
-
-  var portfolioScanSocket=null,portfolioScanTimer=null,portfolioScanState=null;
-  function finishPortfolioUi(message){$('#geminiState').textContent='NO DATA';$('#status').textContent=message;$('#rankedResults').textContent=message;aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
+  function updateParityStrength(){
+    var n=ds.length,even=0;for(var i=0;i<n;i++)if(ds[i]%2===0)even++;var odd=n-even;
+    if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
+      ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
+      $('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
+    var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;
+    function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}
+    set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);
+    bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);
+    $('#parityCount').textContent=n+' / 1000 DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix();
+  }
+  function updateWindowMatrix(){
+    var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
+    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:$('#contract').value});holder.replaceChildren();
+    var header=document.createElement('div');header.className='window-row header';
+    ['WINDOW','EVEN','ODD','SELECTED'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
+    result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
+      [item.size+' TICKS',item.evenPercent.toFixed(1)+'%',item.oddPercent.toFixed(1)+'%',item.targetPercent.toFixed(1)+'%'].forEach(function(value,index){var cell=document.createElement(index===0?'span':'b');cell.textContent=value;row.appendChild(cell)});holder.appendChild(row);});
+  }
+  function readSignalLedger(){try{var value=JSON.parse(localStorage.getItem('zyntrix.signal-ledger.v1')||'[]');return Array.isArray(value)?value:[]}catch(error){return[]}}
+  function writeSignalLedger(ledger){try{localStorage.setItem('zyntrix.signal-ledger.v1',JSON.stringify(ledger));return true}catch(error){return false}}
+  function renderValidation(ledger){
+    var summary=ZyntrixEngine.summarizeSignalLedger(ledger);$('#validationCount').textContent=summary.nextTickResolved+' / '+summary.recorded;
+    var next=summary.nextTickHitRate===null?'awaiting first resolved next-tick outcomes':summary.nextTickHitRate+'% next-tick matches across '+summary.nextTickResolved+' resolved signals';
+    var five=summary.fiveTickAverage===null?'5-tick follow-through pending':summary.fiveTickAverage+'% average target parity across '+summary.fiveTickResolved+' observations';
+    var ten=summary.tenTickAverage===null?'10-tick follow-through pending':summary.tenTickAverage+'% average target parity across '+summary.tenTickResolved+' observations';
+    $('#validationSummary').textContent='LOCAL FORWARD VALIDATION · '+summary.recorded+' recorded · '+next+' · '+five+' · '+ten+'. Descriptive sample only; compare next-tick results with the 50% baseline.';
+  }
+  function finishPortfolioUi(message){$('#engineStateLabel').textContent='NO DATA';$('#engineSummary').textContent=message;$('#rankedResults').textContent=message;analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
   function finishPortfolioScan(error){
-    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}
-    var state=portfolioScanState;portfolioScanState=null;
-    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}
-    if(!state)return;
-    if(error){finishPortfolioUi(error);$('#geminiState').textContent='SCAN ERROR';return;}
-    var usable=state.results.filter(function(x){return x.digits.length>=100;});
-    if(!usable.length){finishPortfolioUi('No supported market returned enough history.');return;}
-    $('#geminiState').textContent='SCORING';
-    $('#geminiSummary').textContent='Scoring '+usable.length+' of '+MK.length+' available markets for '+state.contract+'.';
-    fetch(ANALYSIS_WORKER_URL+'/analysis/rank',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contract:state.contract,markets:usable,attemptedMarkets:MK.length})})
-      .then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Ranking failed');return d})})
-      .then(function(d){
-        $('#geminiState').textContent=d.aiStatus==='COMPLETE'?'COMPLETE':'RANKED · AI NOTE UNAVAILABLE';
-        $('#geminiSignal').textContent=d.contract+' CONTRACT';
-        $('#geminiConfidence').textContent='TOP SCORE '+Number(d.best.score).toFixed(1)+'/100';
-        $('#geminiSummary').textContent=d.commentary||'Ranking completed from the latest available digit history.';
-        $('#geminiEvidence').replaceChildren();
-        (d.best.evidence||[]).forEach(function(x){var li=document.createElement('li');li.textContent=x;$('#geminiEvidence').appendChild(li)});
-        var box=$('#rankedResults');box.replaceChildren();
-        var heading=document.createElement('div');heading.textContent='VOLATILITY RANKING · '+d.contract;heading.style.cssText='font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf';box.appendChild(heading);
-        d.ranking.forEach(function(item,index){
-          var row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px';
-          var rank=document.createElement('b');rank.textContent=String(index+1).padStart(2,'0');
-          var name=document.createElement('span');name.textContent=item.marketName+' · '+item.sampleSize+' ticks'+(item.dataQuality==='LIMITED'?' · LIMITED DATA':'');
-          var score=document.createElement('b');score.textContent=Number(item.score).toFixed(1)+'/100';score.style.color=index===0?'#55f59a':'#c9f7d5';
-          row.append(rank,name,score);box.appendChild(row);
-        });
-        var note=document.createElement('p');note.style.cssText='font-size:9px;line-height:1.5;color:#8ca6a0;margin:9px 0 0';note.textContent='Score measures observed historical parity alignment and consistency in this sample. It is not a win probability or a prediction of the next digit. '+d.skippedMarkets+' market(s) could not provide enough data.';box.appendChild(note);
-        $('#status').textContent='Cross-market analysis complete · '+d.best.marketName+' ranked highest for '+d.contract+'.';
-        $('#activeMarket').textContent=mk.n;
-        event('decision','CROSS-VOLATILITY RANKING',d.best.marketName+' ranked #1 for '+d.contract+' · '+Number(d.best.score).toFixed(1)+'/100');
-        aiLastAnalysisMs=performance.now()-state.started;aiLastModelMs=Number(d.groqLatencyMs)||0;renderGeminiLatency();
-      })
-      .catch(function(e){$('#geminiState').textContent='RANKING ERROR';$('#status').textContent='Ranking failed: '+e.message;$('#rankedResults').textContent='Ranking failed: '+e.message;event('warning','RANKING FAILED',e.message)})
-      .finally(function(){aiRequestInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning')});
+    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}var state=portfolioScanState;portfolioScanState=null;
+    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}if(!state)return;
+    if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
+    var usable=state.results.filter(function(x){return x.digits.length>=50;});if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
+    $('#engineStateLabel').textContent='PROCESSING LOCALLY';var ranked=ZyntrixEngine.rankMarkets(usable,state.contract,MK.length);
+    if(!ranked.best){finishPortfolioUi('No market had sufficient valid history to rank.');return;}
+    var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results),source=state.results.find(function(item){return item.symbol===ranked.best.symbol;});
+    var validEpochs=source&&Array.isArray(source.epochs)?source.epochs.filter(function(epoch){return epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch));}):[];
+    var afterEpoch=validEpochs.length?Math.max.apply(null,validEpochs):null;
+    if(afterEpoch!==null){var exists=ledger.some(function(item){return item.marketSymbol===ranked.best.symbol&&item.contract===state.contract&&Number(item.afterEpoch)===afterEpoch;});
+      if(!exists)ledger.push({marketSymbol:ranked.best.symbol,marketName:ranked.best.marketName,contract:state.contract,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:ranked.best.evidenceScore,status:ranked.best.status,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});}
+    ledger=ledger.slice(-200);var ledgerSaved=writeSignalLedger(ledger);renderValidation(ledger);
+    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=ranked.ranking.length+' / '+MK.length;
+    var best=ranked.best;$('#signalLabel').textContent=best.status==='STRONG HISTORICAL DEVIATION'?state.contract+' HISTORICAL DEVIATION':best.status==='WATCH'?state.contract+' WATCH':'NO CLEAR EDGE';
+    $('#signalScore').textContent='EVIDENCE '+best.evidenceScore.toFixed(1)+'/100';
+    $('#engineSummary').textContent=(ranked.hasClearSignal?'A candidate passed the conservative historical-deviation threshold. ':'No market passed the conservative historical-deviation threshold. ')+best.marketName+' is the highest relative candidate for '+state.contract+' in '+best.sampleSize+' ticks. Adjusted p-value: '+best.adjustedPValue+'. This describes the sampled past and does not predict the next digit.';
+    $('#engineEvidence').replaceChildren();best.evidence.forEach(function(item){var li=document.createElement('li');li.textContent=item;$('#engineEvidence').appendChild(li);});
+    var diag=$('#marketDiagnostics');diag.replaceChildren();
+    var diagTitle=document.createElement('div');diagTitle.className='diagnostic-heading';diagTitle.textContent='BEST MARKET DATA DIAGNOSTICS · '+best.dataQuality+' SAMPLE';diag.appendChild(diagTitle);
+    var digitGrid=document.createElement('div');digitGrid.className='digit-frequency-grid';
+    best.distribution.counts.forEach(function(count,digit){var cell=document.createElement('div');cell.className='digit-frequency';var label=document.createElement('span');label.textContent=String(digit);var value=document.createElement('b');value.textContent=String(count);var pct=document.createElement('small');pct.textContent=best.distribution.percentages[digit].toFixed(1)+'%';cell.append(label,value,pct);digitGrid.appendChild(cell);});
+    diag.appendChild(digitGrid);
+    var diagGrid=document.createElement('div');diagGrid.className='diagnostic-grid';
+    function addDiagnostic(label,value){var item=document.createElement('div');item.className='diagnostic-item';var a=document.createElement('span');a.textContent=label;var b=document.createElement('b');b.textContent=value;item.append(a,b);diagGrid.appendChild(item);}
+    var tm=best.transitions.counts,shift=best.changeDetection;
+    addDiagnostic('Digit entropy',best.distribution.entropyBits+' / 3.3219 bits');
+    addDiagnostic('Uniformity chi-square',String(best.distribution.chiSquareUniform));
+    addDiagnostic('Parity streak current / max',best.parityRuns.current+' / '+best.parityRuns.longest);
+    addDiagnostic('Same-digit streak current / max',best.digitRuns.current+' / '+best.digitRuns.longest);
+    addDiagnostic('Parity transitions EE / EO',tm[0][0]+' / '+tm[0][1]);
+    addDiagnostic('Parity transitions OE / OO',tm[1][0]+' / '+tm[1][1]);
+    addDiagnostic('Last parity → selected contract',best.transitions.previousParity+' → '+(best.transitions.nextTargetRate===null?'N/A':best.transitions.nextTargetRate+'%')+' ('+best.transitions.previousParitySupport+' cases)');
+    addDiagnostic('Recent-window change',shift.available?shift.direction+' · z '+shift.zScore:'Not enough history');
+    addDiagnostic('Price moves up / down / flat',best.priceMovement.upTicks+' / '+best.priceMovement.downTicks+' / '+best.priceMovement.flatTicks);
+    addDiagnostic('Log-return dispersion',String(best.priceMovement.returnStdDev));
+    diag.appendChild(diagGrid);
+    var diagNote=document.createElement('p');diagNote.className='analysis-note';diagNote.textContent='Entropy, transitions, streaks and price movement are diagnostic context. They are not treated as proven predictive features in the ranking score.';diag.appendChild(diagNote);
+    var box=$('#rankedResults');box.replaceChildren();var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent='CROSS-VOLATILITY RANKING · '+state.contract;box.appendChild(heading);
+    ranked.ranking.forEach(function(item,index){var row=document.createElement('div');row.className='ranking-row';var rank=document.createElement('b');rank.textContent=String(index+1).padStart(2,'0');
+      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=item.marketName;var meta=document.createElement('small');
+      meta.textContent=item.sampleSize+' ticks · '+item.targetFrequencyPercent.toFixed(1)+'% '+state.contract+' · z '+item.zScore.toFixed(2)+' · adjusted p '+item.adjustedPValue.toFixed(4)+' · '+item.status;
+      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=item.evidenceScore.toFixed(1)+'/100';score.style.color=index===0?'#55f59a':'#c9f7d5';row.append(rank,detail,score);box.appendChild(row);});
+    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank historical evidence, not win probability. '+ranked.skippedMarkets+' market(s) lacked the minimum 50 valid ticks. '+(afterEpoch===null?'Timestamped forward validation is unavailable for this sample.':ledgerSaved?'Forward outcomes will be checked on later analyses.':'Browser storage is unavailable; this session cannot retain validation history.');box.appendChild(note);
+    $('#status').textContent='Analysis complete · '+best.marketName+' ranked highest for '+state.contract+'.';event('decision','LOCAL CROSS-MARKET RANKING',best.marketName+' ranked #1 for '+state.contract+' · evidence '+best.evidenceScore.toFixed(1)+'/100');
+    analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
   }
   function requestNextPortfolioHistory(){
     var state=portfolioScanState;if(!state||!portfolioScanSocket||portfolioScanSocket.readyState!==WebSocket.OPEN)return;
@@ -705,48 +703,41 @@ li span:first-child{color:#668b70}
     portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
-    if(aiRequestInFlight)return;
-    aiRequestInFlight=true;
-    var contract=$('#contract').value;
+    if(analysisInFlight)return;analysisInFlight=true;var contract=$('#contract').value;
     portfolioScanState={contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
-    $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');
-    $('#engineState').textContent='Comparing markets';$('#geminiState').textContent='COLLECTING DATA';
-    $('#geminiSignal').textContent=contract+' CONTRACT';$('#geminiConfidence').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#geminiSummary').textContent='Fetching comparable recent tick history for every supported volatility index. No trades are placed.';
-    $('#geminiEvidence').replaceChildren();$('#rankedResults').textContent='';
-    event('system','CROSS-VOLATILITY SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · 1000 historical ticks requested per market.');
-    try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}
-    catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
+    $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
+    $('#signalLabel').textContent=contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Statistical processing and ranking run locally; no AI or account service is contacted.';
+    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · up to 1,000 historical ticks per market.');
+    try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
     portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
     portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
     portfolioScanSocket.onmessage=function(message){
-      var data;try{data=JSON.parse(message.data)}catch(e){return;}
-      var state=portfolioScanState;if(!state)return;
-      var market=state.pending[data.req_id];if(!market)return;
-      delete state.pending[data.req_id];
-      if(data.error){state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],error:data.error.message||'History unavailable'});}
+      var data;try{data=JSON.parse(message.data)}catch(e){return;}var state=portfolioScanState;if(!state)return;
+      var market=state.pending[data.req_id];if(!market)return;delete state.pending[data.req_id];
+      if(data.error)state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:data.error.message||'History unavailable'});
       else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
         var prices=data.history.prices,times=data.history.times||[],pip=Number(data.pip_size!==undefined?data.pip_size:data.history.pip_size);
-        if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){pip=Math.max(pip,quoteDecimals(v));});}
-        var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?i:Number(times[i])};});
-        rows.sort(function(a,b){return a.epoch-b.epoch;});
-        var digits=rows.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
-        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:rows.map(function(x){return x.price;})});
-      }
+        if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){var decimals=quoteDecimals(v);if(decimals>pip)pip=decimals;});}
+        var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?null:Number(times[i]),index:i};}).filter(function(row){return Number.isFinite(row.price)&&row.price>0;});
+        if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)}))rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index;});
+        var clean=[];rows.forEach(function(row){var previous=clean.length?clean[clean.length-1]:null;if(previous&&row.epoch!==null&&previous.epoch===row.epoch&&previous.price===row.price)return;clean.push(row);});
+        var digits=clean.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
+        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:clean.map(function(x){return x.price;}),epochs:clean.map(function(x){return x.epoch;})});
+      }else state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:'Unexpected history response'});
       state.index++;requestNextPortfolioHistory();
     };
     portfolioScanSocket.onerror=function(){finishPortfolioScan('Deriv history WebSocket connection failed.');};
     portfolioScanSocket.onclose=function(){if(portfolioScanState&&portfolioScanState.index<MK.length&&Object.keys(portfolioScanState.pending).length===0&&portfolioScanState.results.length<MK.length)finishPortfolioScan('Deriv history connection closed before all markets were checked.');};
   }
-  function scan(){if(aiRequestInFlight)return;$('#status').textContent='Starting cross-volatility analysis…';runPortfolioScan()}
+  function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
-  function processMarketTick(d,pn){}
+  $('#contract').addEventListener('change',updateWindowMatrix);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
-  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
-  var ANALYSIS_WORKER_URL='https://zyntrix-oauth.fiverlancer51.workers.dev';
-  render();updateParityStrength();$('#activeMarket').textContent=mk.n;connectMarketSocket();
+  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
+  render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
 })();
 </script>
 </body>
