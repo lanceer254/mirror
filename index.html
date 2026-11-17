@@ -690,7 +690,7 @@ li span:first-child{color:#668b70}
     $('#status').textContent='Analysis complete · '+best.marketName+' ranked highest for '+state.contract+'.';event('decision','LOCAL CROSS-MARKET RANKING',best.marketName+' ranked #1 for '+state.contract+' · evidence '+best.evidenceScore.toFixed(1)+'/100');
     analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
   }
-  function requestNextPortfolioHistory{
+  function requestNextPortfolioHistory(){
     var state=portfolioScanState;if(!state||!portfolioScanSocket||portfolioScanSocket.readyState!==WebSocket.OPEN)return;
     if(state.index>=MK.length){finishPortfolioScan(null);return;}
     var market=MK[state.index],req=state.nextReq++;
