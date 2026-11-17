@@ -347,7 +347,7 @@ li span:first-child{color:#668b70}
   var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0;
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
-  var portfolioScanSocket=null,portfolioScanTimer=null,portfolioScanState=null;
+  var portfolioScanTimer=null,portfolioScanState=null;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
