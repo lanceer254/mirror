@@ -232,9 +232,10 @@ li span:first-child{color:#668b70}
 .diagnostic-item span{color:#668b70}.diagnostic-item b{color:#c9f7d5;text-align:right;font-weight:600}
 .ranked-results{margin-top:12px}.ranking-heading{font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf}
 .ranking-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px}.ranking-row small{display:block;color:#789681;font-size:9px;margin-top:2px}.ranking-score{font-weight:700;white-space:nowrap}
+.parity-signal-card{margin:7px 0 12px;padding:8px 10px;border:1px solid #287447;background:#07110b;border-radius:5px}.parity-signal-card .ranking-row{border-top:0;padding:4px 0}.parity-signal-card .ranking-row>div>span{color:#aaf8bf;font-weight:700;font-size:12px}.parity-signal-card .ranking-score{color:#55f59a}
 .validation-summary{margin-top:10px;padding-top:8px;border-top:1px solid #153323;color:#8ca6a0;font-size:9px;line-height:1.6}
-.window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(3,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
-@media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(3,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
+.window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(2,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
+@media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(2,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
 </style>
@@ -682,11 +683,12 @@ li span:first-child{color:#668b70}
     sides.forEach(function(side){
       var best=side.ranked.best;
       var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=side.label+' · STRONGEST VOLATILITY';box.appendChild(heading);
+      var signalCard=document.createElement('div');signalCard.className='parity-signal-card';
       var card=document.createElement('div');card.className='ranking-row';
       var rank=document.createElement('b');rank.textContent=best?'01':'—';
       var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO CLEAR SIGNAL';
       var meta=document.createElement('small');meta.textContent=best?best.sampleSize+' ticks · '+best.targetFrequencyPercent.toFixed(1)+'% '+side.label+' · z '+best.zScore.toFixed(2)+' · adjusted p '+best.adjustedPValue.toFixed(4)+' · '+best.status:'No market had sufficient evidence to rank.';
-      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?best.evidenceScore.toFixed(1)+'/100':'—';card.append(rank,detail,score);box.appendChild(card);
+      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?best.evidenceScore.toFixed(1)+'/100':'—';card.append(rank,detail,score);signalCard.appendChild(card);box.appendChild(signalCard);
       var subheading=document.createElement('div');subheading.className='analysis-note';subheading.textContent=side.label+' CROSS-VOLATILITY ORDER';box.appendChild(subheading);
       side.ranked.ranking.forEach(function(item,index){
         var row=document.createElement('div');row.className='ranking-row';
