@@ -20,8 +20,46 @@ var evidence=[contract+" appeared in "+targetCount+"/"+n+" ticks ("+round(target
 if(change.available)evidence.push("Recent 100-tick target frequency "+change.recentRate+"% vs prior 100 ticks "+change.priorRate+"%.");
 return{symbol:String(input.symbol||""),marketName:String(input.marketName||input.symbol||"Unknown market"),contract:contract,sampleSize:n,targetCount:targetCount,targetFrequencyPercent:round(targetRate*100,2),opposingFrequencyPercent:round((1-targetRate)*100,2),zScore:round(zScore,3),rawPValue:round(pRaw,6),adjustedPValue:round(adjustedP,6),confidenceInterval95:{lower:round(interval.lower*100,2),upper:round(interval.upper*100,2)},evidenceScore:evidenceScore,status:status,dataQuality:n>=950?"GOOD":"LIMITED",windowStats:windowStats,windowAgreementPercent:round(agreement*100,1),stabilityScore:round(stability,1),distribution:dist,parityRuns:parityRuns,digitRuns:digitRuns,transitions:transitionStats,changeDetection:change,priceMovement:priceStats,evidence:evidence};}
 function rankMarkets(markets,contract,attemptedMarkets){if(!Array.isArray(markets))throw new TypeError("Markets must be an array.");contract=String(contract||"EVEN").toUpperCase();var tested=Math.max(1,Math.min(10,Number(attemptedMarkets)||markets.length||1)),ranking=[];markets.forEach(function(m){if(!m||!Array.isArray(m.digits)||m.digits.length<50)return;try{ranking.push(analyzeMarket({symbol:m.symbol,marketName:m.marketName,digits:m.digits,prices:m.prices,contract:contract,marketsTested:tested}));}catch(e){}});ranking.sort(function(a,b){return b.evidenceScore-a.evidenceScore||a.adjustedPValue-b.adjustedPValue||b.sampleSize-a.sampleSize||a.marketName.localeCompare(b.marketName);});var best=ranking.length?ranking[0]:null;return{contract:contract,best:best,ranking:ranking,skippedMarkets:Math.max(0,tested-ranking.length),hasClearSignal:!!best&&best.status==="STRONG HISTORICAL DEVIATION"};}
+
+function analyzeRecurringPattern(digits,targetParity){
+  if(!Array.isArray(digits)||digits.length<50)return null;
+  targetParity=targetParity===1?1:0;
+  var candidates=[];
+  [2,3].forEach(function(length){
+    if(digits.length<=length+8)return;
+    var pattern=digits.slice(-length).join(""),hits=0,target=0,occurrences=[];
+    for(var i=0;i<=digits.length-length-1;i++){
+      if(digits.slice(i,i+length).join("")!==pattern)continue;
+      var next=digits[i+length];
+      hits++;if(next%2===targetParity)target++;
+      occurrences.push(i);
+    }
+    if(hits<8)return;
+    var rate=target/hits,interval=wilson(rate,hits),z=(rate-.5)/Math.sqrt(.25/hits);
+    var clear=rate>=.60&&interval.lower>.5&&z>=1.96;
+    var score=round(clamp((rate-.5)*100,0,50)+Math.min(hits,30)*.8+Math.max(0,interval.lower-.5)*100,1);
+    candidates.push({pattern:pattern,patternLength:length,occurrences:hits,targetCount:target,targetRatePercent:round(rate*100,1),wilsonLowerPercent:round(interval.lower*100,1),zScore:round(z,2),score:score,clearSignal:clear,latestOccurrenceIndex:occurrences.length?occurrences[occurrences.length-1]:null});
+  });
+  candidates.sort(function(a,b){return Number(b.clearSignal)-Number(a.clearSignal)||b.score-a.score||b.occurrences-a.occurrences;});
+  return candidates.length?candidates[0]:null;
+}
+function rankPatternMarkets(markets,contract,attemptedMarkets){
+  if(!Array.isArray(markets))throw new TypeError("Markets must be an array.");
+  contract=String(contract||"EVEN").toUpperCase();
+  if(contract!=="EVEN"&&contract!=="ODD")throw new TypeError("Contract must be EVEN or ODD.");
+  var target=contract==="EVEN"?0:1,tested=Math.max(1,Math.min(10,Number(attemptedMarkets)||markets.length||1)),ranking=[];
+  markets.forEach(function(m){
+    if(!m||!Array.isArray(m.digits)||m.digits.length<50)return;
+    var pattern=analyzeRecurringPattern(m.digits,target);
+    if(!pattern)return;
+    ranking.push({symbol:String(m.symbol||""),marketName:String(m.marketName||m.symbol||"Unknown market"),contract:contract,sampleSize:m.digits.length,pattern:pattern,evidenceScore:pattern.score,status:pattern.clearSignal?"PATTERN SIGNAL":"PATTERN WATCH"});
+  });
+  ranking.sort(function(a,b){return Number(b.pattern.clearSignal)-Number(a.pattern.clearSignal)||b.evidenceScore-a.evidenceScore||b.pattern.occurrences-a.pattern.occurrences||a.marketName.localeCompare(b.marketName);});
+  var signals=ranking.filter(function(item){return item.pattern.clearSignal;});
+  return{contract:contract,best:signals.length?signals[0]:null,candidate:ranking.length?ranking[0]:null,ranking:ranking,skippedMarkets:Math.max(0,tested-ranking.length),hasClearSignal:signals.length>0};
+}
 function resolveSignalLedger(ledger,marketResults){return(Array.isArray(ledger)?ledger:[]).map(function(record){var copy=Object.assign({},record);copy.outcomes=Object.assign({nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null},record.outcomes||{});if(copy.outcomes.nextTickHit!==null&&copy.outcomes.after5Rate!==null&&copy.outcomes.after10Rate!==null)return copy;var market=(Array.isArray(marketResults)?marketResults:[]).find(function(item){return item&&item.symbol===copy.marketSymbol;});if(!market||!Array.isArray(market.epochs)||!Array.isArray(market.digits))return copy;var future=[];for(var i=0;i<market.epochs.length;i++){var epoch=market.epochs[i];if(epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch))&&Number(epoch)>Number(copy.afterEpoch)&&Number.isInteger(market.digits[i]))future.push(market.digits[i]);}var parity=copy.contract==="EVEN"?0:1;if(copy.outcomes.nextTickHit===null&&future.length>=1){copy.outcomes.nextTickDigit=future[0];copy.outcomes.nextTickHit=future[0]%2===parity;}if(copy.outcomes.after5Rate===null&&future.length>=5)copy.outcomes.after5Rate=round(future.slice(0,5).filter(function(d){return d%2===parity;}).length/5*100,1);if(copy.outcomes.after10Rate===null&&future.length>=10)copy.outcomes.after10Rate=round(future.slice(0,10).filter(function(d){return d%2===parity;}).length/10*100,1);return copy;});}
 function summarizeSignalLedger(ledger){var records=Array.isArray(ledger)?ledger:[],resolved=records.filter(function(r){return r.outcomes&&typeof r.outcomes.nextTickHit==="boolean";}),hits=resolved.filter(function(r){return r.outcomes.nextTickHit;}).length,five=records.filter(function(r){return r.outcomes&&Number.isFinite(r.outcomes.after5Rate);}),ten=records.filter(function(r){return r.outcomes&&Number.isFinite(r.outcomes.after10Rate);});return{recorded:records.length,nextTickResolved:resolved.length,nextTickHits:hits,nextTickHitRate:resolved.length?round(hits/resolved.length*100,1):null,fiveTickResolved:five.length,fiveTickAverage:five.length?round(mean(five.map(function(r){return r.outcomes.after5Rate;})),1):null,tenTickResolved:ten.length,tenTickAverage:ten.length?round(mean(ten.map(function(r){return r.outcomes.after10Rate;})),1):null};}
 function rankBothMarkets(markets,attemptedMarkets){return{even:rankMarkets(markets,"EVEN",attemptedMarkets),odd:rankMarkets(markets,"ODD",attemptedMarkets)};}
-return{WINDOWS:WINDOWS.slice(),analyzeMarket:analyzeMarket,rankMarkets:rankMarkets,rankBothMarkets:rankBothMarkets,resolveSignalLedger:resolveSignalLedger,summarizeSignalLedger:summarizeSignalLedger};
+return{WINDOWS:WINDOWS.slice(),analyzeMarket:analyzeMarket,rankMarkets:rankMarkets,rankBothMarkets:rankBothMarkets,analyzeRecurringPattern:analyzeRecurringPattern,rankPatternMarkets:rankPatternMarkets,resolveSignalLedger:resolveSignalLedger,summarizeSignalLedger:summarizeSignalLedger};
 });
