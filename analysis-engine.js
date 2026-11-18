@@ -24,23 +24,32 @@ function rankMarkets(markets,contract,attemptedMarkets){if(!Array.isArray(market
 function analyzeRecurringPattern(digits,targetParity){
   if(!Array.isArray(digits)||digits.length<50)return null;
   targetParity=targetParity===1?1:0;
-  var candidates=[];
+  var candidates=[],targetName=targetParity===0?"EVEN":"ODD";
   [2,3].forEach(function(length){
     if(digits.length<=length+8)return;
-    var pattern=digits.slice(-length).join(""),hits=0,target=0,occurrences=[];
+    var patterns=Object.create(null);
     for(var i=0;i<=digits.length-length-1;i++){
-      if(digits.slice(i,i+length).join("")!==pattern)continue;
-      var next=digits[i+length];
-      hits++;if(next%2===targetParity)target++;
-      occurrences.push(i);
+      var key=digits.slice(i,i+length).join("");
+      var item=patterns[key];
+      if(!item)item=patterns[key]={pattern:key,hits:0,target:0,indices:[]};
+      item.hits++;
+      if(digits[i+length]%2===targetParity)item.target++;
+      item.indices.push(i);
     }
-    if(hits<8)return;
-    var rate=target/hits,interval=wilson(rate,hits),z=(rate-.5)/Math.sqrt(.25/hits);
-    var clear=rate>=.60&&interval.lower>.5&&z>=1.96;
-    var score=round(clamp((rate-.5)*100,0,50)+Math.min(hits,30)*.8+Math.max(0,interval.lower-.5)*100,1);
-    candidates.push({pattern:pattern,patternLength:length,occurrences:hits,targetCount:target,targetRatePercent:round(rate*100,1),wilsonLowerPercent:round(interval.lower*100,1),zScore:round(z,2),score:score,clearSignal:clear,latestOccurrenceIndex:occurrences.length?occurrences[occurrences.length-1]:null});
+    Object.keys(patterns).forEach(function(key){
+      var item=patterns[key];
+      if(item.hits<8)return;
+      var rate=item.target/item.hits,interval=wilson(rate,item.hits),z=(rate-.5)/Math.sqrt(.25/item.hits);
+      var clear=rate>=.60&&interval.lower>.5&&z>=1.96;
+      var supportScore=Math.min(item.hits,40)*.55;
+      var edgeScore=clamp((rate-.5)*100,0,50);
+      var confidenceScore=Math.max(0,interval.lower-.5)*100;
+      var lengthScore=length===3?1.5:0;
+      var score=round(clamp(edgeScore+supportScore+confidenceScore+lengthScore,0,100),1);
+      candidates.push({pattern:item.pattern,patternLength:length,occurrences:item.hits,targetCount:item.target,targetParity:targetName,targetRatePercent:round(rate*100,1),wilsonLowerPercent:round(interval.lower*100,1),zScore:round(z,2),score:score,clearSignal:clear,latestOccurrenceIndex:item.indices[item.indices.length-1]});
+    });
   });
-  candidates.sort(function(a,b){return Number(b.clearSignal)-Number(a.clearSignal)||b.score-a.score||b.occurrences-a.occurrences;});
+  candidates.sort(function(a,b){return Number(b.clearSignal)-Number(a.clearSignal)||b.score-a.score||b.occurrences-a.occurrences||b.patternLength-a.patternLength||a.pattern.localeCompare(b.pattern);});
   return candidates.length?candidates[0]:null;
 }
 function rankPatternMarkets(markets,contract,attemptedMarkets){
