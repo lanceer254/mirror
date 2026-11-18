@@ -38,7 +38,7 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 
 /* Compact scan bar: keep the original SCAN control; inline P/L and settings */
 .actions.scanbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:13px}
-.actions.scanbar .brain{flex:0 0 68px}
+.actions.scanbar .brain{flex:0 0 68px}.rescan-btn{margin:0;flex:none;min-height:38px}.rescan-btn[hidden]{display:none!important}
 .actions.scanbar .say{flex:1 1 105px;min-width:100px}
 
 
@@ -251,7 +251,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><div class="field">CONTRACT ANALYSIS <strong style="color:#b4f8c8;font-size:13px">EVEN + ODD · SIMULTANEOUS</strong></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN independently ranks EVEN and ODD across all supported volatility indices. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><label class="field">ANALYSIS MODE<select id="analysisMode"><option value="BOTH" selected>BOTH · EVEN + ODD</option><option value="EVEN">EVEN ONLY</option><option value="ODD">ODD ONLY</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN scans recurring last-digit sequences across all 10 volatility indices. Choose EVEN, ODD or BOTH. Live display market is independent. Analysis only · No trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -267,6 +267,7 @@ li span:first-child{color:#668b70}
             <circle class="n" cx="19" cy="38" r="1.8"/><circle class="n" cx="45" cy="38" r="1.8"/>
           </svg>
         </button>
+        <button class="ghost rescan-btn" id="rescan" type="button" hidden>RESCAN</button>
         <div class="say" aria-live="polite"><strong id="status">Ready to analyze</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
         <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
       </div>
@@ -307,7 +308,7 @@ li span:first-child{color:#668b70}
       <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
     </div>
     <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
-    <div class="engine-summary" id="engineSummary">Press BRAIN to compare EVEN and ODD independently across all supported volatility indices using local statistical calculations.</div>
+    <div class="engine-summary" id="engineSummary">Press BRAIN to scan recurring digit sequences across all supported volatility indices. Select EVEN, ODD or BOTH.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
     <div id="marketDiagnostics" class="market-diagnostics"></div>
     <div id="rankedResults" class="ranked-results"></div>
@@ -653,12 +654,15 @@ li span:first-child{color:#668b70}
     var state=portfolioScanState;portfolioScanState=null;
     if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}
     if(!state)return;
+    $('#rescan').hidden=false;
     if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
     var usable=state.results.filter(function(x){return x.digits.length>=50;});
     if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
-    $('#engineStateLabel').textContent='PROCESSING LOCALLY';
-    var ranked=ZyntrixEngine.rankBothMarkets(usable,MK.length);
-    var sides=[{label:'ODD',ranked:ranked.odd},{label:'EVEN',ranked:ranked.even}];
+    $('#engineStateLabel').textContent='PROCESSING PATTERNS';
+    var mode=$('#analysisMode').value||'BOTH';
+    var sides=[];
+    if(mode==='EVEN'||mode==='BOTH')sides.push({label:'EVEN',ranked:ZyntrixEngine.rankPatternMarkets(usable,'EVEN',MK.length)});
+    if(mode==='ODD'||mode==='BOTH')sides.push({label:'ODD',ranked:ZyntrixEngine.rankPatternMarkets(usable,'ODD',MK.length)});
     var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results);
     sides.forEach(function(side){
       var best=side.ranked.best;if(!best)return;
@@ -666,42 +670,46 @@ li span:first-child{color:#668b70}
       var validEpochs=source&&Array.isArray(source.epochs)?source.epochs.filter(function(epoch){return epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch));}):[];
       var afterEpoch=validEpochs.length?Math.max.apply(null,validEpochs):null;
       if(afterEpoch!==null&&!ledger.some(function(item){return item.marketSymbol===best.symbol&&item.contract===side.label&&Number(item.afterEpoch)===afterEpoch;}))
-        ledger.push({marketSymbol:best.symbol,marketName:best.marketName,contract:side.label,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:best.evidenceScore,status:best.status,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});
+        ledger.push({marketSymbol:best.symbol,marketName:best.marketName,contract:side.label,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:best.evidenceScore,status:best.status,pattern:best.pattern.pattern,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});
     });
     ledger=ledger.slice(-200);var ledgerSaved=writeSignalLedger(ledger);renderValidation(ledger);
     lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
     $('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;
-    $('#signalLabel').textContent='EVEN + ODD · TWO INDEPENDENT RANKINGS';
-    $('#signalScore').textContent='BOTH PARITIES ANALYZED';
-    var odd=ranked.odd.best,even=ranked.even.best;
-    function describe(best,label){return best?label+': '+best.marketName+' · '+best.targetFrequencyPercent.toFixed(1)+'% · evidence '+best.evidenceScore.toFixed(1)+'/100 · '+best.status+'.':label+': NO CLEAR SIGNAL — insufficient market history.';}
-    $('#engineSummary').textContent='BRAIN analyzed '+usable.length+' supported volatility markets for EVEN and ODD separately. '+describe(even,'EVEN')+' '+describe(odd,'ODD')+' These are independent historical rankings, not predictions of the next digit.';
+    $('#signalLabel').textContent=mode+' RECURRING-PATTERN ANALYSIS';
+    $('#signalScore').textContent=sides.filter(function(side){return side.ranked.hasClearSignal;}).length+' PATTERN SIGNAL(S)';
+    function describe(side){
+      var best=side.ranked.best,candidate=side.ranked.candidate;
+      if(best)return side.label+': '+best.marketName+' · pattern '+best.pattern.pattern+' · '+best.pattern.targetRatePercent+'% '+side.label+' in '+best.pattern.occurrences+' repeats.';
+      if(candidate)return side.label+': NO CLEAR SIGNAL · strongest observed pattern '+candidate.pattern.pattern+' had '+candidate.pattern.targetRatePercent+'% '+side.label+' across '+candidate.pattern.occurrences+' repeats; evidence threshold not met.';
+      return side.label+': NO CLEAR SIGNAL · no recurring pattern had enough observations.';
+    }
+    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and searched repeated exact last-digit sequences (2- and 3-digit motifs). '+sides.map(describe).join(' ')+' A pattern signal requires at least 8 historical repeats, at least 60% target-parity follow-through and a Wilson lower bound above 50%. Historical evidence only; not a guarantee of the next tick.';
     $('#engineEvidence').replaceChildren();
-    [{label:'EVEN',best:even},{label:'ODD',best:odd}].forEach(function(side){var li=document.createElement('li');li.textContent=describe(side.best,side.label);$('#engineEvidence').appendChild(li);});
-    $('#marketDiagnostics').textContent='Entropy, transitions, streaks and price movement remain descriptive diagnostics, not proven predictive features.';
+    sides.forEach(function(side){var li=document.createElement('li');li.textContent=describe(side);$('#engineEvidence').appendChild(li);});
+    $('#marketDiagnostics').textContent='Pattern method: the latest 2- or 3-digit sequence is matched against earlier occurrences; the parity of the following digit is measured. Weak or under-sampled patterns are not promoted to signals.';
     var box=$('#rankedResults');box.replaceChildren();
     sides.forEach(function(side){
-      var best=side.ranked.best;
-      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=side.label+' · STRONGEST VOLATILITY';box.appendChild(heading);
+      var best=side.ranked.best,candidate=side.ranked.candidate;
+      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=side.label+' · STRONGEST PATTERN SIGNAL';box.appendChild(heading);
       var signalCard=document.createElement('div');signalCard.className='parity-signal-card';
       var card=document.createElement('div');card.className='ranking-row';
       var rank=document.createElement('b');rank.textContent=best?'01':'—';
       var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO CLEAR SIGNAL';
-      var meta=document.createElement('small');meta.textContent=best?best.sampleSize+' ticks · '+best.targetFrequencyPercent.toFixed(1)+'% '+side.label+' · z '+best.zScore.toFixed(2)+' · adjusted p '+best.adjustedPValue.toFixed(4)+' · '+best.status:'No market had sufficient evidence to rank.';
+      var meta=document.createElement('small');meta.textContent=best?'Pattern '+best.pattern.pattern+' · '+best.pattern.occurrences+' repeats · '+best.pattern.targetRatePercent+'% '+side.label+' follow-through · z '+best.pattern.zScore:'No recurring sequence met the evidence threshold.'+(candidate?' Best watch: '+candidate.marketName+' · '+candidate.pattern.pattern+' · '+candidate.pattern.occurrences+' repeats.':'');
       detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?best.evidenceScore.toFixed(1)+'/100':'—';card.append(rank,detail,score);signalCard.appendChild(card);box.appendChild(signalCard);
-      var subheading=document.createElement('div');subheading.className='analysis-note';subheading.textContent=side.label+' CROSS-VOLATILITY ORDER';box.appendChild(subheading);
+      var subheading=document.createElement('div');subheading.className='analysis-note';subheading.textContent=side.label+' · RECURRING SEQUENCE CANDIDATES';box.appendChild(subheading);
       side.ranked.ranking.forEach(function(item,index){
         var row=document.createElement('div');row.className='ranking-row';
         var number=document.createElement('b');number.textContent=String(index+1).padStart(2,'0');
-        var info=document.createElement('div'),marketName=document.createElement('span');marketName.textContent=item.marketName;
-        var stats=document.createElement('small');stats.textContent=item.sampleSize+' ticks · '+item.targetFrequencyPercent.toFixed(1)+'% '+side.label+' · z '+item.zScore.toFixed(2)+' · '+item.status;
+        var info=document.createElement('div'),marketName=document.createElement('span');marketName.textContent=item.marketName+' · '+item.status;
+        var stats=document.createElement('small');stats.textContent='Pattern '+item.pattern.pattern+' · '+item.pattern.occurrences+' repeats · '+item.pattern.targetRatePercent+'% '+side.label+' follow-through · '+item.sampleSize+' ticks';
         info.append(marketName,stats);var value=document.createElement('b');value.className='ranking-score';value.textContent=item.evidenceScore.toFixed(1)+'/100';row.append(number,info,value);box.appendChild(row);
       });
-      var note=document.createElement('p');note.className='analysis-note';note.textContent=side.ranked.skippedMarkets+' market(s) lacked 50 valid ticks for '+side.label+'.';box.appendChild(note);
+      var note=document.createElement('p');note.className='analysis-note';note.textContent=side.ranked.skippedMarkets+' market(s) had no repeatable 2- or 3-digit pattern with at least 8 historical matches.';box.appendChild(note);
     });
-    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank historical evidence, not win probability. '+(ledgerSaved?'Forward outcomes will be checked on later analyses.':'Browser storage is unavailable; forward validation cannot be retained.');box.appendChild(note);
-    $('#status').textContent='Analysis complete · independent EVEN and ODD volatility rankings ready.';
-    event('decision','EVEN + ODD CROSS-MARKET ANALYSIS','EVEN: '+(even?even.marketName:'NO CLEAR SIGNAL')+' · ODD: '+(odd?odd.marketName:'NO CLEAR SIGNAL'));
+    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank recurring historical patterns, not guaranteed outcomes. '+(ledgerSaved?'Forward outcomes will be checked on later scans.':'Browser storage is unavailable; forward validation cannot be retained.');box.appendChild(note);
+    $('#status').textContent='Pattern analysis complete · '+mode+' mode · '+sides.filter(function(side){return side.ranked.hasClearSignal;}).length+' qualifying signal(s).';
+    event('decision',mode+' PATTERN ANALYSIS',sides.map(describe).join(' '));
     analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
   }
   function requestNextPortfolioHistory(){
@@ -716,9 +724,9 @@ li span:first-child{color:#668b70}
     if(analysisInFlight)return;analysisInFlight=true;
     portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    $('#signalLabel').textContent='EVEN + ODD COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. EVEN and ODD will be ranked independently using local statistical processing.';
-    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','EVEN + ODD · '+MK.length+' markets · up to 1,000 historical ticks per market.');
+    $('#rescan').hidden=true;var mode=$('#analysisMode').value||'BOTH';$('#signalLabel').textContent=mode+' PATTERN SCAN';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. The selected mode will be checked for recurring 2- and 3-digit sequences.';
+    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',mode+' · '+MK.length+' markets · up to 1,000 historical ticks per market.');
     try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
     portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
     portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
@@ -743,7 +751,7 @@ li span:first-child{color:#668b70}
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#scan').addEventListener('click',scan);
+  $('#scan').addEventListener('click',scan);\n  $('#rescan').addEventListener('click',scan);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
