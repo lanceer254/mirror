@@ -631,7 +631,7 @@ li span:first-child{color:#668b70}
   }
   function updateWindowMatrix(){
     var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
-    var evenResult=ZyntrixEngine.analyzeMarket({digits:ds,contract:'EVEN'}),oddResult=ZyntrixEngine.analyzeMarket({digits:ds,contract:'ODD'});holder.replaceChildren();
+    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:'EVEN'});holder.replaceChildren();
     var header=document.createElement('div');header.className='window-row header';
     ['WINDOW','EVEN','ODD'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
     result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
