@@ -250,7 +250,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><label class="field">CONTRACT TO ANALYZE<select id="contract"><option value="EVEN">EVEN</option><option value="ODD">ODD</option></select></label><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">ANALYZE compares all supported volatility indices for the selected contract. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
+  <section class="analysis-market panel"><div class="field">CONTRACT ANALYSIS <strong style="color:#b4f8c8;font-size:13px">EVEN + ODD · SIMULTANEOUS</strong></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN independently ranks EVEN and ODD across all supported volatility indices. Live display market is independent. Analysis only · No account connection or trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -306,7 +306,7 @@ li span:first-child{color:#668b70}
       <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
     </div>
     <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
-    <div class="engine-summary" id="engineSummary">Choose EVEN or ODD, then press ANALYZE. Zyntrix will compare all supported volatility indices using local statistical calculations.</div>
+    <div class="engine-summary" id="engineSummary">Press BRAIN to compare EVEN and ODD independently across all supported volatility indices using local statistical calculations.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
     <div id="marketDiagnostics" class="market-diagnostics"></div>
     <div id="rankedResults" class="ranked-results"></div>
@@ -631,11 +631,11 @@ li span:first-child{color:#668b70}
   }
   function updateWindowMatrix(){
     var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
-    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:$('#contract').value});holder.replaceChildren();
+    var evenResult=ZyntrixEngine.analyzeMarket({digits:ds,contract:'EVEN'}),oddResult=ZyntrixEngine.analyzeMarket({digits:ds,contract:'ODD'});holder.replaceChildren();
     var header=document.createElement('div');header.className='window-row header';
-    ['WINDOW','EVEN','ODD','SELECTED'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
+    ['WINDOW','EVEN','ODD'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
     result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
-      [item.size+' TICKS',item.evenPercent.toFixed(1)+'%',item.oddPercent.toFixed(1)+'%',item.targetPercent.toFixed(1)+'%'].forEach(function(value,index){var cell=document.createElement(index===0?'span':'b');cell.textContent=value;row.appendChild(cell)});holder.appendChild(row);});
+      [item.size+' TICKS',item.evenPercent.toFixed(1)+'%',item.oddPercent.toFixed(1)+'%'].forEach(function(value,index){var cell=document.createElement(index===0?'span':'b');cell.textContent=value;row.appendChild(cell)});holder.appendChild(row);});
   }
   function readSignalLedger(){try{var value=JSON.parse(localStorage.getItem('zyntrix.signal-ledger.v1')||'[]');return Array.isArray(value)?value:[]}catch(error){return[]}}
   function writeSignalLedger(ledger){try{localStorage.setItem('zyntrix.signal-ledger.v1',JSON.stringify(ledger));return true}catch(error){return false}}
@@ -648,50 +648,58 @@ li span:first-child{color:#668b70}
   }
   function finishPortfolioUi(message){$('#engineStateLabel').textContent='NO DATA';$('#engineSummary').textContent=message;$('#rankedResults').textContent=message;analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
   function finishPortfolioScan(error){
-    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}var state=portfolioScanState;portfolioScanState=null;
-    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}if(!state)return;
+    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}
+    var state=portfolioScanState;portfolioScanState=null;
+    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}
+    if(!state)return;
     if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
-    var usable=state.results.filter(function(x){return x.digits.length>=50;});if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
-    $('#engineStateLabel').textContent='PROCESSING LOCALLY';var ranked=ZyntrixEngine.rankMarkets(usable,state.contract,MK.length);
-    if(!ranked.best){finishPortfolioUi('No market had sufficient valid history to rank.');return;}
-    var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results),source=state.results.find(function(item){return item.symbol===ranked.best.symbol;});
-    var validEpochs=source&&Array.isArray(source.epochs)?source.epochs.filter(function(epoch){return epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch));}):[];
-    var afterEpoch=validEpochs.length?Math.max.apply(null,validEpochs):null;
-    if(afterEpoch!==null){var exists=ledger.some(function(item){return item.marketSymbol===ranked.best.symbol&&item.contract===state.contract&&Number(item.afterEpoch)===afterEpoch;});
-      if(!exists)ledger.push({marketSymbol:ranked.best.symbol,marketName:ranked.best.marketName,contract:state.contract,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:ranked.best.evidenceScore,status:ranked.best.status,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});}
+    var usable=state.results.filter(function(x){return x.digits.length>=50;});
+    if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
+    $('#engineStateLabel').textContent='PROCESSING LOCALLY';
+    var ranked=ZyntrixEngine.rankBothMarkets(usable,MK.length);
+    var sides=[{label:'ODD',ranked:ranked.odd},{label:'EVEN',ranked:ranked.even}];
+    var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results);
+    sides.forEach(function(side){
+      var best=side.ranked.best;if(!best)return;
+      var source=state.results.find(function(item){return item.symbol===best.symbol;});
+      var validEpochs=source&&Array.isArray(source.epochs)?source.epochs.filter(function(epoch){return epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch));}):[];
+      var afterEpoch=validEpochs.length?Math.max.apply(null,validEpochs):null;
+      if(afterEpoch!==null&&!ledger.some(function(item){return item.marketSymbol===best.symbol&&item.contract===side.label&&Number(item.afterEpoch)===afterEpoch;}))
+        ledger.push({marketSymbol:best.symbol,marketName:best.marketName,contract:side.label,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:best.evidenceScore,status:best.status,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});
+    });
     ledger=ledger.slice(-200);var ledgerSaved=writeSignalLedger(ledger);renderValidation(ledger);
-    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=ranked.ranking.length+' / '+MK.length;
-    var best=ranked.best;$('#signalLabel').textContent=best.status==='STRONG HISTORICAL DEVIATION'?state.contract+' HISTORICAL DEVIATION':best.status==='WATCH'?state.contract+' WATCH':'NO CLEAR EDGE';
-    $('#signalScore').textContent='EVIDENCE '+best.evidenceScore.toFixed(1)+'/100';
-    $('#engineSummary').textContent=(ranked.hasClearSignal?'A candidate passed the conservative historical-deviation threshold. ':'No market passed the conservative historical-deviation threshold. ')+best.marketName+' is the highest relative candidate for '+state.contract+' in '+best.sampleSize+' ticks. Adjusted p-value: '+best.adjustedPValue+'. This describes the sampled past and does not predict the next digit.';
-    $('#engineEvidence').replaceChildren();best.evidence.forEach(function(item){var li=document.createElement('li');li.textContent=item;$('#engineEvidence').appendChild(li);});
-    var diag=$('#marketDiagnostics');diag.replaceChildren();
-    var diagTitle=document.createElement('div');diagTitle.className='diagnostic-heading';diagTitle.textContent='BEST MARKET DATA DIAGNOSTICS · '+best.dataQuality+' SAMPLE';diag.appendChild(diagTitle);
-    var digitGrid=document.createElement('div');digitGrid.className='digit-frequency-grid';
-    best.distribution.counts.forEach(function(count,digit){var cell=document.createElement('div');cell.className='digit-frequency';var label=document.createElement('span');label.textContent=String(digit);var value=document.createElement('b');value.textContent=String(count);var pct=document.createElement('small');pct.textContent=best.distribution.percentages[digit].toFixed(1)+'%';cell.append(label,value,pct);digitGrid.appendChild(cell);});
-    diag.appendChild(digitGrid);
-    var diagGrid=document.createElement('div');diagGrid.className='diagnostic-grid';
-    function addDiagnostic(label,value){var item=document.createElement('div');item.className='diagnostic-item';var a=document.createElement('span');a.textContent=label;var b=document.createElement('b');b.textContent=value;item.append(a,b);diagGrid.appendChild(item);}
-    var tm=best.transitions.counts,shift=best.changeDetection;
-    addDiagnostic('Digit entropy',best.distribution.entropyBits+' / 3.3219 bits');
-    addDiagnostic('Uniformity chi-square',String(best.distribution.chiSquareUniform));
-    addDiagnostic('Parity streak current / max',best.parityRuns.current+' / '+best.parityRuns.longest);
-    addDiagnostic('Same-digit streak current / max',best.digitRuns.current+' / '+best.digitRuns.longest);
-    addDiagnostic('Parity transitions EE / EO',tm[0][0]+' / '+tm[0][1]);
-    addDiagnostic('Parity transitions OE / OO',tm[1][0]+' / '+tm[1][1]);
-    addDiagnostic('Last parity → selected contract',best.transitions.previousParity+' → '+(best.transitions.nextTargetRate===null?'N/A':best.transitions.nextTargetRate+'%')+' ('+best.transitions.previousParitySupport+' cases)');
-    addDiagnostic('Recent-window change',shift.available?shift.direction+' · z '+shift.zScore:'Not enough history');
-    addDiagnostic('Price moves up / down / flat',best.priceMovement.upTicks+' / '+best.priceMovement.downTicks+' / '+best.priceMovement.flatTicks);
-    addDiagnostic('Log-return dispersion',String(best.priceMovement.returnStdDev));
-    diag.appendChild(diagGrid);
-    var diagNote=document.createElement('p');diagNote.className='analysis-note';diagNote.textContent='Entropy, transitions, streaks and price movement are diagnostic context. They are not treated as proven predictive features in the ranking score.';diag.appendChild(diagNote);
-    var box=$('#rankedResults');box.replaceChildren();var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent='CROSS-VOLATILITY RANKING · '+state.contract;box.appendChild(heading);
-    ranked.ranking.forEach(function(item,index){var row=document.createElement('div');row.className='ranking-row';var rank=document.createElement('b');rank.textContent=String(index+1).padStart(2,'0');
-      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=item.marketName;var meta=document.createElement('small');
-      meta.textContent=item.sampleSize+' ticks · '+item.targetFrequencyPercent.toFixed(1)+'% '+state.contract+' · z '+item.zScore.toFixed(2)+' · adjusted p '+item.adjustedPValue.toFixed(4)+' · '+item.status;
-      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=item.evidenceScore.toFixed(1)+'/100';score.style.color=index===0?'#55f59a':'#c9f7d5';row.append(rank,detail,score);box.appendChild(row);});
-    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank historical evidence, not win probability. '+ranked.skippedMarkets+' market(s) lacked the minimum 50 valid ticks. '+(afterEpoch===null?'Timestamped forward validation is unavailable for this sample.':ledgerSaved?'Forward outcomes will be checked on later analyses.':'Browser storage is unavailable; this session cannot retain validation history.');box.appendChild(note);
-    $('#status').textContent='Analysis complete · '+best.marketName+' ranked highest for '+state.contract+'.';event('decision','LOCAL CROSS-MARKET RANKING',best.marketName+' ranked #1 for '+state.contract+' · evidence '+best.evidenceScore.toFixed(1)+'/100');
+    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
+    $('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;
+    $('#signalLabel').textContent='EVEN + ODD · TWO INDEPENDENT RANKINGS';
+    $('#signalScore').textContent='BOTH PARITIES ANALYZED';
+    var odd=ranked.odd.best,even=ranked.even.best;
+    function describe(best,label){return best?label+': '+best.marketName+' · '+best.targetFrequencyPercent.toFixed(1)+'% · evidence '+best.evidenceScore.toFixed(1)+'/100 · '+best.status+'.':label+': NO CLEAR SIGNAL — insufficient market history.';}
+    $('#engineSummary').textContent='BRAIN analyzed '+usable.length+' supported volatility markets for EVEN and ODD separately. '+describe(even,'EVEN')+' '+describe(odd,'ODD')+' These are independent historical rankings, not predictions of the next digit.';
+    $('#engineEvidence').replaceChildren();
+    [{label:'EVEN',best:even},{label:'ODD',best:odd}].forEach(function(side){var li=document.createElement('li');li.textContent=describe(side.best,side.label);$('#engineEvidence').appendChild(li);});
+    $('#marketDiagnostics').textContent='Entropy, transitions, streaks and price movement remain descriptive diagnostics, not proven predictive features.';
+    var box=$('#rankedResults');box.replaceChildren();
+    sides.forEach(function(side){
+      var best=side.ranked.best;
+      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=side.label+' · STRONGEST VOLATILITY';box.appendChild(heading);
+      var card=document.createElement('div');card.className='ranking-row';
+      var rank=document.createElement('b');rank.textContent=best?'01':'—';
+      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO CLEAR SIGNAL';
+      var meta=document.createElement('small');meta.textContent=best?best.sampleSize+' ticks · '+best.targetFrequencyPercent.toFixed(1)+'% '+side.label+' · z '+best.zScore.toFixed(2)+' · adjusted p '+best.adjustedPValue.toFixed(4)+' · '+best.status:'No market had sufficient evidence to rank.';
+      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?best.evidenceScore.toFixed(1)+'/100':'—';card.append(rank,detail,score);box.appendChild(card);
+      var subheading=document.createElement('div');subheading.className='analysis-note';subheading.textContent=side.label+' CROSS-VOLATILITY ORDER';box.appendChild(subheading);
+      side.ranked.ranking.forEach(function(item,index){
+        var row=document.createElement('div');row.className='ranking-row';
+        var number=document.createElement('b');number.textContent=String(index+1).padStart(2,'0');
+        var info=document.createElement('div'),marketName=document.createElement('span');marketName.textContent=item.marketName;
+        var stats=document.createElement('small');stats.textContent=item.sampleSize+' ticks · '+item.targetFrequencyPercent.toFixed(1)+'% '+side.label+' · z '+item.zScore.toFixed(2)+' · '+item.status;
+        info.append(marketName,stats);var value=document.createElement('b');value.className='ranking-score';value.textContent=item.evidenceScore.toFixed(1)+'/100';row.append(number,info,value);box.appendChild(row);
+      });
+      var note=document.createElement('p');note.className='analysis-note';note.textContent=side.ranked.skippedMarkets+' market(s) lacked 50 valid ticks for '+side.label+'.';box.appendChild(note);
+    });
+    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank historical evidence, not win probability. '+(ledgerSaved?'Forward outcomes will be checked on later analyses.':'Browser storage is unavailable; forward validation cannot be retained.');box.appendChild(note);
+    $('#status').textContent='Analysis complete · independent EVEN and ODD volatility rankings ready.';
+    event('decision','EVEN + ODD CROSS-MARKET ANALYSIS','EVEN: '+(even?even.marketName:'NO CLEAR SIGNAL')+' · ODD: '+(odd?odd.marketName:'NO CLEAR SIGNAL'));
     analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
   }
   function requestNextPortfolioHistory(){
@@ -703,12 +711,12 @@ li span:first-child{color:#668b70}
     portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
-    if(analysisInFlight)return;analysisInFlight=true;var contract=$('#contract').value;
-    portfolioScanState={contract:contract,index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
+    if(analysisInFlight)return;analysisInFlight=true;
+    portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    $('#signalLabel').textContent=contract+' COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Statistical processing and ranking run locally; no AI or account service is contacted.';
-    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','Contract '+contract+' · '+MK.length+' markets · up to 1,000 historical ticks per market.');
+    $('#signalLabel').textContent='EVEN + ODD COMPARISON';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. EVEN and ODD will be ranked independently using local statistical processing.';
+    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED','EVEN + ODD · '+MK.length+' markets · up to 1,000 historical ticks per market.');
     try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
     portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
     portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
@@ -734,7 +742,6 @@ li span:first-child{color:#668b70}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#scan').addEventListener('click',scan);
-  $('#contract').addEventListener('change',updateWindowMatrix);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
