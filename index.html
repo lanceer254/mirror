@@ -751,7 +751,8 @@ li span:first-child{color:#668b70}
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#scan').addEventListener('click',scan);\n  $('#rescan').addEventListener('click',scan);
+  $('#scan').addEventListener('click',scan);
+  $('#rescan').addEventListener('click',scan);
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
   render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
