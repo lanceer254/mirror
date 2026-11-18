@@ -307,7 +307,7 @@ li span:first-child{color:#668b70}
       <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
     </div>
     <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
-    <div class="engine-summary" id="engineSummary">Press BRAIN to scan recurring digit sequences across all supported volatility indices. Select EVEN, ODD or BOTH.</div>
+    <div class="engine-summary" id="engineSummary">Press BRAIN to scan recurring digit patterns across all supported volatility indices for the selected contract.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
     <div id="marketDiagnostics" class="market-diagnostics"></div>
     <div id="rankedResults" class="ranked-results"></div>
@@ -721,7 +721,7 @@ li span:first-child{color:#668b70}
     if(analysisInFlight)return;analysisInFlight=true;
     portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    var mode=$('#analysisMode').value||'BOTH';$('#signalLabel').textContent=mode+' PATTERN SCAN';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    var mode=$('#analysisMode').value||'EVEN';$('#signalLabel').textContent=mode+' PATTERN SCAN';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
     $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Every recurring 2- and 3-digit sequence will be checked for the selected contract.';
     $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',mode+' contract · '+MK.length+' markets · up to 1,000 historical ticks per market.');
     try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
