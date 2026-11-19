@@ -469,8 +469,8 @@ li span:first-child{color:#668b70}
     tickEpochs.push(epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null);
     if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
-      render();
       moveCursor(lastDigit,true);
+      render();
       processMarketTick(lastDigit,price);
     }
     return true;
