@@ -329,6 +329,8 @@ li span:first-child{color:#668b70}
       <select id="derivAccount" disabled><option value="">CONNECT TO LOAD DEMO AND REAL ACCOUNTS</option></select>
     </label>
     <div class="deriv-balance-row"><span id="derivAuthStatus" aria-live="polite">NOT CONNECTED</span><strong id="derivBalance">—</strong></div>
+    <div class="deriv-balance-row"><span>DEMO BALANCE</span><strong id="derivDemoBalance">—</strong></div>
+    <div class="deriv-balance-row"><span>REAL BALANCE</span><strong id="derivRealBalance">—</strong></div>
   </section>
 
   <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN_ODD" selected>EVEN / ODD</option><option value="OVER_UNDER">OVER / UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis is separate from account trading. Connect Deriv to read balances and place trades.</p></section>
@@ -990,6 +992,17 @@ li span:first-child{color:#668b70}
     var amount=Number(account.balance);
     return Number.isFinite(amount)?amount.toFixed(2)+' '+String(account.currency||'').toUpperCase():'BALANCE PENDING';
   }
+  function setAccountTypeBalance(kind,value){
+    var target=kind==='demo'?'#derivDemoBalance':'#derivRealBalance';
+    $(target).textContent=value;
+  }
+  function renderAccountTypeBalances(){
+    setAccountTypeBalance('demo','—');setAccountTypeBalance('real','—');
+    derivAccounts.forEach(function(account){
+      var kind=String(account.account_type||'').toLowerCase();
+      if(kind==='demo'||kind==='real')setAccountTypeBalance(kind,accountBalanceText(account));
+    });
+  }
   function updateTradeButton(){
     var stake=Number($('#martingaleEnabled').checked?$('#martingaleBase').value:$('#tradeStake').value);
     var stakeReady=Number.isFinite(stake)&&stake>0;
@@ -1017,6 +1030,7 @@ li span:first-child{color:#668b70}
   }
   function renderDerivAccounts(accounts){
     derivAccounts=Array.isArray(accounts)?accounts:[];
+    renderAccountTypeBalances();
     var select=$('#derivAccount');
     select.innerHTML='';
     if(!derivAccounts.length){
@@ -1090,7 +1104,9 @@ li span:first-child{color:#668b70}
         if(message.msg_type==='balance'&&message.balance){
           var amount=Number(message.balance.balance);
           var currency=message.balance.currency||selectedDerivAccount.currency||'';
-          $('#derivBalance').textContent=Number.isFinite(amount)?amount.toFixed(2)+' '+String(currency).toUpperCase():'—';
+          var liveBalance=Number.isFinite(amount)?amount.toFixed(2)+' '+String(currency).toUpperCase():'—';
+          $('#derivBalance').textContent=liveBalance;
+          setAccountTypeBalance(String(selectedDerivAccount.account_type||'').toLowerCase(),liveBalance);
         }
         if(message.msg_type==='proposal'&&pendingTrade&&message.req_id===pendingProposalReqId&&message.proposal){
           var proposal=message.proposal;
