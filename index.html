@@ -283,7 +283,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><optgroup label="EVEN / ODD"><option value="EVEN" selected>EVEN</option><option value="ODD">ODD</option></optgroup><optgroup label="OVER / UNDER"><option value="OVER">OVER</option><option value="UNDER">UNDER</option></optgroup></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p></section>
+  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN_ODD" selected>EVEN / ODD</option><option value="OVER_UNDER">OVER / UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -416,12 +416,12 @@ li span:first-child{color:#668b70}
 
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
-  function activeContract(){return String($('#analysisMode').value||'EVEN').toUpperCase();}
+  function activeContract(){return String($('#analysisMode').value||'EVEN_ODD').toUpperCase();}
   function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{percentages:percentages,momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10,sampleSize:n};}
   function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
   function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.min(100,stats.momentum/90*100):0)+'%';track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
-  function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER'&&mode!=='UNDER';renderMomentumHistogram();}
-  function renderMomentumHistogram(){var mode=activeContract(),panel=$('#momentumPanel');if(!panel)return;var isOU=mode==='OVER'||mode==='UNDER';panel.hidden=!isOU;if(!isOU)return;var stats=momentumForDigits(selectedDigits(ds),'OVER',0),sample=stats.sampleSize,percentages=stats.percentages;renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?stats.momentum.toFixed(1)+'%':'—';var under=momentumForDigits(selectedDigits(ds),'UNDER',9);$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+  function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER_UNDER';renderMomentumHistogram();}
+  function renderMomentumHistogram(){var panel=$('#momentumPanel');if(!panel)return;var isOU=activeContract()==='OVER_UNDER';panel.hidden=!isOU;if(!isOU)return;var stats=momentumForDigits(selectedDigits(ds),'OVER',0),sample=stats.sampleSize,percentages=stats.percentages;renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?stats.momentum.toFixed(1)+'%':'—';var under=momentumForDigits(selectedDigits(ds),'UNDER',9);$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
 
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
@@ -713,8 +713,8 @@ li span:first-child{color:#668b70}
     if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
     $('#engineStateLabel').textContent='PROCESSING PATTERNS';
     var mode=state.mode||activeContract();
-    if(mode==='OVER'||mode==='UNDER'){finishMomentumScan(usable,state);return;}
-    var sides=[{label:mode,ranked:ZyntrixEngine.rankPatternMarkets(usable,mode,MK.length)}];
+    if(mode==='OVER_UNDER'){finishMomentumScan(usable,state);return;}
+    var sides=['EVEN','ODD'].map(function(contract){return{label:contract,ranked:ZyntrixEngine.rankPatternMarkets(usable,contract,MK.length)};});
     var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results);
     sides.forEach(function(side){
       var best=side.ranked.best;if(!best)return;
@@ -802,7 +802,55 @@ li span:first-child{color:#668b70}
   }
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
-  function finishMomentumScan(usable,state){var mode=state.mode||activeContract(),ranked=usable.map(function(m){var percentages=momentumForDigits(m.digits,'OVER',0).percentages,series=[];for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier);series.push({barrier:barrier,momentum:stats.momentum,required:stats.required,margin:stats.momentum-stats.required});}series.sort(function(a,b){return b.margin-a.margin;});return{symbol:m.symbol,marketName:m.marketName,stats:series[0],sampleSize:m.digits.length};}).sort(function(a,b){return b.stats.margin-a.stats.margin;});var best=ranked[0],qualified=!!best&&best.sampleSize>0&&best.stats.margin>0;lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;$('#signalLabel').textContent=mode+' BARRIER MOMENTUM';$('#signalScore').textContent=best?mode+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'%':'NO DATA';$('#engineSummary').textContent=best?(qualified?'The strongest observed '+mode+' barrier is '+mode+' '+best.stats.barrier+' on '+best.marketName+'. ':'No barrier exceeded its neutral frequency baseline. ')+'Winning-digit frequency is calculated cumulatively for each barrier from the selected '+state.window+'-tick sample. Strongest margin over baseline: '+(best.stats.margin>=0?'+':'')+best.stats.margin.toFixed(1)+' percentage points. Historical frequency is not a guaranteed next-tick probability.':'No market returned usable tick data.';$('#engineEvidence').replaceChildren();ranked.slice(0,5).forEach(function(item,index){var li=document.createElement('li');li.textContent=(index+1)+'. '+item.marketName+' · strongest '+mode+' '+item.stats.barrier+' · '+item.stats.momentum.toFixed(1)+'% observed / '+item.stats.required.toFixed(1)+'% baseline · '+item.sampleSize+' ticks';$('#engineEvidence').appendChild(li);});$('#marketDiagnostics').textContent='Over barriers count digits greater than the barrier; Under barriers count digits lower than the barrier. Neutral baseline = winning-digit count × 10%. Selected window: '+state.window+' ticks.';$('#rankedResults').textContent=best?'Top market: '+best.marketName+' · '+mode+' '+best.stats.barrier+' · '+(qualified?'ABOVE BASELINE':'AT/BELOW BASELINE'):'No usable market data.';$('#status').textContent=mode+' barrier momentum scan complete · '+(qualified?'above baseline':'no barrier above baseline');event('decision',mode+' BARRIER MOMENTUM ANALYSIS',best?best.marketName+' · '+mode+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% vs '+best.stats.required.toFixed(1)+'% baseline.':'No usable market data.');analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
+  function finishMomentumScan(usable,state){
+    var contracts=['OVER','UNDER'];
+    var rankedByContract=contracts.map(function(mode){
+      var ranked=usable.map(function(m){
+        var percentages=momentumForDigits(m.digits,'OVER',0).percentages,series=[];
+        for(var barrier=0;barrier<=9;barrier++){
+          var stats=momentumFromPercentages(percentages,mode,barrier);
+          series.push({barrier:barrier,momentum:stats.momentum,required:stats.required,margin:stats.momentum-stats.required});
+        }
+        series.sort(function(a,b){return b.margin-a.margin;});
+        return{symbol:m.symbol,marketName:m.marketName,stats:series[0],sampleSize:m.digits.length};
+      }).sort(function(a,b){return b.stats.margin-a.stats.margin;});
+      return{label:mode,ranked:ranked,best:ranked[0]};
+    });
+    var qualified=rankedByContract.filter(function(x){return x.best&&x.best.sampleSize>0&&x.best.stats.margin>0;}).length;
+    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
+    $('#engineStateLabel').textContent='COMPLETE';
+    $('#marketCoverage').textContent=usable.length+' / '+MK.length;
+    $('#signalLabel').textContent='OVER / UNDER BARRIER MOMENTUM';
+    $('#signalScore').textContent=qualified+' CONTRACT SIGNAL(S)';
+    function describe(group){
+      var best=group.best;
+      return best?(group.label+': '+best.marketName+' · '+group.label+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% observed / '+best.stats.required.toFixed(1)+'% baseline · '+(best.stats.margin>0?'ABOVE':'AT/BELOW')+' baseline.'):group.label+': no usable market data.';
+    }
+    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and analyzed OVER and UNDER together using the selected '+state.window+'-tick sample. '+rankedByContract.map(describe).join(' ')+' Historical frequency is not a guaranteed next-tick probability.';
+    $('#engineEvidence').replaceChildren();
+    rankedByContract.forEach(function(group){
+      group.ranked.slice(0,5).forEach(function(item,index){
+        var li=document.createElement('li');
+        li.textContent=group.label+' · '+(index+1)+'. '+item.marketName+' · strongest '+group.label+' '+item.stats.barrier+' · '+item.stats.momentum.toFixed(1)+'% observed / '+item.stats.required.toFixed(1)+'% baseline · '+item.sampleSize+' ticks';
+        $('#engineEvidence').appendChild(li);
+      });
+    });
+    $('#marketDiagnostics').textContent='OVER and UNDER are both analyzed in the same scan. Over barriers count digits greater than the barrier; Under barriers count digits lower than the barrier. Neutral baseline = winning-digit count × 10%. Selected window: '+state.window+' ticks.';
+    $('#rankedResults').replaceChildren();
+    rankedByContract.forEach(function(group){
+      var best=group.best;
+      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=group.label+' · STRONGEST BARRIER';$('#rankedResults').appendChild(heading);
+      var row=document.createElement('div');row.className='ranking-row';
+      var rank=document.createElement('b');rank.textContent=best?'01':'—';
+      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO DATA';
+      var meta=document.createElement('small');meta.textContent=best?'Strongest '+group.label+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% observed / '+best.stats.required.toFixed(1)+'% baseline · '+best.sampleSize+' ticks':'No market returned usable tick data.';
+      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?(best.stats.margin>=0?'+':'')+best.stats.margin.toFixed(1)+' pp':'—';
+      row.append(rank,detail,score);$('#rankedResults').appendChild(row);
+    });
+    $('#status').textContent='OVER / UNDER analysis complete · '+qualified+' contract signal(s) above baseline.';
+    event('decision','OVER / UNDER MOMENTUM ANALYSIS',rankedByContract.map(describe).join(' '));
+    analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
+  }
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();updateParityStrength();renderMomentumHistogram();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
