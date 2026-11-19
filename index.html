@@ -982,7 +982,7 @@ li span:first-child{color:#668b70}
   var DERIV_WORKER='https://zyntrix-oauth.fiverlancer51.workers.dev';
   var derivSessionId=sessionStorage.getItem('zyntrix_session')||'';
   var derivAccounts=[],selectedDerivAccount=null,accountSocket=null,accountSocketReady=false;
-  var tradeRequestId=2000,pendingTrade=false,pendingProposalReqId=null;
+  var tradeRequestId=2000,pendingTrade=false,pendingProposalReqId=null,pendingBuyReqId=null;
   function setDerivStatus(message){$('#derivAuthStatus').textContent=message;}
   function accountBalanceText(account){
     var amount=Number(account.balance);
@@ -1076,7 +1076,7 @@ li span:first-child{color:#668b70}
         try{message=JSON.parse(event.data)}catch(e){return;}
         if(message.error){
           var errorText=message.error.message||message.error.code||'Deriv returned an error';
-          if(message.req_id===pendingProposalReqId){pendingTrade=false;pendingProposalReqId=null;updateTradeHint('TRADE REJECTED: '+errorText);}
+          if(message.req_id===pendingProposalReqId||message.req_id===pendingBuyReqId){pendingTrade=false;pendingProposalReqId=null;pendingBuyReqId=null;updateTradeHint('TRADE REJECTED: '+errorText);}
           else updateTradeHint(errorText);
           return;
         }
@@ -1090,18 +1090,19 @@ li span:first-child{color:#668b70}
           if(!proposal.id||!Number.isFinite(Number(proposal.ask_price))){
             pendingTrade=false;pendingProposalReqId=null;updateTradeHint('Deriv returned an incomplete trade proposal.');return;
           }
-          accountSocket.send(JSON.stringify({buy:proposal.id,price:Number(proposal.ask_price),req_id:++tradeRequestId}));
+          pendingBuyReqId=++tradeRequestId;
+          accountSocket.send(JSON.stringify({buy:proposal.id,price:Number(proposal.ask_price),req_id:pendingBuyReqId}));
           pendingProposalReqId=null;
           updateTradeHint('Price received. Sending the confirmed purchase request…');
         }
         if(message.msg_type==='buy'&&message.buy){
-          pendingTrade=false;
+          pendingTrade=false;pendingBuyReqId=null;pendingProposalReqId=null;
           updateTradeHint('TRADE PLACED · CONTRACT '+(message.buy.contract_id||'CONFIRMED')+' · PURCHASE PRICE '+(message.buy.buy_price||'—'));
           event('result','TRADE PLACED',(selectedDerivAccount?selectedDerivAccount.account_type:'ACCOUNT')+' · '+(message.buy.contract_id||'Contract confirmed'));
         }
       };
       accountSocket.onerror=function(){accountSocketReady=false;setDerivStatus('ACCOUNT CONNECTION ERROR');updateTradeHint('Could not establish the selected account WebSocket connection.');};
-      accountSocket.onclose=function(){accountSocketReady=false;setDerivStatus('ACCOUNT DISCONNECTED');updateTradeButton();};
+      accountSocket.onclose=function(){accountSocketReady=false;pendingTrade=false;pendingBuyReqId=null;pendingProposalReqId=null;setDerivStatus('ACCOUNT DISCONNECTED');updateTradeButton();};
     }catch(error){
       setDerivStatus('ACCOUNT CONNECTION FAILED');
       updateTradeHint(error.message);
