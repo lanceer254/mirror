@@ -248,7 +248,7 @@ li span:first-child{color:#668b70}
 .tick-window-switch button:disabled{opacity:.45;cursor:not-allowed}
 .contract-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .contract-digit-field[hidden]{display:none!important}
-.ou-histograms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.ou-histograms{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px}
 .ou-histograms[hidden]{display:none!important}
 .ou-chart{min-width:0;padding:12px 10px 9px;background:#071a25;border:1px solid #174052;border-radius:12px;color:#dcecf2}
 .ou-chart-head{height:24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:12px}
@@ -266,6 +266,7 @@ li span:first-child{color:#668b70}
 .ou-bar{width:100%;max-width:34px;min-height:0;transition:height .18s ease}
 .over-chart .ou-bar{background:rgba(237,78,145,.25);border:1px solid #ed4e91}
 .under-chart .ou-bar{background:rgba(53,198,206,.23);border:1px solid #35c6ce}
+.digit-chart .ou-bar{background:rgba(53,198,206,.23);border:1px solid #35c6ce}
 .ou-digit{height:18px;color:#78919b;font-size:9px;line-height:18px}
 .ou-chart-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#668b97;font-size:8px;letter-spacing:.08em}
 @media(max-width:600px){.ou-histograms{grid-template-columns:1fr;gap:10px}.ou-chart{padding:10px 8px 8px}.ou-chart-body{grid-template-columns:24px minmax(0,1fr);gap:5px;height:230px}.ou-bars{gap:5px}.ou-value{font-size:9px;letter-spacing:0}.ou-bar{max-width:34px}.ou-chart-head{font-size:11px}.ou-chart-head strong{font-size:14px}.ou-axis{font-size:8px}}
@@ -305,16 +306,11 @@ li span:first-child{color:#668b70}
       </div>
     </section>
   </div>
-  <section class="ou-histograms" id="momentumPanel" aria-label="Over and Under barrier momentum histograms" hidden>
-    <div class="ou-chart over-chart">
-      <div class="ou-chart-head"><span class="ou-legend"><i></i> Over</span><strong id="overMomentumNow">—</strong></div>
-      <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="overHistogram" role="img" aria-label="Over 0 through Over 9 cumulative winning digit percentages"></div></div></div>
-      <div class="ou-chart-foot"><span>OVER BARRIER</span><span id="overSample">0 TICKS</span></div>
-    </div>
-    <div class="ou-chart under-chart">
-      <div class="ou-chart-head"><span class="ou-legend"><i></i> Under</span><strong id="underMomentumNow">—</strong></div>
-      <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="underHistogram" role="img" aria-label="Under 0 through Under 9 cumulative winning digit percentages"></div></div></div>
-      <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 TICKS</span></div>
+  <section class="ou-histograms" id="momentumPanel" aria-label="Digit distribution histogram">
+    <div class="ou-chart digit-chart">
+      <div class="ou-chart-head"><span class="ou-legend"><i></i> Digit frequency</span><strong id="digitDistributionWindow">—</strong></div>
+      <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>100%</span><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="digitHistogram" role="img" aria-label="Frequency percentage for each last digit from 0 to 9"></div></div></div>
+      <div class="ou-chart-foot"><span>DIGIT DISTRIBUTION · 0–9</span><span id="digitDistributionSample">0 / 1000 TICKS</span></div>
     </div>
   </section>
     <section class="tick-window" aria-label="Deriv rolling tick window">
@@ -418,10 +414,9 @@ li span:first-child{color:#668b70}
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
   function activeContract(){return String($('#analysisMode').value||'EVEN_ODD').toUpperCase();}
   function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
-  function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
-  function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.max(0,Math.min(100,stats.momentum/90*100)):0)+'%';bar.setAttribute('aria-label',mode+' '+barrier+': '+(sampleSize?stats.momentum.toFixed(1)+'%':'no data'));track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
-  function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER_UNDER';renderMomentumHistogram();}
-  function renderMomentumHistogram(distribution){var panel=$('#momentumPanel');if(!panel)return;var isOU=activeContract()==='OVER_UNDER';panel.hidden=!isOU;if(!isOU)return;var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+  function renderDigitHistogram(distribution){var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,counts=shared.counts,holder=$('#digitHistogram');if(!holder)return;holder.replaceChildren();for(var digit=0;digit<=9;digit++){var percentage=percentages[digit],col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sample?percentage.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sample?Math.max(0,Math.min(100,percentage)):0)+'%';bar.setAttribute('aria-label','Digit '+digit+': '+(sample?percentage.toFixed(1)+'% ('+counts[digit]+' of '+sample+' ticks)':'no data'));track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(digit);col.append(value,track,label);holder.appendChild(col);}$('#digitDistributionWindow').textContent=selectedWindow+' TICKS';$('#digitDistributionSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+  function updateContractControls(){renderDigitHistogram();}
+  function renderMomentumHistogram(distribution){renderDigitHistogram(distribution);}
 
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
