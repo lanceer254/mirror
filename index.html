@@ -736,10 +736,10 @@ li span:first-child{color:#668b70}
       if(candidate)return side.label+': NO CLEAR SIGNAL · strongest observed pattern '+candidate.pattern.pattern+' had '+candidate.pattern.targetRatePercent+'% '+side.label+' across '+candidate.pattern.occurrences+' repeats; evidence threshold not met.';
       return side.label+': NO CLEAR SIGNAL · no recurring pattern had enough observations.';
     }
-    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and tested every recurring 2- and 3-digit sequence in the collected history. '+sides.map(describe).join(' ')+' A pattern signal requires at least 8 historical repeats, at least 60% target-parity follow-through and a Wilson lower bound above 50%. Historical evidence only; not a guarantee of the next tick.';
+    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and tested every recurring 2- and 3-digit sequence in the selected '+state.window+'-tick sample for each market. '+sides.map(describe).join(' ')+' A pattern signal requires at least 8 historical repeats, at least 60% target-parity follow-through and a Wilson lower bound above 50%. Historical evidence only; not a guarantee of the next tick.';
     $('#engineEvidence').replaceChildren();
     sides.forEach(function(side){var li=document.createElement('li');li.textContent=describe(side);$('#engineEvidence').appendChild(li);});
-    $('#marketDiagnostics').textContent='Pattern method: every 2- and 3-digit sequence is checked across the full collected history; the parity of the following digit is measured at each occurrence. Weak or under-sampled patterns are not promoted to signals.';
+    $('#marketDiagnostics').textContent='Pattern method: every 2- and 3-digit sequence is checked across the selected '+state.window+'-tick sample for each market; the parity of the following digit is measured at each occurrence. Weak or under-sampled patterns are not promoted to signals.';
     var box=$('#rankedResults');box.replaceChildren();
     sides.forEach(function(side){
       var best=side.ranked.best,candidate=side.ranked.candidate;
@@ -794,7 +794,7 @@ li span:first-child{color:#668b70}
         if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)}))rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index;});
         var clean=[];rows.forEach(function(row){var previous=clean.length?clean[clean.length-1]:null;if(previous&&row.epoch!==null&&previous.epoch===row.epoch&&previous.price===row.price)return;clean.push(row);});
         var digits=clean.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
-        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits,prices:clean.map(function(x){return x.price;}),epochs:clean.map(function(x){return x.epoch;})});
+        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits.slice(-state.window),prices:clean.map(function(x){return x.price;}).slice(-state.window),epochs:clean.map(function(x){return x.epoch;}).slice(-state.window)});
       }else state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:'Unexpected history response'});
       state.index++;requestNextPortfolioHistory();
     };
