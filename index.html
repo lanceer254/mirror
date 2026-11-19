@@ -1075,9 +1075,9 @@ li span:first-child{color:#668b70}
         accountSocket.send(JSON.stringify({balance:1,subscribe:1,req_id:++tradeRequestId}));
         updateTradeHint('Account connected. Select barrier, direction, ticks and stake, then ENGAGE before placing a trade.');
       };
-      accountSocket.onmessage=function(event){
+      accountSocket.onmessage=function(wsEvent){
         var message;
-        try{message=JSON.parse(event.data)}catch(e){return;}
+        try{message=JSON.parse(wsEvent.data)}catch(e){return;}
         if(message.error){
           var errorText=message.error.message||message.error.code||'Deriv returned an error';
           if(message.req_id===pendingProposalReqId||message.req_id===pendingBuyReqId){pendingTrade=false;pendingProposalReqId=null;pendingBuyReqId=null;updateTradeHint('TRADE REJECTED: '+errorText);}
@@ -1102,7 +1102,7 @@ li span:first-child{color:#668b70}
         if(message.msg_type==='buy'&&message.buy){
           pendingTrade=false;pendingBuyReqId=null;pendingProposalReqId=null;
           updateTradeHint('TRADE PLACED · CONTRACT '+(message.buy.contract_id||'CONFIRMED')+' · PURCHASE PRICE '+(message.buy.buy_price||'—'));
-          window.event('result','TRADE PLACED',(selectedDerivAccount?selectedDerivAccount.account_type:'ACCOUNT')+' · '+(message.buy.contract_id||'Contract confirmed'));
+          event('result','TRADE PLACED',(selectedDerivAccount?selectedDerivAccount.account_type:'ACCOUNT')+' · '+(message.buy.contract_id||'Contract confirmed'));
         }
       };
       accountSocket.onerror=function(){accountSocketReady=false;setDerivStatus('ACCOUNT CONNECTION ERROR');updateTradeHint('Could not establish the selected account WebSocket connection.');};
