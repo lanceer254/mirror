@@ -248,25 +248,28 @@ li span:first-child{color:#668b70}
 .tick-window-switch button:disabled{opacity:.45;cursor:not-allowed}
 .contract-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .contract-digit-field[hidden]{display:none!important}
-.momentum-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:14px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-.momentum-panel[hidden]{display:none!important}
-.momentum-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.momentum-head h2{margin:0;color:#aaf8bf}
-.momentum-total{font-size:clamp(20px,4vw,30px);font-weight:800;color:#55f59a;font-variant-numeric:tabular-nums}
-.momentum-meta{display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 12px;color:#8bdba2;font-size:10px}
-.momentum-histogram{height:190px;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:7px;align-items:end;padding:12px 4px 0;border-bottom:1px solid #3b6046;background:linear-gradient(to top,rgba(85,245,154,.055) 1px,transparent 1px);background-size:100% 25%}
-.momentum-column{height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px}
-.momentum-column .value{font-size:9px;color:#a9cbb2;font-variant-numeric:tabular-nums;white-space:nowrap}
-.momentum-column .bar-track{height:125px;width:100%;max-width:38px;display:flex;align-items:flex-end;justify-content:center}
-.momentum-column .bar{width:100%;min-height:2px;border-radius:3px 3px 0 0;background:#315c40;border:1px solid #477e59;transition:height .18s ease}
-.momentum-column.winner .bar{background:linear-gradient(180deg,#8dffb0,#15964a);border-color:#55f59a;box-shadow:0 0 10px rgba(85,245,154,.18)}
-.momentum-column .digit{font-size:11px;color:#8bdba2;font-weight:700}
-.momentum-column:not(.winner){opacity:.42}
-.momentum-threshold{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px;border:1px solid #17452e;border-radius:5px;background:#07110b;font-size:10px}
-.momentum-threshold strong{color:#55f59a}
-.momentum-status{margin-top:9px;color:#8bdba2;font-size:10px;line-height:1.5}
-.momentum-status.ready{color:#55f59a}.momentum-status.watch{color:#ffbf69}
-@media(max-width:600px){.stage-toolbar{justify-content:space-between}.tick-window-switch button{min-width:38px;padding:6px 5px}.momentum-panel{padding:11px}.momentum-histogram{gap:3px;height:165px}.momentum-column .bar-track{height:105px}.momentum-column .value{font-size:8px}.contract-fields{grid-template-columns:1fr}}
+.ou-histograms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.ou-histograms[hidden]{display:none!important}
+.ou-chart{min-width:0;padding:12px 10px 9px;background:#071a25;border:1px solid #174052;border-radius:12px;color:#dcecf2}
+.ou-chart-head{height:24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.ou-legend{display:flex;align-items:center;gap:6px;color:#78919b;font-size:10px}
+.ou-legend i{display:inline-block;width:24px;height:12px;border:1px solid #ed4e91;background:rgba(237,78,145,.18)}
+.under-chart .ou-legend i{border-color:#35c6ce;background:rgba(53,198,206,.18)}
+.ou-chart-head strong{font-size:16px;color:#edf7fa;font-variant-numeric:tabular-nums}
+.ou-chart-body{display:grid;grid-template-columns:24px minmax(0,1fr);gap:5px;height:270px}
+.ou-axis{display:flex;flex-direction:column;justify-content:space-between;padding:0 0 23px;color:#617c88;font-size:8px;line-height:1}
+.ou-plot{position:relative;min-width:0;border-bottom:1px solid #42606b;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(11.111% - 1px),rgba(80,125,143,.12) calc(11.111% - 1px),rgba(80,125,143,.12) 11.111%)}
+.ou-bars{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;align-items:end}
+.ou-column{height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}
+.ou-value{height:16px;max-width:100%;white-space:nowrap;font-size:clamp(7px,.9vw,10px);line-height:16px;color:#e5edf0;font-weight:700;font-variant-numeric:tabular-nums}
+.ou-bar-track{height:calc(100% - 38px);width:100%;display:flex;align-items:flex-end;justify-content:center}
+.ou-bar{width:100%;max-width:34px;min-height:0;transition:height .18s ease}
+.over-chart .ou-bar{background:rgba(237,78,145,.25);border:1px solid #ed4e91}
+.under-chart .ou-bar{background:rgba(53,198,206,.23);border:1px solid #35c6ce}
+.ou-digit{height:18px;color:#78919b;font-size:9px;line-height:18px}
+.ou-chart-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#668b97;font-size:8px;letter-spacing:.08em}
+@media(max-width:600px){.ou-histograms{gap:7px}.ou-chart{padding:9px 6px 7px}.ou-chart-body{grid-template-columns:20px minmax(0,1fr);gap:3px;height:215px}.ou-bars{gap:2px}.ou-value{font-size:7px}.ou-bar{max-width:23px}.ou-chart-head{font-size:10px}.ou-chart-head strong{font-size:13px}.ou-axis{font-size:7px}}
+@media(max-width:600px){.stage-toolbar{justify-content:space-between}.tick-window-switch button{min-width:38px;padding:6px 5px}.contract-fields{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -280,7 +283,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN" selected>EVEN</option><option value="ODD">ODD</option><option value="OVER">OVER</option><option value="UNDER">UNDER</option></select></label><label class="field contract-digit-field" id="contractDigitField" hidden>CONTRACT BARRIER<select id="contractDigit"><option value="0">OVER 0</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p></section>
+  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN" selected>EVEN</option><option value="ODD">ODD</option><option value="OVER">OVER</option><option value="UNDER">UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -302,12 +305,17 @@ li span:first-child{color:#668b70}
       </div>
     </section>
   </div>
-  <section class="momentum-panel" id="momentumPanel" aria-label="Over and Under digit momentum histogram" hidden>
-    <div class="momentum-head"><h2 id="momentumTitle">OVER 0 DIGIT MOMENTUM</h2><div class="momentum-total" id="momentumTotal">—</div></div>
-    <div class="momentum-meta"><span id="momentumWindow">WINDOW: 1000 TICKS</span><span id="momentumWinningDigits">WINNING DIGITS: 1–9</span></div>
-    <div class="momentum-histogram" id="momentumHistogram" role="img" aria-label="Digit percentage histogram"></div>
-    <div class="momentum-threshold"><span>REQUIRED MOMENTUM <strong id="momentumRequired">90.0%</strong></span><span>OBSERVED MOMENTUM <strong id="momentumObserved">—</strong></span></div>
-    <div class="momentum-status" id="momentumStatus">Waiting for Deriv digit data.</div>
+  <section class="ou-histograms" id="momentumPanel" aria-label="Over and Under barrier momentum histograms" hidden>
+    <div class="ou-chart over-chart">
+      <div class="ou-chart-head"><span class="ou-legend"><i></i> Over</span><strong id="overMomentumNow">—</strong></div>
+      <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="overHistogram" role="img" aria-label="Over 0 through Over 9 cumulative winning digit percentages"></div></div></div>
+      <div class="ou-chart-foot"><span>OVER BARRIER</span><span id="overSample">0 TICKS</span></div>
+    </div>
+    <div class="ou-chart under-chart">
+      <div class="ou-chart-head"><span class="ou-legend"><i></i> Under</span><strong id="underMomentumNow">—</strong></div>
+      <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="underHistogram" role="img" aria-label="Under 0 through Under 9 cumulative winning digit percentages"></div></div></div>
+      <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 TICKS</span></div>
+    </div>
   </section>
     <section class="tick-window" aria-label="Deriv rolling tick window">
     <button class="tick-window-toggle" id="tickWindowToggle" type="button" aria-expanded="false" aria-controls="tickWindowBody">
@@ -384,7 +392,7 @@ li span:first-child{color:#668b70}
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
   var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=1000;
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
-  function lockScanControls(locked){$('#analysisMode').disabled=locked;$('#contractDigit').disabled=locked;Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
+  function lockScanControls(locked){$('#analysisMode').disabled=locked;Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -409,7 +417,12 @@ li span:first-child{color:#668b70}
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
   function activeContract(){return String($('#analysisMode').value||'EVEN').toUpperCase();}
-  function contractBarrier(){return Number($('#contractDigit').value||0);}
+  function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{percentages:percentages,momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10,sampleSize:n};}
+  function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
+  function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?stats.momentum:0)+'%';track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
+  function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER'&&mode!=='UNDER';renderMomentumHistogram();}
+  function renderMomentumHistogram(){var mode=activeContract(),panel=$('#momentumPanel');if(!panel)return;var isOU=mode==='OVER'||mode==='UNDER';panel.hidden=!isOU;if(!isOU)return;var stats=momentumForDigits(selectedDigits(ds),'OVER',0),sample=stats.sampleSize,percentages=stats.percentages;renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?stats.momentum.toFixed(1)+'%':'—';var under=momentumForDigits(selectedDigits(ds),'UNDER',9);$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+
   function winningDigits(mode,barrier){var out=[];for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:mode==='UNDER'?d<barrier:false)out.push(d);return out;}
   function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),winners=winningDigits(mode,barrier),momentum=winners.reduce(function(sum,d){return sum+percentages[d];},0),required=winners.length*10;return{counts:counts,percentages:percentages,winners:winners,momentum:momentum,required:required,sampleSize:n};}
   function updateContractControls(){var mode=activeContract(),field=$('#contractDigitField'),select=$('#contractDigit'),previous=select.value;field.hidden=mode!=='OVER'&&mode!=='UNDER';if(mode==='OVER'){select.innerHTML='';for(var i=0;i<=8;i++){var option=document.createElement('option');option.value=String(i);option.textContent='OVER '+i;select.appendChild(option);}select.value=previous!==''&&Number(previous)<=8?previous:'0';}else if(mode==='UNDER'){select.innerHTML='';for(var j=1;j<=9;j++){var option2=document.createElement('option');option2.value=String(j);option2.textContent='UNDER '+j;select.appendChild(option2);}select.value=previous!==''&&Number(previous)>=1&&Number(previous)<=9?previous:'9';}$('#momentumPanel').hidden=mode!=='OVER'&&mode!=='UNDER';renderMomentumHistogram();}
@@ -794,12 +807,11 @@ li span:first-child{color:#668b70}
   }
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
-  function finishMomentumScan(usable,state){var mode=state.mode||activeContract(),barrier=state.barrier===undefined?contractBarrier():state.barrier,ranked=usable.map(function(m){var stats=momentumForDigits(m.digits,mode,barrier);return{symbol:m.symbol,marketName:m.marketName,stats:stats};}).sort(function(a,b){return b.stats.momentum-a.stats.momentum;});var best=ranked[0],required=best?best.stats.required:0,qualified=!!best&&best.stats.sampleSize>0&&best.stats.momentum>=required;lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;$('#signalLabel').textContent=mode+' '+barrier+' MOMENTUM';$('#signalScore').textContent=best?best.stats.momentum.toFixed(1)+'% / '+required.toFixed(1)+'%':'NO DATA';$('#engineSummary').textContent=best?(qualified?'Momentum threshold reached on '+best.marketName+'. ':'No market reached the required momentum threshold. ')+mode+' '+barrier+' combines the observed percentages of winning digits in the selected '+state.window+'-tick sample. Highest observed group momentum: '+best.stats.momentum.toFixed(1)+'% ('+best.stats.sampleSize+' ticks). This is a recent frequency measure, not a guaranteed next-tick probability.':'No market returned usable tick data.';$('#engineEvidence').replaceChildren();ranked.slice(0,5).forEach(function(item,index){var li=document.createElement('li');li.textContent=(index+1)+'. '+item.marketName+' · '+item.stats.momentum.toFixed(1)+'% momentum · '+item.stats.required.toFixed(1)+'% required · '+item.stats.sampleSize+' ticks';$('#engineEvidence').appendChild(li);});$('#marketDiagnostics').textContent='Over/Under momentum = sum of the observed percentages for all winning digits. Threshold = number of winning digits × 10%. Selected window: '+state.window+' ticks.';$('#rankedResults').textContent=best?'Top market: '+best.marketName+' · '+(qualified?'THRESHOLD REACHED':'BELOW THRESHOLD'):'No usable market data.';$('#status').textContent=mode+' '+barrier+' momentum scan complete · '+(qualified?'threshold reached':'no qualifying market');event('decision',mode+' '+barrier+' MOMENTUM ANALYSIS',best?best.marketName+' · '+best.stats.momentum.toFixed(1)+'% observed · '+required.toFixed(1)+'% required.':'No usable market data.');analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
+  function finishMomentumScan(usable,state){var mode=state.mode||activeContract(),ranked=usable.map(function(m){var percentages=momentumForDigits(m.digits,'OVER',0).percentages,series=[];for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier);series.push({barrier:barrier,momentum:stats.momentum,required:stats.required,margin:stats.momentum-stats.required});}series.sort(function(a,b){return b.margin-a.margin;});return{symbol:m.symbol,marketName:m.marketName,stats:series[0],sampleSize:m.digits.length};}).sort(function(a,b){return b.stats.margin-a.stats.margin;});var best=ranked[0],qualified=!!best&&best.sampleSize>0&&best.stats.margin>0;lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;$('#signalLabel').textContent=mode+' BARRIER MOMENTUM';$('#signalScore').textContent=best?mode+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'%':'NO DATA';$('#engineSummary').textContent=best?(qualified?'The strongest observed '+mode+' barrier is '+mode+' '+best.stats.barrier+' on '+best.marketName+'. ':'No barrier exceeded its neutral frequency baseline. ')+'Winning-digit frequency is calculated cumulatively for each barrier from the selected '+state.window+'-tick sample. Strongest margin over baseline: '+(best.stats.margin>=0?'+':'')+best.stats.margin.toFixed(1)+' percentage points. Historical frequency is not a guaranteed next-tick probability.':'No market returned usable tick data.';$('#engineEvidence').replaceChildren();ranked.slice(0,5).forEach(function(item,index){var li=document.createElement('li');li.textContent=(index+1)+'. '+item.marketName+' · strongest '+mode+' '+item.stats.barrier+' · '+item.stats.momentum.toFixed(1)+'% observed / '+item.stats.required.toFixed(1)+'% baseline · '+item.sampleSize+' ticks';$('#engineEvidence').appendChild(li);});$('#marketDiagnostics').textContent='Over barriers count digits greater than the barrier; Under barriers count digits lower than the barrier. Neutral baseline = winning-digit count × 10%. Selected window: '+state.window+' ticks.';$('#rankedResults').textContent=best?'Top market: '+best.marketName+' · '+mode+' '+best.stats.barrier+' · '+(qualified?'ABOVE BASELINE':'AT/BELOW BASELINE'):'No usable market data.';$('#status').textContent=mode+' barrier momentum scan complete · '+(qualified?'above baseline':'no barrier above baseline');event('decision',mode+' BARRIER MOMENTUM ANALYSIS',best?best.marketName+' · '+mode+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% vs '+best.stats.required.toFixed(1)+'% baseline.':'No usable market data.');analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();updateParityStrength();renderMomentumHistogram();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
   $('#analysisMode').addEventListener('change',updateContractControls);
-  $('#contractDigit').addEventListener('change',renderMomentumHistogram);
   $('#scan').addEventListener('click',scan);
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
