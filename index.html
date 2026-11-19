@@ -328,7 +328,7 @@ li span:first-child{color:#668b70}
         <span id="tickWindowState">WAITING FOR DERIV CONNECTION</span>
         <span id="tickWindowCount">0 / 1000 DIGITS</span>
       </div>
-      <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest 1000 tick digits, newest first"></div>
+      <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest selected tick digits, newest first"></div>
     </div>
   </section>
   <section class="parity-panel" aria-label="Even and odd data analysis">
@@ -429,18 +429,19 @@ li span:first-child{color:#668b70}
   function renderTickWindowDigits(){
     var container=$('#tickDigitGrid');
     if(!container)return;
-    var fragment=document.createDocumentFragment();
-    for(var i=ds.length-1;i>=0;i--){
+    var fragment=document.createDocumentFragment(),sample=selectedDigits(ds);
+    for(var i=sample.length-1;i>=0;i--){
       var digit=document.createElement('span');
       digit.className='tick-digit';
-      digit.textContent=String(ds[i]);
+      digit.textContent=String(sample[i]);
       fragment.appendChild(digit);
     }
     container.replaceChildren(fragment);
   }
   function updateTickWindow(){
-    $('#latestDigit').textContent=ds.length?String(lastDigit):'—';
-    $('#tickWindowCount').textContent=ds.length+' / 1000 DIGITS';
+    var sample=selectedDigits(ds);
+    $('#latestDigit').textContent=sample.length?String(sample[sample.length-1]):'—';
+    $('#tickWindowCount').textContent=sample.length+' / '+selectedWindow+' DIGITS';
     if(!$('#tickWindowBody').hidden)renderTickWindowDigits();
   }
   function quoteDecimals(value){
