@@ -417,11 +417,11 @@ li span:first-child{color:#668b70}
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
   function activeContract(){return String($('#analysisMode').value||'EVEN_ODD').toUpperCase();}
-  function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{percentages:percentages,momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10,sampleSize:n};}
+  function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
   function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
-  function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.min(100,stats.momentum/90*100):0)+'%';track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
+  function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.max(0,Math.min(100,stats.momentum/90*100)):0)+'%';bar.setAttribute('aria-label',mode+' '+barrier+': '+(sampleSize?stats.momentum.toFixed(1)+'%':'no data'));track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
   function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER_UNDER';renderMomentumHistogram();}
-  function renderMomentumHistogram(){var panel=$('#momentumPanel');if(!panel)return;var isOU=activeContract()==='OVER_UNDER';panel.hidden=!isOU;if(!isOU)return;var stats=momentumForDigits(selectedDigits(ds),'OVER',0),sample=stats.sampleSize,percentages=stats.percentages;renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?stats.momentum.toFixed(1)+'%':'—';var under=momentumForDigits(selectedDigits(ds),'UNDER',9);$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+  function renderMomentumHistogram(distribution){var panel=$('#momentumPanel');if(!panel)return;var isOU=activeContract()==='OVER_UNDER';panel.hidden=!isOU;if(!isOU)return;var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
 
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
@@ -651,8 +651,7 @@ li span:first-child{color:#668b70}
   }
 
   function render(){
-    var sample=selectedDigits(ds),counts=Array(10).fill(0),n=sample.length||1,hi=0,lo=0;
-    sample.forEach(function(x){counts[x]++});
+    var distribution=buildSelectedDistribution(),counts=distribution.counts,n=distribution.sampleSize||1,hi=0,lo=0;
     for(var i=1;i<10;i++){if(counts[i]>counts[hi])hi=i;if(counts[i]<counts[lo])lo=i}
     cells.forEach(function(c,i){
       var p=counts[i]/n;
@@ -662,7 +661,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();updateParityStrength();renderMomentumHistogram();
+    updateTickWindow();updateParityStrength(distribution);renderMomentumHistogram(distribution);
   }
 
   function moveCursor(i,flash){
@@ -673,8 +672,8 @@ li span:first-child{color:#668b70}
   }
 
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
-  function updateParityStrength(){
-    var sample=selectedDigits(ds),n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
+  function updateParityStrength(distribution){
+    var sample=(distribution||buildSelectedDistribution()).digits,n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
     if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
       ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
       $('#parityCount').textContent='0 / '+selectedWindow+' DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
@@ -853,7 +852,7 @@ li span:first-child{color:#668b70}
   }
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();updateParityStrength();renderMomentumHistogram();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
   $('#analysisMode').addEventListener('change',updateContractControls);
   $('#scan').addEventListener('click',scan);
   
