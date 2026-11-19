@@ -382,7 +382,7 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0;
+  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=1000;
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
@@ -406,6 +406,14 @@ li span:first-child{color:#668b70}
   }
 
   var mk=MK[0];
+  function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
+  function activeContract(){return String($('#analysisMode').value||'EVEN').toUpperCase();}
+  function contractBarrier(){return Number($('#contractDigit').value||0);}
+  function winningDigits(mode,barrier){var out=[];for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:mode==='UNDER'?d<barrier:false)out.push(d);return out;}
+  function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),winners=winningDigits(mode,barrier),momentum=winners.reduce(function(sum,d){return sum+percentages[d];},0),required=winners.length*10;return{counts:counts,percentages:percentages,winners:winners,momentum:momentum,required:required,sampleSize:n};}
+  function updateContractControls(){var mode=activeContract(),field=$('#contractDigitField'),select=$('#contractDigit'),previous=select.value;field.hidden=mode!=='OVER'&&mode!=='UNDER';if(mode==='OVER'){select.innerHTML='';for(var i=0;i<=8;i++){var option=document.createElement('option');option.value=String(i);option.textContent='OVER '+i;select.appendChild(option);}select.value=previous!==''&&Number(previous)<=8?previous:'0';}else if(mode==='UNDER'){select.innerHTML='';for(var j=1;j<=9;j++){var option2=document.createElement('option');option2.value=String(j);option2.textContent='UNDER '+j;select.appendChild(option2);}select.value=previous!==''&&Number(previous)>=1&&Number(previous)<=9?previous:'9';}$('#momentumPanel').hidden=mode!=='OVER'&&mode!=='UNDER';renderMomentumHistogram();}
+  function renderMomentumHistogram(){var mode=activeContract(),panel=$('#momentumPanel');if(!panel)return;var isOU=mode==='OVER'||mode==='UNDER';panel.hidden=!isOU;if(!isOU)return;var barrier=contractBarrier(),stats=momentumForDigits(selectedDigits(ds),mode,barrier),holder=$('#momentumHistogram');$('#momentumTitle').textContent=mode+' '+barrier+' DIGIT MOMENTUM';$('#momentumTotal').textContent=stats.sampleSize?stats.momentum.toFixed(1)+'%':'—';$('#momentumWindow').textContent='WINDOW: '+selectedWindow+' TICKS · '+stats.sampleSize+' AVAILABLE';$('#momentumWinningDigits').textContent='WINNING DIGITS: '+(stats.winners.length?stats.winners.join(', '):'NONE');$('#momentumRequired').textContent=stats.required.toFixed(1)+'%';$('#momentumObserved').textContent=stats.sampleSize?stats.momentum.toFixed(1)+'%':'—';holder.replaceChildren();var max=Math.max(10,Math.max.apply(null,stats.percentages));stats.percentages.forEach(function(p,d){var col=document.createElement('div');col.className='momentum-column'+(stats.winners.indexOf(d)>=0?' winner':'');var value=document.createElement('span');value.className='value';value.textContent=stats.sampleSize?p.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='bar-track';var bar=document.createElement('div');bar.className='bar';bar.style.height=(stats.sampleSize?Math.max(1,p/max*100):0)+'%';track.appendChild(bar);var digit=document.createElement('span');digit.className='digit';digit.textContent=String(d);col.append(value,track,digit);holder.appendChild(col);});var status=$('#momentumStatus');status.className='momentum-status '+(stats.sampleSize&&stats.momentum>=stats.required?'ready':'watch');status.textContent=!stats.sampleSize?'Waiting for Deriv digit data.':stats.momentum>=stats.required?'MOMENTUM THRESHOLD REACHED · '+stats.momentum.toFixed(1)+'% observed against '+stats.required.toFixed(1)+'% required.':'BELOW REQUIRED MOMENTUM · '+stats.momentum.toFixed(1)+'% observed against '+stats.required.toFixed(1)+'% required.';}
+
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
   }
@@ -634,8 +642,8 @@ li span:first-child{color:#668b70}
   }
 
   function render(){
-    var counts=Array(10).fill(0),n=ds.length||1,hi=0,lo=0;
-    ds.forEach(function(x){counts[x]++});
+    var sample=selectedDigits(ds),counts=Array(10).fill(0),n=sample.length||1,hi=0,lo=0;
+    sample.forEach(function(x){counts[x]++});
     for(var i=1;i<10;i++){if(counts[i]>counts[hi])hi=i;if(counts[i]<counts[lo])lo=i}
     cells.forEach(function(c,i){
       var p=counts[i]/n;
@@ -645,7 +653,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();updateParityStrength();
+    updateTickWindow();updateParityStrength();renderMomentumHistogram();
   }
 
   function moveCursor(i,flash){
@@ -657,7 +665,7 @@ li span:first-child{color:#668b70}
 
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
   function updateParityStrength(){
-    var n=ds.length,even=0;for(var i=0;i<n;i++)if(ds[i]%2===0)even++;var odd=n-even;
+    var sample=selectedDigits(ds),n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
     if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
       ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
       $('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
@@ -669,7 +677,7 @@ li span:first-child{color:#668b70}
   }
   function updateWindowMatrix(){
     var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
-    var result=ZyntrixEngine.analyzeMarket({digits:ds,contract:'EVEN'});holder.replaceChildren();
+    var result=ZyntrixEngine.analyzeMarket({digits:selectedDigits(ds),contract:'EVEN'});holder.replaceChildren();
     var header=document.createElement('div');header.className='window-row header';
     ['WINDOW','EVEN','ODD'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
     result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
@@ -695,7 +703,8 @@ li span:first-child{color:#668b70}
     var usable=state.results.filter(function(x){return x.digits.length>=50;});
     if(!usable.length){finishPortfolioUi('No supported market returned at least 50 valid ticks.');return;}
     $('#engineStateLabel').textContent='PROCESSING PATTERNS';
-    var mode=$('#analysisMode').value||'EVEN';
+    var mode=activeContract();
+    if(mode==='OVER'||mode==='UNDER'){finishMomentumScan(usable,state);return;}
     var sides=[{label:mode,ranked:ZyntrixEngine.rankPatternMarkets(usable,mode,MK.length)}];
     var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results);
     sides.forEach(function(side){
@@ -752,15 +761,15 @@ li span:first-child{color:#668b70}
     var market=MK[state.index],req=state.nextReq++;
     state.pending[req]=market;
     $('#status').textContent='Collecting '+market.n+' history ('+(state.index+1)+'/'+MK.length+')…';
-    portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:1000,end:'latest',style:'ticks',req_id:req}));
+    portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:state.window,end:'latest',style:'ticks',req_id:req}));
   }
   function runPortfolioScan(){
     if(analysisInFlight)return;analysisInFlight=true;
-    portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now()};
+    portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now(),window:selectedWindow};
     $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    var mode=$('#analysisMode').value||'EVEN';$('#signalLabel').textContent=mode+' PATTERN SCAN';$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#engineSummary').textContent='Collecting up to 1,000 chronological ticks per supported market. Every recurring 2- and 3-digit sequence will be checked for the selected contract.';
-    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',mode+' contract · '+MK.length+' markets · up to 1,000 historical ticks per market.');
+    var mode=activeContract();$('#signalLabel').textContent=mode+(mode==='OVER'||mode==='UNDER'?' MOMENTUM SCAN':' PATTERN SCAN');$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
+    $('#engineSummary').textContent='Collecting '+selectedWindow+' latest chronological ticks per supported market for the selected contract.';
+    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',mode+' contract · '+MK.length+' markets · '+selectedWindow+' latest ticks per market.');
     try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
     portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
     portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
