@@ -912,13 +912,14 @@ li span:first-child{color:#668b70}
   var tradeDirection='';
   var tradeEngaged=false;
   function refreshTradeSetup(){
-    var ready=$('#tradeBarrier').value!==''&&tradeDirection!=='';
+    var tickValue=Number($('#tradeTicks').value);
+    var ready=$('#tradeBarrier').value!==''&&tradeDirection!==''&&Number.isInteger(tickValue)&&tickValue>=1;
     if(!ready&&tradeEngaged){tradeEngaged=false;$('#tradeEngage').setAttribute('aria-pressed','false');$('#tradeEngage').textContent='ENGAGE';}
     $('#tradeEngage').disabled=!ready;
     $('#tradeState').textContent=tradeEngaged?'ENGAGED · READY':'NOT ENGAGED';
     $('#tradeState').classList.toggle('engaged',tradeEngaged);
     $('#tradeEngage').setAttribute('aria-pressed',String(tradeEngaged));
-    $('#tradeHint').textContent=tradeEngaged?'Setup is marked ready. No trade has been placed.':'Choose a barrier and contract direction. ENGAGE only marks the setup as ready; it does not place a trade.';
+    $('#tradeHint').textContent=tradeEngaged?'Setup is marked ready for '+tickValue+' tick(s). No trade has been placed.':'Choose a barrier, tick duration and contract direction. ENGAGE only marks the setup as ready; it does not place a trade.';
   }
   function chooseTradeDirection(direction){
     tradeDirection=direction;
@@ -928,6 +929,12 @@ li span:first-child{color:#668b70}
     refreshTradeSetup();
   }
   $('#tradeBarrier').addEventListener('change',function(){if(tradeEngaged)tradeEngaged=false;refreshTradeSetup();});
+  $('#tradeTicks').addEventListener('input',function(){
+    var valid=Number.isInteger(Number(this.value))&&Number(this.value)>=1;
+    this.setCustomValidity(valid?'':'Enter a whole number of ticks (1 or more).');
+    if(tradeEngaged)tradeEngaged=false;
+    refreshTradeSetup();
+  });
   $('#tradeUnder').addEventListener('click',function(){chooseTradeDirection('UNDER');});
   $('#tradeOver').addEventListener('click',function(){chooseTradeDirection('OVER');});
   $('#tradeEngage').addEventListener('click',function(){
