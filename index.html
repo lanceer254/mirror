@@ -335,6 +335,9 @@ li span:first-child{color:#668b70}
       <label class="field" for="tradeBarrier">BARRIER DIGIT
         <select id="tradeBarrier"><option value="">CHOOSE BARRIER</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select>
       </label>
+      <label class="field" for="tradeTicks" style="display:block;margin-top:10px">NUMBER OF TICKS
+        <input id="tradeTicks" type="number" min="1" step="1" value="1" inputmode="numeric" placeholder="Enter tick duration">
+      </label>
       <div class="trade-direction" role="group" aria-label="Choose Over or Under">
         <button type="button" id="tradeUnder" aria-pressed="false">UNDER</button>
         <button type="button" id="tradeOver" aria-pressed="false">OVER</button>
