@@ -299,6 +299,7 @@ li span:first-child{color:#668b70}
 
 /* Deriv OAuth account connection and account-scoped trading */
 .deriv-auth{margin:0 0 14px;padding:12px;border:1px solid #17452e;border-radius:8px;background:#030806}
+.deriv-auth-top{margin:12px 0 14px}
 .deriv-auth-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;color:#aaf8bf;font-size:9px;font-weight:700;letter-spacing:.1em}
 .deriv-auth-actions{display:flex;gap:6px;flex-wrap:wrap}
 .deriv-auth-btn{border:1px solid #55f59a;border-radius:5px;background:#0b2816;color:#c9f7d5;padding:7px 9px;font:700 9px ui-monospace,SFMono-Regular,Consolas,monospace;cursor:pointer}
@@ -321,6 +322,14 @@ li span:first-child{color:#668b70}
     <div class="price" id="price" aria-label="Latest price">0000.00</div>
   </header>
 
+
+  <section class="deriv-auth deriv-auth-top" aria-label="Deriv account connection">
+    <div class="deriv-auth-head"><span>DERIV ACCOUNT</span><div class="deriv-auth-actions"><button type="button" id="connectDeriv" class="deriv-auth-btn">CONNECT DERIV</button><button type="button" id="disconnectDeriv" class="deriv-auth-btn secondary" hidden>DISCONNECT</button></div></div>
+    <label class="field" for="derivAccount">TRADING ACCOUNT
+      <select id="derivAccount" disabled><option value="">CONNECT TO LOAD DEMO AND REAL ACCOUNTS</option></select>
+    </label>
+    <div class="deriv-balance-row"><span id="derivAuthStatus" aria-live="polite">NOT CONNECTED</span><strong id="derivBalance">—</strong></div>
+  </section>
 
   <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN_ODD" selected>EVEN / ODD</option><option value="OVER_UNDER">OVER / UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis is separate from account trading. Connect Deriv to read balances and place trades.</p></section>
 
@@ -345,13 +354,7 @@ li span:first-child{color:#668b70}
     </section>
     <section class="trade-card" id="tradeCard" aria-label="Over and Under trading configuration">
       <div class="trade-card-head"><h2>OVER / UNDER // TRADE SETUP</h2><span class="trade-state" id="tradeState">NOT ENGAGED</span></div>
-      <div class="deriv-auth" aria-label="Deriv account connection">
-        <div class="deriv-auth-head"><span>DERIV ACCOUNT</span><div class="deriv-auth-actions"><button type="button" id="connectDeriv" class="deriv-auth-btn">CONNECT DERIV</button><button type="button" id="disconnectDeriv" class="deriv-auth-btn secondary" hidden>DISCONNECT</button></div></div>
-        <label class="field" for="derivAccount">TRADING ACCOUNT
-          <select id="derivAccount" disabled><option value="">CONNECT TO LOAD DEMO AND REAL ACCOUNTS</option></select>
-        </label>
-        <div class="deriv-balance-row"><span id="derivAuthStatus" aria-live="polite">NOT CONNECTED</span><strong id="derivBalance">—</strong></div>
-      </div>
+
       <label class="field" for="tradeStake" style="display:block;margin-top:10px">TRADE STAKE
         <input id="tradeStake" type="number" min="0.01" step="0.01" placeholder="Enter stake" inputmode="decimal">
       </label>
