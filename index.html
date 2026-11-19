@@ -668,12 +668,12 @@ li span:first-child{color:#668b70}
     var sample=selectedDigits(ds),n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
     if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
       ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
-      $('#parityCount').textContent='0 / 1000 DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
+      $('#parityCount').textContent='0 / '+selectedWindow+' DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
     var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;
     function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}
     set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);
     bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);
-    $('#parityCount').textContent=n+' / 1000 DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix();
+    $('#parityCount').textContent=n+' / '+selectedWindow+' DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix();
   }
   function updateWindowMatrix(){
     var holder=$('#windowMatrix');if(!holder)return;if(ds.length<50){holder.textContent='Collecting at least 50 valid ticks…';return;}
@@ -793,12 +793,17 @@ li span:first-child{color:#668b70}
   }
   function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
 
+  function finishMomentumScan(usable,state){var mode=activeContract(),barrier=contractBarrier(),ranked=usable.map(function(m){var stats=momentumForDigits(m.digits,mode,barrier);return{symbol:m.symbol,marketName:m.marketName,stats:stats};}).sort(function(a,b){return b.stats.momentum-a.stats.momentum;});var best=ranked[0],required=best?best.stats.required:0,qualified=!!best&&best.stats.sampleSize>0&&best.stats.momentum>=required;lastAnalysisMs=performance.now()-state.started;renderEngineLatency();$('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;$('#signalLabel').textContent=mode+' '+barrier+' MOMENTUM';$('#signalScore').textContent=best?best.stats.momentum.toFixed(1)+'% / '+required.toFixed(1)+'%':'NO DATA';$('#engineSummary').textContent=best?(qualified?'Momentum threshold reached on '+best.marketName+'. ':'No market reached the required momentum threshold. ')+mode+' '+barrier+' combines the observed percentages of winning digits in the selected '+state.window+'-tick sample. Highest observed group momentum: '+best.stats.momentum.toFixed(1)+'% ('+best.stats.sampleSize+' ticks). This is a recent frequency measure, not a guaranteed next-tick probability.':'No market returned usable tick data.';$('#engineEvidence').replaceChildren();ranked.slice(0,5).forEach(function(item,index){var li=document.createElement('li');li.textContent=(index+1)+'. '+item.marketName+' · '+item.stats.momentum.toFixed(1)+'% momentum · '+item.stats.required.toFixed(1)+'% required · '+item.stats.sampleSize+' ticks';$('#engineEvidence').appendChild(li);});$('#marketDiagnostics').textContent='Over/Under momentum = sum of the observed percentages for all winning digits. Threshold = number of winning digits × 10%. Selected window: '+state.window+' ticks.';$('#rankedResults').textContent=best?'Top market: '+best.marketName+' · '+(qualified?'THRESHOLD REACHED':'BELOW THRESHOLD'):'No usable market data.';$('#status').textContent=mode+' '+barrier+' momentum scan complete · '+(qualified?'threshold reached':'no qualifying market');event('decision',mode+' '+barrier+' MOMENTUM ANALYSIS',best?best.marketName+' · '+best.stats.momentum.toFixed(1)+'% observed · '+required.toFixed(1)+'% required.':'No usable market data.');analysisInFlight=false;$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
+
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();updateParityStrength();renderMomentumHistogram();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
+  $('#analysisMode').addEventListener('change',updateContractControls);
+  $('#contractDigit').addEventListener('change',renderMomentumHistogram);
   $('#scan').addEventListener('click',scan);
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
-  render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
+  updateContractControls();render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
 })();
 </script>
 </body>
