@@ -665,7 +665,8 @@ li span:first-child{color:#668b70}
   }
 
   function moveCursor(i,flash){
-    var c=cells[i];
+    var sample=selectedDigits(ds),digit=sample.length?sample[sample.length-1]:i;
+    var c=cells[digit];if(!c)return;
     cur.style.width=(c.offsetWidth+14)+'px';cur.style.height=(c.offsetHeight+14)+'px';
     cur.style.transform='translate('+(c.offsetLeft-7)+'px,'+(c.offsetTop-7)+'px)';
     if(flash){c.classList.add('hit');setTimeout(function(){c.classList.remove('hit')},350)}
@@ -676,15 +677,15 @@ li span:first-child{color:#668b70}
     var sample=(distribution||buildSelectedDistribution()).digits,n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
     if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
       ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
-      $('#parityCount').textContent='0 / '+selectedWindow+' DIGITS · WAITING FOR DATA';updateWindowMatrix();return;}
+      $('#parityCount').textContent='0 / '+selectedWindow+' DIGITS · WAITING FOR DATA';updateWindowMatrix(distribution);return;}
     var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;
     function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}
     set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);
     bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);
-    $('#parityCount').textContent=n+' / '+selectedWindow+' DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix();
+    $('#parityCount').textContent=n+' / '+selectedWindow+' DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix(distribution);
   }
-  function updateWindowMatrix(){
-    var holder=$('#windowMatrix');if(!holder)return;var sample=selectedDigits(ds),minimum=Math.min(50,selectedWindow);if(sample.length<minimum){holder.textContent='Collecting at least '+minimum+' valid ticks…';return;}
+  function updateWindowMatrix(distribution){
+    var holder=$('#windowMatrix');if(!holder)return;var sample=(distribution||buildSelectedDistribution()).digits,minimum=selectedWindow;if(sample.length<minimum){holder.textContent='Collecting at least '+minimum+' valid ticks…';return;}
     var result=ZyntrixEngine.analyzeMarket({digits:sample,contract:'EVEN'});holder.replaceChildren();
     var header=document.createElement('div');header.className='window-row header';
     ['WINDOW','EVEN','ODD'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
@@ -708,8 +709,8 @@ li span:first-child{color:#668b70}
     if(!state)return;
     
     if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
-    var minimumTicks=Math.min(50,state.window),usable=state.results.filter(function(x){return x.digits.length>=minimumTicks;});
-    if(!usable.length){finishPortfolioUi('No supported market returned at least '+minimumTicks+' valid ticks.');return;}
+    var minimumTicks=state.window,usable=state.results.filter(function(x){return x.digits.length>=minimumTicks;});
+    if(!usable.length){finishPortfolioUi('No supported market returned the full selected '+minimumTicks+'-tick sample.');return;}
     $('#engineStateLabel').textContent='PROCESSING PATTERNS';
     var mode=state.mode||activeContract();
     if(mode==='OVER_UNDER'){finishMomentumScan(usable,state);return;}
@@ -852,7 +853,7 @@ li span:first-child{color:#668b70}
   }
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();if(ds.length)moveCursor(lastDigit,false);$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
   $('#analysisMode').addEventListener('change',updateContractControls);
   $('#scan').addEventListener('click',scan);
   
