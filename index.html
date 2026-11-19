@@ -666,8 +666,7 @@ li span:first-child{color:#668b70}
   }
 
   function moveCursor(i,flash){
-    var sample=selectedDigits(ds),digit=sample.length?sample[sample.length-1]:i;
-    var c=cells[digit];if(!c)return;
+    var c=cells[i];if(!c)return;
     cur.style.width=(c.offsetWidth+14)+'px';cur.style.height=(c.offsetHeight+14)+'px';
     cur.style.transform='translate('+(c.offsetLeft-7)+'px,'+(c.offsetTop-7)+'px)';
     if(flash){c.classList.add('hit');setTimeout(function(){c.classList.remove('hit')},350)}
@@ -854,7 +853,7 @@ li span:first-child{color:#668b70}
   }
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();if(ds.length)moveCursor(lastDigit,false);$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
   $('#analysisMode').addEventListener('change',updateContractControls);
   $('#scan').addEventListener('click',scan);
   
