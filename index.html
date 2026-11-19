@@ -270,16 +270,6 @@ li span:first-child{color:#668b70}
 .ou-chart-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#668b97;font-size:8px;letter-spacing:.08em}
 @media(max-width:600px){.ou-histograms{gap:7px}.ou-chart{padding:9px 6px 7px}.ou-chart-body{grid-template-columns:20px minmax(0,1fr);gap:3px;height:215px}.ou-bars{gap:2px}.ou-value{font-size:7px}.ou-bar{max-width:23px}.ou-chart-head{font-size:10px}.ou-chart-head strong{font-size:13px}.ou-axis{font-size:7px}}
 @media(max-width:600px){.stage-toolbar{justify-content:space-between}.tick-window-switch button{min-width:38px;padding:6px 5px}.contract-fields{grid-template-columns:1fr}}
-.contract-selector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.contract-pair{min-width:0;padding:9px;background:#071a25;border:1px solid #244553;border-radius:9px}
-.contract-pair-label{display:block;margin:0 0 7px;color:#829da8;font-size:10px;font-weight:800;letter-spacing:.1em}
-.contract-pair-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
-.contract-choice{min-width:0;min-height:38px;border:1px solid #365564;border-radius:6px;background:#102b39;color:#a8c0ca;font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
-.contract-choice:hover{border-color:#6d9aaa;color:#e4f5fa}
-.contract-choice.selected{background:#0a8065;border-color:#20d5a3;color:#effffb;box-shadow:inset 0 0 0 1px rgba(32,213,163,.22),0 0 10px rgba(32,213,163,.12)}
-.contract-choice:disabled{opacity:.5;cursor:not-allowed}
-.contract-choice:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-@media(max-width:600px){.contract-selector{gap:7px}.contract-pair{padding:7px 5px}.contract-choice{min-height:35px;font-size:11px}.contract-pair-label{font-size:9px}}
 </style>
 </head>
 <body>
@@ -293,14 +283,7 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel">
-    <div class="contract-selector" aria-label="Contract selector">
-      <div class="contract-pair"><span class="contract-pair-label">EVEN / ODD</span><div class="contract-pair-buttons" role="group" aria-label="Even or Odd contract"><button type="button" class="contract-choice selected" data-contract="EVEN" aria-pressed="true">EVEN</button><button type="button" class="contract-choice" data-contract="ODD" aria-pressed="false">ODD</button></div></div>
-      <div class="contract-pair"><span class="contract-pair-label">OVER / UNDER</span><div class="contract-pair-buttons" role="group" aria-label="Over or Under contract"><button type="button" class="contract-choice" data-contract="OVER" aria-pressed="false">OVER</button><button type="button" class="contract-choice" data-contract="UNDER" aria-pressed="false">UNDER</button></div></div>
-    </div>
-    <label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label>
-    <p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p>
-  </section>
+  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN" selected>EVEN</option><option value="ODD">ODD</option><option value="OVER">OVER</option><option value="UNDER">UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Analysis only · No trade execution.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
@@ -409,7 +392,7 @@ li span:first-child{color:#668b70}
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
   var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=1000;
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
-  function lockScanControls(locked){Array.prototype.forEach.call(document.querySelectorAll('.contract-choice'),function(button){button.disabled=locked;});Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
+  function lockScanControls(locked){$('#analysisMode').disabled=locked;Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -433,9 +416,7 @@ li span:first-child{color:#668b70}
 
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
-  var selectedContract='EVEN';
-  function activeContract(){return selectedContract;}
-  function setActiveContract(contract){if(analysisInFlight)return;selectedContract=contract;Array.prototype.forEach.call(document.querySelectorAll('.contract-choice'),function(button){var active=button.getAttribute('data-contract')===selectedContract;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',active?'true':'false');});updateContractControls();$('#status').textContent=selectedContract+' contract selected.';}
+  function activeContract(){return String($('#analysisMode').value||'EVEN').toUpperCase();}
   function momentumForDigits(digits,mode,barrier){var counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length,percentages=counts.map(function(c){return n?c/n*100:0;}),momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{percentages:percentages,momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10,sampleSize:n};}
   function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
   function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.min(100,stats.momentum/90*100):0)+'%';track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
@@ -825,7 +806,7 @@ li span:first-child{color:#668b70}
 
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();updateParityStrength();renderMomentumHistogram();$('#status').textContent='D-Circles and Brain window set to '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for D-Circles and Brain.');});
-  Array.prototype.forEach.call(document.querySelectorAll('.contract-choice'),function(button){button.addEventListener('click',function(){setActiveContract(button.getAttribute('data-contract'));});});
+  $('#analysisMode').addEventListener('change',updateContractControls);
   $('#scan').addEventListener('click',scan);
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
