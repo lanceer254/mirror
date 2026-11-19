@@ -1037,7 +1037,12 @@ li span:first-child{color:#668b70}
     try{
       var payload=await derivRequest('/api/accounts');
       var data=payload.data||payload.result||payload.accounts||[];
-      if(!Array.isArray(data)&&Array.isArray(data.accounts))data=data.accounts;
+      if(!Array.isArray(data)){
+        if(Array.isArray(data.accounts))data=data.accounts;
+        else if(Array.isArray(data.data))data=data.data;
+        else if(data.account_id)data=[data];
+        else data=[];
+      }
       renderDerivAccounts(data);
       $('#disconnectDeriv').hidden=false;
       $('#connectDeriv').hidden=true;
@@ -1097,7 +1102,7 @@ li span:first-child{color:#668b70}
         if(message.msg_type==='buy'&&message.buy){
           pendingTrade=false;pendingBuyReqId=null;pendingProposalReqId=null;
           updateTradeHint('TRADE PLACED · CONTRACT '+(message.buy.contract_id||'CONFIRMED')+' · PURCHASE PRICE '+(message.buy.buy_price||'—'));
-          event('result','TRADE PLACED',(selectedDerivAccount?selectedDerivAccount.account_type:'ACCOUNT')+' · '+(message.buy.contract_id||'Contract confirmed'));
+          window.event('result','TRADE PLACED',(selectedDerivAccount?selectedDerivAccount.account_type:'ACCOUNT')+' · '+(message.buy.contract_id||'Contract confirmed'));
         }
       };
       accountSocket.onerror=function(){accountSocketReady=false;setDerivStatus('ACCOUNT CONNECTION ERROR');updateTradeHint('Could not establish the selected account WebSocket connection.');};
