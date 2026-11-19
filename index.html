@@ -973,7 +973,7 @@ li span:first-child{color:#668b70}
     if(tradeEngaged)tradeEngaged=false;
     refreshTradeSetup();
   });
-  ['martingaleBase','martingaleMultiplier','martingaleSteps'].forEach(function(id){
+  ['martingaleBase','martingaleMultiplier'].forEach(function(id){
     $('#'+id).addEventListener('input',function(){if(tradeEngaged)tradeEngaged=false;refreshTradeSetup();});
   });
 
