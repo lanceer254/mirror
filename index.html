@@ -270,6 +270,32 @@ li span:first-child{color:#668b70}
 .ou-chart-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#668b97;font-size:8px;letter-spacing:.08em}
 @media(max-width:600px){.ou-histograms{grid-template-columns:1fr;gap:10px}.ou-chart{padding:10px 8px 8px}.ou-chart-body{grid-template-columns:24px minmax(0,1fr);gap:5px;height:230px}.ou-bars{gap:5px}.ou-value{font-size:9px;letter-spacing:0}.ou-bar{max-width:34px}.ou-chart-head{font-size:11px}.ou-chart-head strong{font-size:14px}.ou-axis{font-size:8px}}
 @media(max-width:600px){.stage-toolbar{justify-content:space-between}.tick-window-switch button{min-width:38px;padding:6px 5px}.contract-fields{grid-template-columns:1fr}}
+
+/* Over/Under trade configuration card — readiness only, no execution */
+.trade-card{min-width:0;background:#050b09;border:1px solid #17452e;border-radius:14px;padding:16px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;box-shadow:0 0 18px rgba(0,255,120,.04)}
+.trade-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.trade-card-head h2{margin:0;color:#aaf8bf;font-size:11px;letter-spacing:.13em}
+.trade-state{display:inline-flex;align-items:center;gap:6px;color:#668b70;font-size:9px;letter-spacing:.1em}
+.trade-state:before{content:"";width:6px;height:6px;border-radius:50%;background:#668b70}
+.trade-state.engaged{color:#55f59a}
+.trade-state.engaged:before{background:#55f59a;box-shadow:0 0 8px #55f59a}
+.trade-card .field{color:#79a986;font-size:9px;letter-spacing:.08em}
+.trade-card .field input,.trade-card .field select{min-height:39px;padding:9px 10px;border-radius:7px;background:#030806;border-color:#17452e;color:#c9f7d5;font:11px ui-monospace,SFMono-Regular,Consolas,monospace}
+.trade-direction{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.trade-direction button{min-height:42px;border:1px solid #245b3a;border-radius:7px;background:#07110b;color:#8bdba2;font:700 11px ui-monospace,SFMono-Regular,Consolas,monospace;cursor:pointer}
+.trade-direction button[aria-pressed="true"]{border-color:#55f59a;background:#0b2816;color:#c9f7d5;box-shadow:inset 0 0 12px rgba(85,245,154,.08)}
+.trade-engage{width:100%;min-height:42px;margin-top:13px;border:1px solid #55f59a;border-radius:7px;background:#0b2816;color:#c9f7d5;font:700 11px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.1em;cursor:pointer}
+.trade-engage:disabled{opacity:.4;cursor:not-allowed}
+.trade-engage[aria-pressed="true"]{border-color:#ff806f;background:#24100d;color:#ffad9f}
+.trade-hint{margin:8px 0 0;color:#668b70;font-size:9px;line-height:1.5}
+.martingale-box{margin-top:15px;padding-top:13px;border-top:1px solid #17452e}
+.martingale-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#aaf8bf;font-size:10px;font-weight:700;letter-spacing:.07em}
+.martingale-toggle input{accent-color:#55f59a;width:15px;height:15px}
+.martingale-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.martingale-fields[hidden]{display:none}
+.martingale-note{grid-column:1/-1;margin:0;color:#668b70;font-size:9px;line-height:1.45}
+@media(max-width:899px){.trade-card{width:100%}}
+@media(max-width:520px){.martingale-fields{grid-template-columns:1fr}.martingale-note{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -302,6 +328,28 @@ li span:first-child{color:#668b70}
         </button>
         <div class="say" aria-live="polite"><strong id="status">Ready to analyze</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
         <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
+      </div>
+    </section>
+    <section class="trade-card" id="tradeCard" aria-label="Over and Under trading configuration">
+      <div class="trade-card-head"><h2>OVER / UNDER // TRADE SETUP</h2><span class="trade-state" id="tradeState">NOT ENGAGED</span></div>
+      <label class="field" for="tradeBarrier">BARRIER DIGIT
+        <select id="tradeBarrier"><option value="">CHOOSE BARRIER</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select>
+      </label>
+      <div class="trade-direction" role="group" aria-label="Choose Over or Under">
+        <button type="button" id="tradeUnder" aria-pressed="false">UNDER</button>
+        <button type="button" id="tradeOver" aria-pressed="false">OVER</button>
+      </div>
+      <button class="trade-engage" id="tradeEngage" type="button" aria-pressed="false" disabled>ENGAGE</button>
+      <p class="trade-hint" id="tradeHint" aria-live="polite">Choose a barrier and contract direction. ENGAGE only marks the setup as ready; it does not place a trade.</p>
+      <div class="martingale-box">
+        <label class="martingale-toggle" for="martingaleEnabled"><span>MARTINGALE</span><input id="martingaleEnabled" type="checkbox"></label>
+        <div class="martingale-fields" id="martingaleFields" hidden>
+          <label class="field" for="martingaleBase">BASE STAKE<input id="martingaleBase" type="number" min="0.01" step="0.01" placeholder="Enter stake"></label>
+          <label class="field" for="martingaleMultiplier">MULTIPLIER<input id="martingaleMultiplier" type="number" min="1.01" step="0.01" placeholder="e.g. 2"></label>
+          <label class="field" for="martingaleSteps">MAX RECOVERY STEPS<input id="martingaleSteps" type="number" min="1" max="20" step="1" placeholder="Enter steps"></label>
+          <label class="field" for="martingaleMaxStake">MAX STAKE<input id="martingaleMaxStake" type="number" min="0.01" step="0.01" placeholder="Enter limit"></label>
+          <p class="martingale-note">Settings are saved only in this page session and are not applied to trades. No stake progression runs at this stage.</p>
+        </div>
       </div>
     </section>
   </div>
@@ -857,6 +905,42 @@ li span:first-child{color:#668b70}
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
   $('#analysisMode').addEventListener('change',updateContractControls);
+  // Trading setup is intentionally configuration-only. No proposal or buy request is sent.
+  var tradeDirection='';
+  var tradeEngaged=false;
+  function refreshTradeSetup(){
+    var ready=$('#tradeBarrier').value!==''&&tradeDirection!=='';
+    if(!ready&&tradeEngaged){tradeEngaged=false;$('#tradeEngage').setAttribute('aria-pressed','false');$('#tradeEngage').textContent='ENGAGE';}
+    $('#tradeEngage').disabled=!ready;
+    $('#tradeState').textContent=tradeEngaged?'ENGAGED · READY':'NOT ENGAGED';
+    $('#tradeState').classList.toggle('engaged',tradeEngaged);
+    $('#tradeEngage').setAttribute('aria-pressed',String(tradeEngaged));
+    $('#tradeHint').textContent=tradeEngaged?'Setup is marked ready. No trade has been placed.':'Choose a barrier and contract direction. ENGAGE only marks the setup as ready; it does not place a trade.';
+  }
+  function chooseTradeDirection(direction){
+    tradeDirection=direction;
+    $('#tradeUnder').setAttribute('aria-pressed',String(direction==='UNDER'));
+    $('#tradeOver').setAttribute('aria-pressed',String(direction==='OVER'));
+    if(tradeEngaged)tradeEngaged=false;
+    refreshTradeSetup();
+  }
+  $('#tradeBarrier').addEventListener('change',function(){if(tradeEngaged)tradeEngaged=false;refreshTradeSetup();});
+  $('#tradeUnder').addEventListener('click',function(){chooseTradeDirection('UNDER');});
+  $('#tradeOver').addEventListener('click',function(){chooseTradeDirection('OVER');});
+  $('#tradeEngage').addEventListener('click',function(){
+    if(this.disabled)return;
+    tradeEngaged=!tradeEngaged;
+    this.textContent=tradeEngaged?'DISENGAGE':'ENGAGE';
+    refreshTradeSetup();
+  });
+  $('#martingaleEnabled').addEventListener('change',function(){
+    $('#martingaleFields').hidden=!this.checked;
+    if(tradeEngaged)tradeEngaged=false;
+    refreshTradeSetup();
+  });
+  ['martingaleBase','martingaleMultiplier','martingaleSteps','martingaleMaxStake'].forEach(function(id){
+    $('#'+id).addEventListener('input',function(){if(tradeEngaged)tradeEngaged=false;refreshTradeSetup();});
+  });
   $('#scan').addEventListener('click',scan);
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
