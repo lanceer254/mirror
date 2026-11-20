@@ -543,7 +543,7 @@ li span:first-child{color:#668b70}
   function scanDigitsFromHistory(data,limit){
     var history=data.history||{},prices=history.prices||[],pip=data.pip_size!==undefined?Number(data.pip_size):Number(history.pip_size);
     if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(value){pip=Math.max(pip,quoteDecimals(value));});}
-    return prices.slice(-limit).map(function(value){return Number(String(Number(value).toFixed(pip)).replace(/\\D/g,'').slice(-1));}).filter(function(d){return Number.isInteger(d)&&d>=0&&d<=9;});
+    return prices.slice(-limit).map(function(value){return Number(String(Number(value).toFixed(pip)).replace(/\D/g,'').slice(-1));}).filter(function(d){return Number.isInteger(d)&&d>=0&&d<=9;});
   }
   function scanCompleteMarket(market,digits,runId){
     if(!scanState||scanState.id!==runId)return;
