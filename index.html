@@ -576,7 +576,7 @@ li span:first-child{color:#668b70}
     if(!historyReady||selectedDigits(ds).length===0){$('#scanResult').textContent='WAIT · Collecting data for the selected '+selectedWindow+'-second window.';return;}
     if(scanTimeout)clearTimeout(scanTimeout);
     var runId=++scanRunId,windowSize=selectedWindow,startEpoch=Math.floor(Date.now()/1000)-selectedWindow,activeMarket=mk,activeDigits=selectedDigits(ds).slice();
-    scanState={id:runId,window:windowSize,pending:MK.length-1,results:[],failures:0};
+    scanState={id:runId,window:windowSize,startEpoch:startEpoch,pending:MK.length-1,results:[],failures:0};
     $('#scanButton').disabled=true;$('#scanButton').title='Scanning markets';$('#scanWindowLabel').textContent=windowSize+'-tick';
     $('#scanResult').textContent='SCANNING · Comparing '+MK.length+' markets and both contracts…';
     scanCompleteMarket(activeMarket,activeDigits,runId);
@@ -683,7 +683,7 @@ li span:first-child{color:#668b70}
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
         var completedScan=scanRequests[String(data.req_id)];
-        if(completedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(completedScan.market,scanDigitsFromHistory(data,Math.floor(Date.now()/1000)-(scanState&&scanState.id===completedScan.runId?scanState.window:selectedWindow)),completedScan.runId);return;}
+        if(completedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(completedScan.market,scanDigitsFromHistory(data,scanState&&scanState.id===completedScan.runId?scanState.startEpoch:Infinity),completedScan.runId);return;}
         if(data.req_id!==historyRequestId)return;
         reconnectDelay=1000;
         loadHistory(data);
