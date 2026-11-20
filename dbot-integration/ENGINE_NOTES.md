@@ -27,4 +27,4 @@ This gate must run for **every** purchase call. That covers the first trade and 
 
 ## Prototype test status
 
-The standalone gate prototype has 7 Node.js tests. They cover trusted source/origin, pre-RUN and pre-wait replay rejection, fresh PASS, WAIT, stale signal, market mismatch, thresholds, duplicate IDs, contract mismatch, and STOP cancellation.
+The standalone gate prototype has a 7-case Node.js test suite authored. Test execution has not yet been verified in this environment. Cases cover trusted source/origin, pre-RUN and pre-wait replay rejection, fresh PASS, WAIT, stale signal, market mismatch, thresholds, duplicate IDs, contract mismatch, and STOP cancellation.
