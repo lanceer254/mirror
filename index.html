@@ -281,6 +281,8 @@ li span:first-child{color:#668b70}
 .over1-rule.pass b{font-weight:900;color:#d5ffe0}
 .over1-rule.pass small{font-weight:800;color:#55f59a}
 @media(prefers-reduced-motion:reduce){.over1-rule{transition:none}}
+
+.scan-panel{display:flex;align-items:center;gap:18px;margin:18px 0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}.scan-copy{min-width:0;flex:1}.scan-copy h3{margin:0 0 6px;font-size:.9rem;letter-spacing:.06em}.scan-copy p{margin:0;color:var(--mute);font-size:.78rem;line-height:1.5}.scan-result{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--field);font-size:.82rem;line-height:1.6}.scan-result strong{color:var(--ink)}.scan-result .scan-signal{font-size:1.05rem;font-weight:800;letter-spacing:.04em}.scan-result .scan-strong{color:var(--win)}.scan-result .scan-weak{color:var(--mute)}.scan-result small{display:block;color:var(--mute);margin-top:5px}@media(max-width:520px){.scan-panel{align-items:flex-start;gap:12px;padding:14px}.brain{width:68px;height:68px;border-radius:18px}.brain svg{width:38px;height:38px}}
 </style>
 </head>
 <body>
@@ -304,6 +306,12 @@ li span:first-child{color:#668b70}
 
     </section>
   </div>
+  <section class="scan-panel" aria-label="Zyntrix cross-market scan">
+    <button class="brain" id="scanButton" type="button" aria-label="Run cross-market scan" title="Scan all supported markets">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 8c-5-5-14-1-14 6-6 2-7 11-2 15-2 7 4 12 10 10 2 4 8 4 10 0 6 2 12-3 10-10 5-4 4-13-2-15 0-7-9-11-14-6Z"/><path d="M24 9v30M16 14c4 1 5 4 5 7m-11 5c5-1 8 1 9 5m13-17c-4 1-5 4-5 7m11 5c-5-1-8 1-9 5M17 37c1-4 3-6 7-6m7 6c-1-4-3-6-7-6"/></svg>
+    </button>
+    <div class="scan-copy"><h3>ZYNTRIX BRAIN SCAN</h3><p>Cross-analyzes OVER 1 and UNDER 8 across all 10 Volatility markets using your active <strong id="scanWindowLabel">60-tick</strong> window. Press again to reanalyze.</p><div class="scan-result" id="scanResult" aria-live="polite">READY · Press SCAN to compare markets.</div></div>
+  </section>
   <section class="ou-histograms" id="momentumPanel" aria-label="Over and Under barrier momentum histograms">
     <div class="ou-chart over-chart">
       <div class="ou-chart-head"><span class="ou-legend"><i></i> Over</span><strong id="overMomentumNow">—</strong></div>
@@ -388,6 +396,7 @@ li span:first-child{color:#668b70}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
+  var scanRequests=Object.create(null),scanRunId=0,scanState=null,scanTimeout=null;
   function stamp(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
   function event(type,title,detail){
     if(type==='tick')return;
@@ -519,6 +528,69 @@ li span:first-child{color:#668b70}
     flushPendingLiveTicks();
     updateTickWindow();
   }
+
+  function scanWilsonLower(wins,total){
+    if(!total)return 0;
+    var z=1.96,p=wins/total,z2=z*z;
+    return (p+z2/(2*total)-z*Math.sqrt((p*(1-p)+z2/(4*total))/total))/(1+z2/total)*100;
+  }
+  function scanContractStats(digits,kind){
+    var wins=0,split=Math.floor(digits.length/2),recentWins=0;
+    digits.forEach(function(d,index){var hit=kind==='OVER 1'?d>1:d<8;if(hit){wins++;if(index>=split)recentWins++;}});
+    var recentTotal=digits.length-split;
+    return{wins:wins,total:digits.length,rate:wins/digits.length*100,lower:scanWilsonLower(wins,digits.length),recent:recentTotal?recentWins/recentTotal*100:0};
+  }
+  function scanDigitsFromHistory(data,limit){
+    var history=data.history||{},prices=history.prices||[],pip=data.pip_size!==undefined?Number(data.pip_size):Number(history.pip_size);
+    if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(value){pip=Math.max(pip,quoteDecimals(value));});}
+    return prices.slice(-limit).map(function(value){return Number(String(Number(value).toFixed(pip)).replace(/\\D/g,'').slice(-1));}).filter(function(d){return Number.isInteger(d)&&d>=0&&d<=9;});
+  }
+  function scanCompleteMarket(market,digits,runId){
+    if(!scanState||scanState.id!==runId)return;
+    if(digits&&digits.length>=scanState.window){
+      var sample=digits.slice(-scanState.window);
+      ['OVER 1','UNDER 8'].forEach(function(kind){var stats=scanContractStats(sample,kind);scanState.results.push({market:market,kind:kind,stats:stats});});
+    }else scanState.failures++;
+    scanState.pending--;
+    if(scanState.pending<=0)finishCrossScan(runId);
+  }
+  function finishCrossScan(runId){
+    if(!scanState||scanState.id!==runId)return;
+    if(scanTimeout){clearTimeout(scanTimeout);scanTimeout=null;}
+    var results=scanState.results.slice().sort(function(a,b){return b.stats.lower-a.stats.lower||b.stats.recent-a.stats.recent||b.stats.rate-a.stats.rate;});
+    var best=results[0],completeMarkets=results.length/2,windowSize=scanState.window;
+    var holder=$('#scanResult');
+    if(!best){holder.textContent='NO RESULT · Market history was unavailable or incomplete. Press SCAN to try again.';}
+    else{
+      var strong=best.stats.lower>=80&&best.stats.recent>=80&&best.stats.total===windowSize;
+      holder.innerHTML='<div class="scan-signal '+(strong?'scan-strong':'scan-weak')+'">'+(strong?'STRONG':'WEAK')+' · '+best.kind+'</div><div><strong>MARKET:</strong> '+best.market.n+'</div><div><strong>WIN RATE:</strong> '+best.stats.rate.toFixed(1)+'% ('+best.stats.wins+'/'+best.stats.total+')</div><div><strong>95% LOWER BOUND:</strong> '+best.stats.lower.toFixed(1)+'% · <strong>RECENT HALF:</strong> '+best.stats.recent.toFixed(1)+'%</div><small>Cross-analysis: '+completeMarkets+' / '+MK.length+' markets · '+(completeMarkets*2)+' contracts · '+windowSize+' ticks each. '+scanState.failures+' market(s) incomplete. Historical frequency is not a guarantee of the next tick.</small>';
+    }
+    $('#scanButton').disabled=false;$('#scanButton').setAttribute('aria-label','Run cross-market scan');
+    $('#scanWindowLabel').textContent=windowSize+'-tick';
+    $('#scanButton').title='Scan again';
+    scanState=null;
+  }
+  function runCrossScan(){
+    if(!socket||socket.readyState!==WebSocket.OPEN){$('#scanResult').textContent='WAIT · Deriv feed is offline. Reconnect before scanning.';return;}
+    if(!historyReady||ds.length<selectedWindow){$('#scanResult').textContent='WAIT · Collecting '+selectedWindow+' ticks for the selected market.';return;}
+    if(scanTimeout)clearTimeout(scanTimeout);
+    var runId=++scanRunId,windowSize=selectedWindow,activeMarket=mk,activeDigits=selectedDigits(ds).slice();
+    scanState={id:runId,window:windowSize,pending:MK.length-1,results:[],failures:0};
+    $('#scanButton').disabled=true;$('#scanButton').title='Scanning markets';$('#scanWindowLabel').textContent=windowSize+'-tick';
+    $('#scanResult').textContent='SCANNING · Comparing '+MK.length+' markets and both contracts…';
+    scanCompleteMarket(activeMarket,activeDigits,runId);
+    MK.forEach(function(market){
+      if(market.symbol===activeMarket.symbol)return;
+      var id=requestId++;scanRequests[String(id)]={runId:runId,market:market};
+      sendSocket({ticks_history:market.symbol,count:windowSize,end:'latest',style:'ticks',req_id:id});
+    });
+    scanTimeout=setTimeout(function(){
+      if(!scanState||scanState.id!==runId)return;
+      Object.keys(scanRequests).forEach(function(key){if(scanRequests[key].runId===runId){delete scanRequests[key];scanState.pending--;scanState.failures++;}});
+      finishCrossScan(runId);
+    },20000);
+  }
+
   function sendSocket(payload){
     if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(payload));
   }
@@ -591,6 +663,8 @@ li span:first-child{color:#668b70}
         return;
       }
       if(data.error){
+        var failedScan=scanRequests[String(data.req_id)];
+        if(failedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(failedScan.market,null,failedScan.runId);return;}
         $('#status').textContent='Deriv data error: '+(data.error.message||'Request rejected');
         if(data.req_id===historyRequestId){
           historyReady=true;historyFailed=true;
@@ -607,6 +681,8 @@ li span:first-child{color:#668b70}
         var found=symbols.some(function(item){return (item.underlying_symbol||item.symbol)===mk.symbol});
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
+        var completedScan=scanRequests[String(data.req_id)];
+        if(completedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(completedScan.market,scanDigitsFromHistory(data,completedScan.runId===scanState.id?scanState.window:selectedWindow),completedScan.runId);return;}
         if(data.req_id!==historyRequestId)return;
         reconnectDelay=1000;
         loadHistory(data);
@@ -717,9 +793,10 @@ li span:first-child{color:#668b70}
     if(flash){c.classList.add('hit');setTimeout(function(){c.classList.remove('hit')},350)}
   }
 
+  $('#scanButton').addEventListener('click',runCrossScan);
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
   $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button)return;selectedWindow=Number(button.getAttribute('data-window'));$('#scanWindowLabel').textContent=selectedWindow+'-tick';Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
 
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
