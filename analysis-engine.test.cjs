@@ -15,6 +15,12 @@ test("OVER 1 gate passes only when all four thresholds pass on the same 60 ticks
  const r=Engine.evaluateOver1Gate(sample,60,true);
  assert.equal(r.ready,true);assert.deepEqual(r.barriers.map(x=>x.actualPercent),[95,85,75,65]);assert.ok(r.barriers.every(x=>x.passed));
 });
+test("OVER 1 gate reads the latest 60 from the 100-tick mirror buffer",()=>{
+ const mirror=[...Array(40).fill(0),...Array(3).fill(0),...Array(6).fill(1),...Array(6).fill(2),...Array(6).fill(3),...Array(39).fill(4)];
+ const r=Engine.evaluateOver1Gate(mirror,60,true);
+ assert.equal(mirror.length,100);assert.equal(r.sampleSize,60);assert.equal(r.ready,true);
+ assert.deepEqual(r.barriers.map(x=>x.actualPercent),[95,85,75,65]);
+});
 test("OVER 1 gate waits until exactly 60 valid ticks are available",()=>{
  const sample=Array(59).fill(9);const r=Engine.evaluateOver1Gate(sample,60,true);
  assert.equal(r.state,"COLLECTING");assert.equal(r.ready,false);assert.equal(r.sampleSize,59);
