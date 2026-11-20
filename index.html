@@ -540,10 +540,10 @@ li span:first-child{color:#668b70}
     var recentTotal=digits.length-split;
     return{wins:wins,total:digits.length,rate:wins/digits.length*100,lower:scanWilsonLower(wins,digits.length),recent:recentTotal?recentWins/recentTotal*100:0};
   }
-  function scanDigitsFromHistory(data,startEpoch){
+  function scanDigitsFromHistory(data,startEpoch,endEpoch){
     var history=data.history||{},prices=history.prices||[],times=history.times||[],pip=data.pip_size!==undefined?Number(data.pip_size):Number(history.pip_size),digits=[];
     if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(value){pip=Math.max(pip,quoteDecimals(value));});}
-    prices.forEach(function(value,index){var epoch=Number(times[index]);if(times[index]===undefined||!Number.isFinite(epoch)||epoch<startEpoch)return;var digit=Number(String(Number(value).toFixed(pip)).replace(/\D/g,'').slice(-1));if(Number.isInteger(digit)&&digit>=0&&digit<=9)digits.push(digit);});
+    prices.forEach(function(value,index){var epoch=Number(times[index]);if(times[index]===undefined||!Number.isFinite(epoch)||epoch<startEpoch||epoch>endEpoch)return;var digit=Number(String(Number(value).toFixed(pip)).replace(/\D/g,'').slice(-1));if(Number.isInteger(digit)&&digit>=0&&digit<=9)digits.push(digit);});
     return digits;
   }
   function scanCompleteMarket(market,digits,runId){
@@ -575,15 +575,15 @@ li span:first-child{color:#668b70}
     if(!socket||socket.readyState!==WebSocket.OPEN){$('#scanResult').textContent='WAIT · Deriv feed is offline. Reconnect before scanning.';return;}
     if(!historyReady||selectedDigits(ds).length===0){$('#scanResult').textContent='WAIT · Collecting data for the selected '+selectedWindow+'-second window.';return;}
     if(scanTimeout)clearTimeout(scanTimeout);
-    var runId=++scanRunId,windowSize=selectedWindow,startEpoch=Math.floor(Date.now()/1000)-selectedWindow,activeMarket=mk,activeDigits=selectedDigits(ds).slice();
-    scanState={id:runId,window:windowSize,startEpoch:startEpoch,pending:MK.length-1,results:[],failures:0};
+    var runId=++scanRunId,windowSize=selectedWindow,endEpoch=Math.floor(Date.now()/1000),startEpoch=endEpoch-selectedWindow,activeMarket=mk,activeDigits=selectedDigits(ds).slice();
+    scanState={id:runId,window:windowSize,startEpoch:startEpoch,endEpoch:endEpoch,pending:MK.length-1,results:[],failures:0};
     $('#scanButton').disabled=true;$('#scanButton').title='Scanning markets';$('#scanWindowLabel').textContent=windowSize+'-second';
     $('#scanResult').textContent='SCANNING · Comparing '+MK.length+' markets and both contracts…';
     scanCompleteMarket(activeMarket,activeDigits,runId);
     MK.forEach(function(market){
       if(market.symbol===activeMarket.symbol)return;
       var id=requestId++;scanRequests[String(id)]={runId:runId,market:market};
-      sendSocket({ticks_history:market.symbol,start:startEpoch,end:'latest',style:'ticks',req_id:id});
+      sendSocket({ticks_history:market.symbol,start:startEpoch,end:endEpoch,style:'ticks',req_id:id});
     });
     scanTimeout=setTimeout(function(){
       if(!scanState||scanState.id!==runId)return;
@@ -683,7 +683,7 @@ li span:first-child{color:#668b70}
         if(!found)$('#status').textContent=mk.n+' is not listed in Deriv active symbols.';
       }else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
         var completedScan=scanRequests[String(data.req_id)];
-        if(completedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(completedScan.market,scanDigitsFromHistory(data,scanState&&scanState.id===completedScan.runId?scanState.startEpoch:Infinity),completedScan.runId);return;}
+        if(completedScan){delete scanRequests[String(data.req_id)];scanCompleteMarket(completedScan.market,scanDigitsFromHistory(data,scanState&&scanState.id===completedScan.runId?scanState.startEpoch:Infinity,scanState&&scanState.id===completedScan.runId?scanState.endEpoch:-Infinity),completedScan.runId);return;}
         if(data.req_id!==historyRequestId)return;
         reconnectDelay=1000;
         loadHistory(data);
