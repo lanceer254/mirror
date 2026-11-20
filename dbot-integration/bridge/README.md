@@ -1,6 +1,6 @@
 # Signal bridge prototype
 
-This folder contains the first isolated, tested component for the Zyntrix × DBot bridge.
+This folder contains the first isolated signal-gate prototype and its Node.js test suite.
 
 ## Contract
 
@@ -17,7 +17,7 @@ Each signal ID can authorize only one waiting purchase. WAIT, invalid data, stal
 
 ## Current status
 
-This module is a tested prototype only. It is **not yet wired into Deriv's DBot interpreter or the Zyntrix page**. The next implementation step is to integrate the gate into the official template's `Bot.purchase` path, and connect RUN/STOP lifecycle events, before enabling any trading.
+This module is a prototype only. The test cases have been authored, but their execution has not yet been verified in this environment. It is **not yet wired into Deriv's DBot interpreter or the Zyntrix page**. The next implementation step is to integrate the gate into the official template's `Bot.purchase` path, bind it to the selected DBot market, and connect RUN/STOP lifecycle events, before enabling any trading.
 
 ## Tests
 
