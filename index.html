@@ -22,10 +22,10 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 .digits{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(8px,2vw,18px)}
 .d{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .25s;min-width:0}.d svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}.d circle{fill:none;stroke-width:7;stroke-linecap:round}.d .trk{stroke:var(--line)}.d .fg{stroke:var(--accent);transition:stroke-dashoffset .5s,stroke .3s}.d.hi .fg{stroke:var(--win)}.d.lo .fg{stroke:var(--loss)}.d.third .fg{stroke:#a855f7}.d.third b,.d.third small{color:#c084fc}.d b{font-size:clamp(1.25rem,4vw,2.1rem);line-height:1;font-weight:750;letter-spacing:-.04em}.d small{font-size:.68rem;color:var(--mute);margin-top:6px;font-variant-numeric:tabular-nums}.d.hit{transform:scale(1.07)}
 .cursor{position:absolute;left:0;top:0;pointer-events:none;z-index:2;transition:transform .5s cubic-bezier(.3,1.35,.5,1),width .3s,height .3s}.cursor::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px dashed var(--accent);box-shadow:0 0 18px var(--glow),inset 0 0 14px var(--glow);animation:spin 7s linear infinite}.cursor::after{content:"";position:absolute;left:50%;top:-5px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--glow)}@keyframes spin{to{transform:rotate(360deg)}}
-.sweep{position:absolute;top:0;bottom:0;width:90px;left:-120px;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,var(--glow),transparent)}.stage.scanning .sweep{opacity:.7;animation:sweep 1.3s ease-in-out infinite}@keyframes sweep{to{left:100%}}
+.sweep{position:absolute;top:0;bottom:0;width:90px;left:-120px;pointer-events:none;opacity:0;background:linear-gradient(90deg,transparent,var(--glow),transparent)}
 .actions{display:flex;align-items:center;gap:20px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
 .brain{position:relative;flex:none;width:88px;height:88px;border-radius:22px;border:1px solid rgba(91,156,255,.55);background:linear-gradient(145deg,rgba(91,156,255,.18),rgba(91,156,255,.05));color:var(--accent);cursor:pointer;display:grid;place-items:center;animation:breathe 2.8s ease-in-out infinite}.brain svg{width:48px;height:48px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px var(--glow))}.brain svg .n{fill:currentColor;stroke:none}
-.brain:focus-visible,.field input:focus-visible,.field select:focus-visible,.ghost:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.brain:disabled{cursor:not-allowed;animation:none;opacity:.55;box-shadow:none}.brain.scanning{animation:breathe .7s ease-in-out infinite}.brain.scanning::after{content:"";position:absolute;inset:-3px;border-radius:24px;border:2px solid var(--accent);animation:ripple 1.1s ease-out infinite}
+.brain:focus-visible,.field input:focus-visible,.field select:focus-visible,.ghost:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.brain:disabled{cursor:not-allowed;animation:none;opacity:.55;box-shadow:none}
 @keyframes breathe{0%,100%{box-shadow:0 0 14px var(--glow),inset 0 0 10px var(--glow)}50%{box-shadow:0 0 32px var(--glow),inset 0 0 18px var(--glow)}}@keyframes ripple{from{transform:scale(1);opacity:.9}to{transform:scale(1.16);opacity:0}}
 .say strong{display:block;font-size:1rem;font-weight:700}.say span{color:var(--mute);font-size:.82rem}h2{font-size:.88rem;margin:0 0 18px;font-weight:700;letter-spacing:.02em}.side{display:grid;gap:18px}
 .total{font-size:2.4rem;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.05em;line-height:1.1}.pos{color:var(--win)}.neg{color:var(--loss)}
@@ -37,9 +37,9 @@ h1{font-size:1.55rem;margin:0;font-weight:750;letter-spacing:-.045em}.sub{margin
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 /* Compact scan bar: keep the original SCAN control; inline P/L and settings */
-.actions.scanbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:13px}
-.actions.scanbar .brain{flex:0 0 68px}
-.actions.scanbar .say{flex:1 1 105px;min-width:100px}
+
+
+
 
 
 
@@ -120,7 +120,7 @@ h2{font:700 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spaci
 .actions{gap:14px;margin-top:18px;padding-top:14px;border-top:1px solid #153323}
 .brain{width:68px;height:68px;border-radius:7px;border:1px solid #287447;background:#06130b;color:#55f59a;animation:breathe 3s ease-in-out infinite}
 .brain svg{width:38px;height:38px;filter:drop-shadow(0 0 5px rgba(0,255,120,.2))}
-.brain.scanning::after{border-radius:9px;border-color:#55f59a}
+
 .say strong{font:700 12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#aaf8bf}
 .say span{font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#668b70}
 .side{gap:12px}
@@ -232,13 +232,15 @@ li span:first-child{color:#668b70}
 .diagnostic-item span{color:#668b70}.diagnostic-item b{color:#c9f7d5;text-align:right;font-weight:600}
 .ranked-results{margin-top:12px}.ranking-heading{font-size:10px;font-weight:700;letter-spacing:.1em;margin:12px 0 7px;color:#aaf8bf}
 .ranking-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #17452e;font-size:10px}.ranking-row small{display:block;color:#789681;font-size:9px;margin-top:2px}.ranking-score{font-weight:700;white-space:nowrap}
-.parity-signal-card{margin:7px 0 12px;padding:8px 10px;border:1px solid #287447;background:#07110b;border-radius:5px}.parity-signal-card .ranking-row{border-top:0;padding:4px 0}.parity-signal-card .ranking-row>div>span{color:#aaf8bf;font-weight:700;font-size:12px}.parity-signal-card .ranking-score{color:#55f59a}
+
 .validation-summary{margin-top:10px;padding-top:8px;border-top:1px solid #153323;color:#8ca6a0;font-size:9px;line-height:1.6}
 .window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(2,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
 @media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(2,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
 .over1-gate{margin:12px 0;padding:12px;border:1px solid #287447;background:#06130b;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.over1-gate h3{margin:0 0 7px;color:#aaf8bf;font-size:11px;letter-spacing:.1em}.over1-status{font-size:12px;font-weight:700;color:#c9f7d5}.over1-status.ready{color:#55f59a}.over1-status.wait{color:#ffcf7a}.over1-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.over1-rule{padding:7px 5px;border:1px solid #17452e;background:#030806;text-align:center;border-radius:4px}.over1-rule b{display:block;color:#c9f7d5;font-size:12px}.over1-rule small{display:block;color:#8bdba2;font-size:9px}.over1-rule.pass{border-color:#55f59a}.over1-rule.fail{border-color:#a65b52}.over1-note{margin-top:8px;color:#8cae95;font-size:9px;line-height:1.5}@media(max-width:520px){.over1-rules{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
+.analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}
+/* parity analysis removed */
+
 
 /* Selectable D-Circles window and contract momentum histogram */
 .stage-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}
@@ -285,29 +287,17 @@ li span:first-child{color:#668b70}
   </header>
 
 
-  <section class="analysis-market panel"><div class="contract-fields"><label class="field">CONTRACT SELECTOR<select id="analysisMode"><option value="EVEN_ODD" selected>EVEN / ODD</option><option value="OVER_UNDER">OVER / UNDER</option></select></label></div><label class="field" style="margin-top:10px">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">BRAIN analyses the selected contract using the selected tick window across all 10 volatility indices. Live display market is independent. Zyntrix is an analysis-only tool; trading remains separate in DBot.</p></section>
+  <section class="analysis-market panel"><label class="field">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">OVER / UNDER analysis uses the selected market and the existing live tick feed. Zyntrix is analysis-only; trading remains separate in DBot.</p></section>
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
       <div class="stage-toolbar"><span class="stage-toolbar-label">D-CIRCLES WINDOW</span><div class="tick-window-switch" id="tickWindowSwitch" role="group" aria-label="D-Circles tick window"><button type="button" data-window="1000" aria-pressed="false">1000</button><button type="button" data-window="500" aria-pressed="false">500</button><button type="button" data-window="250" aria-pressed="false">250</button><button type="button" data-window="60" aria-pressed="true">60</button><button type="button" data-window="30" aria-pressed="false">30</button></div></div>
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
-      <div class="actions scanbar">
-        <button class="brain" id="scan" type="button" title="ANALYZE ALL MARKETS" aria-label="Analyze all supported markets">
-          <svg viewBox="0 0 64 64" aria-hidden="true">
-            <path d="M31 10c-4-3-11-1-13 4-5 0-9 5-7 10-3 3-3 8 0 11-1 5 3 10 8 10 2 5 9 6 12 2z"/>
-            <path d="M33 10c4-3 11-1 13 4 5 0 9 5 7 10 3 3 3 8 0 11 1 5-3 10-8 10-2 5-9 6-12 2z"/>
-            <path d="M20 26c4 0 5 3 9 3M19 38c4 0 6-3 10-2M44 26c-4 0-5 3-9 3M45 38c-4 0-6-3-10-2"/>
-            <circle class="n" cx="20" cy="26" r="1.8"/><circle class="n" cx="44" cy="26" r="1.8"/>
-            <circle class="n" cx="19" cy="38" r="1.8"/><circle class="n" cx="45" cy="38" r="1.8"/>
-          </svg>
-        </button>
-        <div class="say" aria-live="polite"><strong id="status">Ready to analyze</strong><span id="tline">ANALYZE compares all supported markets · Local calculations only</span></div>
-        <div class="say-meta">LOCAL STATISTICS UPDATE WITH EVERY TICK</div>
-      </div>
+
     </section>
   </div>
-  <section class="ou-histograms" id="momentumPanel" aria-label="Over and Under barrier momentum histograms" hidden>
+  <section class="ou-histograms" id="momentumPanel" aria-label="Over and Under barrier momentum histograms">
     <div class="ou-chart over-chart">
       <div class="ou-chart-head"><span class="ou-legend"><i></i> Over</span><strong id="overMomentumNow">—</strong></div>
       <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="overHistogram" role="img" aria-label="Over 0 through Over 9 cumulative winning digit percentages"></div></div></div>
@@ -333,27 +323,7 @@ li span:first-child{color:#668b70}
       <div class="tick-digit-grid" id="tickDigitGrid" aria-label="Latest selected tick digits, newest first"></div>
     </div>
   </section>
-  <section class="parity-panel" aria-label="Even and odd data analysis">
-    <h2>PARITY STRENGTH // LIVE + ROLLING WINDOWS</h2>
-    <div class="parity-grid">
-      <div class="parity-item"><div class="parity-head"><span>EVEN FREQUENCY</span><b id="evenFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenFrequencyBar"></div></div></div>
-      <div class="parity-item"><div class="parity-head"><span>ODD FREQUENCY</span><b id="oddFrequency">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddFrequencyBar"></div></div></div>
-      <div class="parity-item"><div class="parity-head"><span>EVEN STRENGTH</span><b id="evenStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-even" id="evenStrengthBar"></div></div></div>
-      <div class="parity-item"><div class="parity-head"><span>ODD STRENGTH</span><b id="oddStrength">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-odd" id="oddStrengthBar"></div></div></div>
-      <div class="parity-item"><div class="parity-head"><span>FLAT / BALANCE</span><b id="parityFlat">0.0%</b></div><div class="parity-track"><div class="parity-fill parity-flat" id="parityFlatBar"></div></div></div>
-    </div>
-    <div class="window-matrix" id="windowMatrix"><div class="window-empty">Collecting enough ticks for rolling-window analysis…</div></div>
-    <div class="parity-caption" id="parityCount">0 / 1000 DIGITS · WAITING FOR DATA</div>
-  </section>
-  <section class="engine-panel" aria-label="Local statistical signal analysis">
-    <h2>LOCAL SIGNAL INTELLIGENCE // NO AI DEPENDENCY</h2>
-    <div class="engine-metrics">
-      <div class="engine-metric"><span>ENGINE:</span><b id="engineStateLabel">READY</b></div>
-      <div class="engine-metric"><span>SCAN TIME:</span><b id="analysisLatency">—</b></div>
-      <div class="engine-metric"><span>MARKETS:</span><b id="marketCoverage">0 / 10</b></div>
-      <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
-    </div>
-    <section class="over1-gate" aria-label="OVER 1 live entry gate">
+  <section class="over1-gate" aria-label="OVER 1 live entry gate">
       <h3>OVER 1 // LIVE ENTRY GATE</h3>
       <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING 60 TICKS</div>
       <div class="over1-rules" id="over1GateRules">
@@ -364,13 +334,6 @@ li span:first-child{color:#668b70}
       </div>
       <div class="over1-note">All four thresholds must pass together on the same latest 60 ticks. Signal updates on every tick. This is a signal only; no trade is submitted. Select the same market manually in DBot and Zyntrix.</div>
     </section>
-    <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
-    <div class="engine-summary" id="engineSummary">Press BRAIN to scan recurring digit patterns across all supported volatility indices for the selected contract.</div>
-    <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
-    <div id="marketDiagnostics" class="market-diagnostics"></div>
-    <div id="rankedResults" class="ranked-results"></div>
-    <div id="validationSummary" class="validation-summary">Forward validation begins after the first recorded analysis and is resolved when later timestamped market history becomes available.</div>
-  </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
       <div class="activity-head"><h2>SYS.LOG // LIVE TERMINAL</h2><span class="live-tag" id="feedState">DERIV FEED OFFLINE</span></div>
@@ -379,7 +342,7 @@ li span:first-child{color:#668b70}
         <div class="metric"><small>MARKET:</small><b id="activeMarket">---</b></div>
         <div class="metric"><small>EVENTS:</small><b id="eventCount">0</b></div>
       </div>
-      <div class="activity-grid"><section><div class="feed" id="eventFeed" aria-live="polite"><div class="feed-empty">[BOOT] Waiting for scanner feed...</div></div></section></div>
+      <div class="activity-grid"><section><div class="feed" id="eventFeed" aria-live="polite"><div class="feed-empty">[BOOT] Waiting for Deriv live feed...</div></div></section></div>
       <div class="activity-foot"><span>DERIV LIVE DATA // ANALYSIS ONLY</span><span>LIVE MARKET EVENTS</span></div>
     </div>
   </section>
@@ -403,9 +366,7 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=60;
-  function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
-  function lockScanControls(locked){$('#analysisMode').disabled=locked;Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
+  var events=[],lastDigit=0,selectedWindow=60;
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -429,12 +390,10 @@ li span:first-child{color:#668b70}
 
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds;return values.slice(-selectedWindow);}
-  function activeContract(){return String($('#analysisMode').value||'EVEN_ODD').toUpperCase();}
-  function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
+  function buildSelectedDistribution  function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
   function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
   function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.max(0,Math.min(100,stats.momentum/90*100)):0)+'%';bar.setAttribute('aria-label',mode+' '+barrier+': '+(sampleSize?stats.momentum.toFixed(1)+'%':'no data'));track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
-  function updateContractControls(){var mode=activeContract();$('#momentumPanel').hidden=mode!=='OVER_UNDER';renderMomentumHistogram();}
-  function renderMomentumHistogram(distribution){var panel=$('#momentumPanel');if(!panel)return;var isOU=activeContract()==='OVER_UNDER';panel.hidden=!isOU;if(!isOU)return;var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
+  function renderMomentumHistogram(distribution)  function renderMomentumHistogram(distribution){var panel=$('#momentumPanel');if(!panel)return;var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' / '+selectedWindow+' TICKS';$('#underSample').textContent=sample+' / '+selectedWindow+' TICKS';}
 
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
@@ -601,7 +560,7 @@ li span:first-child{color:#668b70}
       $('#feedState').textContent='DERIV FEED CONNECTED';
       $('#engineState').textContent='Connected';
       $('#status').textContent='Deriv market data connected. Waiting for live ticks.';
-      event('system','Scanner ready','Deriv public market-data WebSocket connected.');
+      event('system','Live analysis ready','Deriv public market-data WebSocket connected.');
       sendSocket({active_symbols:'brief',req_id:requestId++});
       subscribeMarket();
     };
@@ -694,7 +653,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===third);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();updateParityStrength(distribution);renderMomentumHistogram(distribution);renderOver1Gate();
+    updateTickWindow();renderMomentumHistogram(distribution);renderOver1Gate();
   }
 
   function moveCursor(i,flash){
@@ -705,193 +664,13 @@ li span:first-child{color:#668b70}
   }
 
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
-  function updateParityStrength(distribution){
-    var sample=(distribution||buildSelectedDistribution()).digits,n=sample.length,even=0;for(var i=0;i<n;i++)if(sample[i]%2===0)even++;var odd=n-even;
-    if(!n){['evenFrequency','oddFrequency','evenStrength','oddStrength','parityFlat'].forEach(function(id){$('#'+id).textContent='0.0%'});
-      ['evenFrequencyBar','oddFrequencyBar','evenStrengthBar','oddStrengthBar','parityFlatBar'].forEach(function(id){$('#'+id).style.width='0%'});
-      $('#parityCount').textContent='0 / '+selectedWindow+' DIGITS · WAITING FOR DATA';updateWindowMatrix(distribution);return;}
-    var ef=even/n*100,of=odd/n*100,min=Math.min(even,odd),es=Math.round((even-min)/n*1000)/10,os=Math.round((odd-min)/n*1000)/10,flat=Math.round((100-es-os)*10)/10;
-    function set(id,v){$('#'+id).textContent=v.toFixed(1)+'%'}function bar(id,v){$('#'+id).style.width=Math.max(0,Math.min(100,v))+'%'}
-    set('evenFrequency',ef);set('oddFrequency',of);set('evenStrength',es);set('oddStrength',os);set('parityFlat',flat);
-    bar('evenFrequencyBar',ef);bar('oddFrequencyBar',of);bar('evenStrengthBar',es);bar('oddStrengthBar',os);bar('parityFlatBar',flat);
-    $('#parityCount').textContent=n+' / '+selectedWindow+' DIGITS · '+even+' EVEN · '+odd+' ODD';updateWindowMatrix(distribution);
-  }
-  function updateWindowMatrix(distribution){
-    var holder=$('#windowMatrix');if(!holder)return;var sample=(distribution||buildSelectedDistribution()).digits,minimum=selectedWindow;if(sample.length<minimum){holder.textContent='Collecting at least '+minimum+' valid ticks…';return;}
-    var result=ZyntrixEngine.analyzeMarket({digits:sample,contract:'EVEN'});holder.replaceChildren();
-    var header=document.createElement('div');header.className='window-row header';
-    ['WINDOW','EVEN','ODD'].forEach(function(label){var cell=document.createElement('span');cell.textContent=label;header.appendChild(cell)});holder.appendChild(header);
-    result.windowStats.forEach(function(item){var row=document.createElement('div');row.className='window-row';
-      [item.size+' TICKS',item.evenPercent.toFixed(1)+'%',item.oddPercent.toFixed(1)+'%'].forEach(function(value,index){var cell=document.createElement(index===0?'span':'b');cell.textContent=value;row.appendChild(cell)});holder.appendChild(row);});
-  }
-  function readSignalLedger(){try{var value=JSON.parse(localStorage.getItem('zyntrix.signal-ledger.v1')||'[]');return Array.isArray(value)?value:[]}catch(error){return[]}}
-  function writeSignalLedger(ledger){try{localStorage.setItem('zyntrix.signal-ledger.v1',JSON.stringify(ledger));return true}catch(error){return false}}
-  function renderValidation(ledger){
-    var summary=ZyntrixEngine.summarizeSignalLedger(ledger);$('#validationCount').textContent=summary.nextTickResolved+' / '+summary.recorded;
-    var next=summary.nextTickHitRate===null?'awaiting first resolved next-tick outcomes':summary.nextTickHitRate+'% next-tick matches across '+summary.nextTickResolved+' resolved signals';
-    var five=summary.fiveTickAverage===null?'5-tick follow-through pending':summary.fiveTickAverage+'% average target parity across '+summary.fiveTickResolved+' observations';
-    var ten=summary.tenTickAverage===null?'10-tick follow-through pending':summary.tenTickAverage+'% average target parity across '+summary.tenTickResolved+' observations';
-    $('#validationSummary').textContent='LOCAL FORWARD VALIDATION · '+summary.recorded+' recorded · '+next+' · '+five+' · '+ten+'. Descriptive sample only; compare next-tick results with the 50% baseline.';
-  }
-  function finishPortfolioUi(message){$('#engineStateLabel').textContent='NO DATA';$('#engineSummary').textContent=message;$('#rankedResults').textContent=message;analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');}
-  function finishPortfolioScan(error){
-    if(portfolioScanTimer){clearTimeout(portfolioScanTimer);portfolioScanTimer=null;}
-    var state=portfolioScanState;portfolioScanState=null;
-    if(portfolioScanSocket){try{portfolioScanSocket.close()}catch(e){}portfolioScanSocket=null;}
-    if(!state)return;
-    
-    if(error){finishPortfolioUi(error);$('#engineStateLabel').textContent='SCAN ERROR';return;}
-    var minimumTicks=state.window,usable=state.results.filter(function(x){return x.digits.length>=minimumTicks;});
-    if(!usable.length){finishPortfolioUi('No supported market returned the full selected '+minimumTicks+'-tick sample.');return;}
-    $('#engineStateLabel').textContent='PROCESSING PATTERNS';
-    var mode=state.mode||activeContract();
-    if(mode==='OVER_UNDER'){finishMomentumScan(usable,state);return;}
-    var sides=['EVEN','ODD'].map(function(contract){return{label:contract,ranked:ZyntrixEngine.rankPatternMarkets(usable,contract,MK.length)};});
-    var ledger=ZyntrixEngine.resolveSignalLedger(readSignalLedger(),state.results);
-    sides.forEach(function(side){
-      var best=side.ranked.best;if(!best)return;
-      var source=state.results.find(function(item){return item.symbol===best.symbol;});
-      var validEpochs=source&&Array.isArray(source.epochs)?source.epochs.filter(function(epoch){return epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch));}):[];
-      var afterEpoch=validEpochs.length?Math.max.apply(null,validEpochs):null;
-      if(afterEpoch!==null&&!ledger.some(function(item){return item.marketSymbol===best.symbol&&item.contract===side.label&&Number(item.afterEpoch)===afterEpoch;}))
-        ledger.push({marketSymbol:best.symbol,marketName:best.marketName,contract:side.label,afterEpoch:afterEpoch,generatedAt:Date.now(),evidenceScore:best.evidenceScore,status:best.status,pattern:best.pattern.pattern,outcomes:{nextTickHit:null,nextTickDigit:null,after5Rate:null,after10Rate:null}});
-    });
-    ledger=ledger.slice(-200);var ledgerSaved=writeSignalLedger(ledger);renderValidation(ledger);
-    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
-    $('#engineStateLabel').textContent='COMPLETE';$('#marketCoverage').textContent=usable.length+' / '+MK.length;
-    $('#signalLabel').textContent=mode+' RECURRING-PATTERN ANALYSIS';
-    $('#signalScore').textContent=sides.filter(function(side){return side.ranked.hasClearSignal;}).length+' PATTERN SIGNAL(S)';
-    function describe(side){
-      var best=side.ranked.best,candidate=side.ranked.candidate;
-      if(best)return side.label+': '+best.marketName+' · pattern '+best.pattern.pattern+' · '+best.pattern.targetRatePercent+'% '+side.label+' in '+best.pattern.occurrences+' repeats.';
-      if(candidate)return side.label+': NO CLEAR SIGNAL · strongest observed pattern '+candidate.pattern.pattern+' had '+candidate.pattern.targetRatePercent+'% '+side.label+' across '+candidate.pattern.occurrences+' repeats; evidence threshold not met.';
-      return side.label+': NO CLEAR SIGNAL · no recurring pattern had enough observations.';
-    }
-    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and tested every recurring 2- and 3-digit sequence in the selected '+state.window+'-tick sample for each market. '+sides.map(describe).join(' ')+' A pattern signal requires at least 8 historical repeats, at least 60% target-parity follow-through and a Wilson lower bound above 50%. Historical evidence only; not a guarantee of the next tick.';
-    $('#engineEvidence').replaceChildren();
-    sides.forEach(function(side){var li=document.createElement('li');li.textContent=describe(side);$('#engineEvidence').appendChild(li);});
-    $('#marketDiagnostics').textContent='Pattern method: every 2- and 3-digit sequence is checked across the selected '+state.window+'-tick sample for each market; the parity of the following digit is measured at each occurrence. Weak or under-sampled patterns are not promoted to signals.';
-    var box=$('#rankedResults');box.replaceChildren();
-    sides.forEach(function(side){
-      var best=side.ranked.best,candidate=side.ranked.candidate;
-      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=side.label+' · STRONGEST PATTERN SIGNAL';box.appendChild(heading);
-      var signalCard=document.createElement('div');signalCard.className='parity-signal-card';
-      var card=document.createElement('div');card.className='ranking-row';
-      var rank=document.createElement('b');rank.textContent=best?'01':'—';
-      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO CLEAR SIGNAL';
-      var meta=document.createElement('small');meta.textContent=best?'Pattern '+best.pattern.pattern+' · '+best.pattern.occurrences+' repeats · '+best.pattern.targetRatePercent+'% '+side.label+' follow-through · z '+best.pattern.zScore:'No recurring sequence met the evidence threshold.'+(candidate?' Best watch: '+candidate.marketName+' · '+candidate.pattern.pattern+' · '+candidate.pattern.occurrences+' repeats.':'');
-      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?best.evidenceScore.toFixed(1)+'/100':'—';card.append(rank,detail,score);signalCard.appendChild(card);box.appendChild(signalCard);
-      var subheading=document.createElement('div');subheading.className='analysis-note';subheading.textContent=side.label+' · RECURRING SEQUENCE CANDIDATES';box.appendChild(subheading);
-      side.ranked.ranking.forEach(function(item,index){
-        var row=document.createElement('div');row.className='ranking-row';
-        var number=document.createElement('b');number.textContent=String(index+1).padStart(2,'0');
-        var info=document.createElement('div'),marketName=document.createElement('span');marketName.textContent=item.marketName+' · '+item.status;
-        var stats=document.createElement('small');stats.textContent='Pattern '+item.pattern.pattern+' · '+item.pattern.occurrences+' repeats · '+item.pattern.targetRatePercent+'% '+side.label+' follow-through · '+item.sampleSize+' ticks';
-        info.append(marketName,stats);var value=document.createElement('b');value.className='ranking-score';value.textContent=item.evidenceScore.toFixed(1)+'/100';row.append(number,info,value);box.appendChild(row);
-      });
-      var note=document.createElement('p');note.className='analysis-note';note.textContent=side.ranked.skippedMarkets+' market(s) had no 2- or 3-digit sequence repeated at least 8 times.';box.appendChild(note);
-    });
-    var note=document.createElement('p');note.className='analysis-note';note.textContent='Scores rank recurring historical patterns, not guaranteed outcomes. '+(ledgerSaved?'Forward outcomes will be checked on later scans.':'Browser storage is unavailable; forward validation cannot be retained.');box.appendChild(note);
-    $('#status').textContent='Pattern analysis complete · '+mode+' contract · '+sides.filter(function(side){return side.ranked.hasClearSignal;}).length+' qualifying signal(s).';
-    event('decision',mode+' CONTRACT PATTERN ANALYSIS',sides.map(describe).join(' '));
-    analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
-  }
-  function requestNextPortfolioHistory(){
-    var state=portfolioScanState;if(!state||!portfolioScanSocket||portfolioScanSocket.readyState!==WebSocket.OPEN)return;
-    if(state.index>=MK.length){finishPortfolioScan(null);return;}
-    var market=MK[state.index],req=state.nextReq++;
-    state.pending[req]=market;
-    $('#status').textContent='Collecting '+market.n+' history ('+(state.index+1)+'/'+MK.length+')…';
-    portfolioScanSocket.send(JSON.stringify({ticks_history:market.symbol,count:state.window,end:'latest',style:'ticks',req_id:req}));
-  }
-  function runPortfolioScan(){
-    if(analysisInFlight)return;analysisInFlight=true;
-    portfolioScanState={index:0,nextReq:1000,pending:{},results:[],started:performance.now(),window:selectedWindow,mode:activeContract()};lockScanControls(true);
-    $('#scan').classList.add('scanning');$('#stage').classList.add('scanning');$('#engineStateLabel').textContent='COLLECTING DATA';$('#marketCoverage').textContent='0 / '+MK.length;
-    var mode=activeContract();$('#signalLabel').textContent=mode+(mode==='OVER'||mode==='UNDER'?' MOMENTUM SCAN':' PATTERN SCAN');$('#signalScore').textContent='SCANNING '+MK.length+' MARKETS';
-    $('#engineSummary').textContent='Collecting '+selectedWindow+' latest chronological ticks per supported market for the selected contract.';
-    $('#engineEvidence').replaceChildren();$('#rankedResults').textContent='';event('system','DATA SCAN STARTED',mode+' contract · '+MK.length+' markets · '+selectedWindow+' latest ticks per market.');
-    try{portfolioScanSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(e){finishPortfolioScan('Could not open the Deriv history connection.');return;}
-    portfolioScanTimer=setTimeout(function(){finishPortfolioScan('Market history scan timed out. Try again when the Deriv feed is available.');},90000);
-    portfolioScanSocket.onopen=function(){requestNextPortfolioHistory();};
-    portfolioScanSocket.onmessage=function(message){
-      var data;try{data=JSON.parse(message.data)}catch(e){return;}var state=portfolioScanState;if(!state)return;
-      var market=state.pending[data.req_id];if(!market)return;delete state.pending[data.req_id];
-      if(data.error)state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:data.error.message||'History unavailable'});
-      else if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)){
-        var prices=data.history.prices,times=data.history.times||[],pip=Number(data.pip_size!==undefined?data.pip_size:data.history.pip_size);
-        if(!Number.isInteger(pip)||pip<0||pip>8){pip=0;prices.forEach(function(v){var decimals=quoteDecimals(v);if(decimals>pip)pip=decimals;});}
-        var rows=prices.map(function(v,i){return{price:Number(v),epoch:times[i]===undefined?null:Number(times[i]),index:i};}).filter(function(row){return Number.isFinite(row.price)&&row.price>0;});
-        if(rows.length&&rows.every(function(row){return row.epoch!==null&&Number.isFinite(row.epoch)}))rows.sort(function(a,b){return a.epoch-b.epoch||a.index-b.index;});
-        var clean=[];rows.forEach(function(row){var previous=clean.length?clean[clean.length-1]:null;if(previous&&row.epoch!==null&&previous.epoch===row.epoch&&previous.price===row.price)return;clean.push(row);});
-        var digits=clean.map(function(row){var str=row.price.toFixed(pip).replace(/\D/g,'');return Number(str.charAt(str.length-1));});
-        state.results.push({symbol:market.symbol,marketName:market.n,digits:digits.slice(-state.window),prices:clean.map(function(x){return x.price;}).slice(-state.window),epochs:clean.map(function(x){return x.epoch;}).slice(-state.window)});
-      }else state.results.push({symbol:market.symbol,marketName:market.n,digits:[],prices:[],epochs:[],error:'Unexpected history response'});
-      state.index++;requestNextPortfolioHistory();
-    };
-    portfolioScanSocket.onerror=function(){finishPortfolioScan('Deriv history WebSocket connection failed.');};
-    portfolioScanSocket.onclose=function(){if(portfolioScanState&&portfolioScanState.index<MK.length&&Object.keys(portfolioScanState.pending).length===0&&portfolioScanState.results.length<MK.length)finishPortfolioScan('Deriv history connection closed before all markets were checked.');};
-  }
-  function scan(){if(analysisInFlight)return;$('#status').textContent='Starting local cross-market analysis…';runPortfolioScan()}
+  $('#tickWindowToggle').addEventListener  $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
+  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
 
-  function finishMomentumScan(usable,state){
-    var contracts=['OVER','UNDER'];
-    var rankedByContract=contracts.map(function(mode){
-      var ranked=usable.map(function(m){
-        var percentages=momentumForDigits(m.digits,'OVER',0).percentages,series=[];
-        for(var barrier=0;barrier<=9;barrier++){
-          var stats=momentumFromPercentages(percentages,mode,barrier);
-          series.push({barrier:barrier,momentum:stats.momentum,required:stats.required,margin:stats.momentum-stats.required});
-        }
-        series.sort(function(a,b){return b.margin-a.margin;});
-        return{symbol:m.symbol,marketName:m.marketName,stats:series[0],sampleSize:m.digits.length};
-      }).sort(function(a,b){return b.stats.margin-a.stats.margin;});
-      return{label:mode,ranked:ranked,best:ranked[0]};
-    });
-    var qualified=rankedByContract.filter(function(x){return x.best&&x.best.sampleSize>0&&x.best.stats.margin>0;}).length;
-    lastAnalysisMs=performance.now()-state.started;renderEngineLatency();
-    $('#engineStateLabel').textContent='COMPLETE';
-    $('#marketCoverage').textContent=usable.length+' / '+MK.length;
-    $('#signalLabel').textContent='OVER / UNDER BARRIER MOMENTUM';
-    $('#signalScore').textContent=qualified+' CONTRACT SIGNAL(S)';
-    function describe(group){
-      var best=group.best;
-      return best?(group.label+': '+best.marketName+' · '+group.label+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% observed / '+best.stats.required.toFixed(1)+'% baseline · '+(best.stats.margin>0?'ABOVE':'AT/BELOW')+' baseline.'):group.label+': no usable market data.';
-    }
-    $('#engineSummary').textContent='BRAIN scanned '+usable.length+' markets and analyzed OVER and UNDER together using the selected '+state.window+'-tick sample. '+rankedByContract.map(describe).join(' ')+' Historical frequency is not a guaranteed next-tick probability.';
-    $('#engineEvidence').replaceChildren();
-    rankedByContract.forEach(function(group){
-      group.ranked.slice(0,5).forEach(function(item,index){
-        var li=document.createElement('li');
-        li.textContent=group.label+' · '+(index+1)+'. '+item.marketName+' · strongest '+group.label+' '+item.stats.barrier+' · '+item.stats.momentum.toFixed(1)+'% observed / '+item.stats.required.toFixed(1)+'% baseline · '+item.sampleSize+' ticks';
-        $('#engineEvidence').appendChild(li);
-      });
-    });
-    $('#marketDiagnostics').textContent='OVER and UNDER are both analyzed in the same scan. Over barriers count digits greater than the barrier; Under barriers count digits lower than the barrier. Neutral baseline = winning-digit count × 10%. Selected window: '+state.window+' ticks.';
-    $('#rankedResults').replaceChildren();
-    rankedByContract.forEach(function(group){
-      var best=group.best;
-      var heading=document.createElement('div');heading.className='ranking-heading';heading.textContent=group.label+' · STRONGEST BARRIER';$('#rankedResults').appendChild(heading);
-      var row=document.createElement('div');row.className='ranking-row';
-      var rank=document.createElement('b');rank.textContent=best?'01':'—';
-      var detail=document.createElement('div'),name=document.createElement('span');name.textContent=best?best.marketName:'NO DATA';
-      var meta=document.createElement('small');meta.textContent=best?'Strongest '+group.label+' '+best.stats.barrier+' · '+best.stats.momentum.toFixed(1)+'% observed / '+best.stats.required.toFixed(1)+'% baseline · '+best.sampleSize+' ticks':'No market returned usable tick data.';
-      detail.append(name,meta);var score=document.createElement('b');score.className='ranking-score';score.textContent=best?(best.stats.margin>=0?'+':'')+best.stats.margin.toFixed(1)+' pp':'—';
-      row.append(rank,detail,score);$('#rankedResults').appendChild(row);
-    });
-    $('#status').textContent='OVER / UNDER analysis complete · '+qualified+' contract signal(s) above baseline.';
-    event('decision','OVER / UNDER MOMENTUM ANALYSIS',rankedByContract.map(describe).join(' '));
-    analysisInFlight=false;lockScanControls(false);$('#scan').classList.remove('scanning');$('#stage').classList.remove('scanning');
-  }
-
-  $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
-  $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button||analysisInFlight)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
-  $('#analysisMode').addEventListener('change',updateContractControls);
-  $('#scan').addEventListener('click',scan);
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
-  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(portfolioScanTimer)clearTimeout(portfolioScanTimer);if(portfolioScanSocket)portfolioScanSocket.close();if(socket)socket.close()});
-  updateContractControls();render();updateParityStrength();$('#activeMarket').textContent=mk.n;renderValidation(readSignalLedger());connectMarketSocket();
+  window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
+  render();renderMomentumHistogram();$('#activeMarket').textContent=mk.n;connectMarketSocket();
 })();
 </script>
 </body>
