@@ -237,6 +237,7 @@ li span:first-child{color:#668b70}
 .window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(2,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
 @media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(2,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
+.over1-gate{margin:12px 0;padding:12px;border:1px solid #287447;background:#06130b;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.over1-gate h3{margin:0 0 7px;color:#aaf8bf;font-size:11px;letter-spacing:.1em}.over1-status{font-size:12px;font-weight:700;color:#c9f7d5}.over1-status.ready{color:#55f59a}.over1-status.wait{color:#ffcf7a}.over1-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.over1-rule{padding:7px 5px;border:1px solid #17452e;background:#030806;text-align:center;border-radius:4px}.over1-rule b{display:block;color:#c9f7d5;font-size:12px}.over1-rule small{display:block;color:#8bdba2;font-size:9px}.over1-rule.pass{border-color:#55f59a}.over1-rule.fail{border-color:#a65b52}.over1-note{margin-top:8px;color:#8cae95;font-size:9px;line-height:1.5}@media(max-width:520px){.over1-rules{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}.parity-panel{margin-top:12px;background:#050b09;border:1px solid #17452e;border-radius:8px;padding:13px;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.parity-panel h2{margin:0 0 10px;color:#aaf8bf;font-size:10px;letter-spacing:.13em}.parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.parity-item{min-width:0}.parity-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:10px}.parity-head b{font-variant-numeric:tabular-nums}.parity-track{height:9px;background:#102017;border:1px solid #17452e;border-radius:3px;overflow:hidden}.parity-fill{height:100%;width:0%;transition:width .15s linear}.parity-even{background:#55f59a}.parity-odd{background:#ff806f}.parity-flat{background:#8ca6a0}.parity-caption{margin-top:9px;color:#668b70;font-size:9px}@media(max-width:520px){.parity-grid{grid-template-columns:1fr}}
 
 /* Selectable D-Circles window and contract momentum histogram */
@@ -337,7 +338,7 @@ li span:first-child{color:#668b70}
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
-      <div class="stage-toolbar"><span class="stage-toolbar-label">D-CIRCLES WINDOW</span><div class="tick-window-switch" id="tickWindowSwitch" role="group" aria-label="D-Circles tick window"><button type="button" data-window="1000" aria-pressed="true">1000</button><button type="button" data-window="500" aria-pressed="false">500</button><button type="button" data-window="250" aria-pressed="false">250</button><button type="button" data-window="60" aria-pressed="false">60</button><button type="button" data-window="30" aria-pressed="false">30</button></div></div>
+      <div class="stage-toolbar"><span class="stage-toolbar-label">D-CIRCLES WINDOW</span><div class="tick-window-switch" id="tickWindowSwitch" role="group" aria-label="D-Circles tick window"><button type="button" data-window="1000" aria-pressed="false">1000</button><button type="button" data-window="500" aria-pressed="false">500</button><button type="button" data-window="250" aria-pressed="false">250</button><button type="button" data-window="60" aria-pressed="true">60</button><button type="button" data-window="30" aria-pressed="false">30</button></div></div>
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
       <div class="actions scanbar">
@@ -431,6 +432,17 @@ li span:first-child{color:#668b70}
       <div class="engine-metric"><span>MARKETS:</span><b id="marketCoverage">0 / 10</b></div>
       <div class="engine-metric"><span>FORWARD OUTCOMES:</span><b id="validationCount">0 / 0</b></div>
     </div>
+    <section class="over1-gate" aria-label="OVER 1 live entry gate">
+      <h3>OVER 1 // LIVE ENTRY GATE</h3>
+      <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING 60 TICKS</div>
+      <div class="over1-rules" id="over1GateRules">
+        <div class="over1-rule"><b>OVER 0</b><small>— / 95%</small></div>
+        <div class="over1-rule"><b>OVER 1</b><small>— / 85%</small></div>
+        <div class="over1-rule"><b>OVER 2</b><small>— / 75%</small></div>
+        <div class="over1-rule"><b>OVER 3</b><small>— / 65%</small></div>
+      </div>
+      <div class="over1-note">All four thresholds must pass together on the same latest 60 ticks. Signal updates on every tick. This is a signal only; no trade is submitted. Select the same market manually in DBot and Zyntrix.</div>
+    </section>
     <div class="engine-signal"><strong id="signalLabel">NO ANALYSIS</strong><b id="signalScore">—</b></div>
     <div class="engine-summary" id="engineSummary">Press BRAIN to scan recurring digit patterns across all supported volatility indices for the selected contract.</div>
     <ul class="engine-evidence" id="engineEvidence"><li>Waiting for analysis.</li></ul>
@@ -470,7 +482,7 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=1000;
+  var events=[],lastDigit=0,analysisInFlight=false,lastAnalysisMs=0,selectedWindow=60;
   function renderEngineLatency(){$('#analysisLatency').textContent=lastAnalysisMs?Math.round(lastAnalysisMs)+' ms':'—'}
   function lockScanControls(locked){$('#analysisMode').disabled=locked;Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(button){button.disabled=locked;});}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
@@ -727,8 +739,25 @@ li span:first-child{color:#668b70}
       $('#engineState').textContent='Disconnected';
       $('#status').textContent='Deriv feed disconnected. Reconnecting…';
       setTickWindowState('DISCONNECTED · RECONNECTING');
+      renderOver1Gate();
       if(!manuallyClosed)scheduleReconnect();
     };
+  }
+
+  function renderOver1Gate(){
+    var status=$('#over1GateStatus'),holder=$('#over1GateRules');
+    if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1Gate!=='function')return;
+    var result=window.ZyntrixEngine.evaluateOver1Gate(selectedDigits(ds),selectedWindow,!!(socket&&socket.readyState===WebSocket.OPEN));
+    status.textContent=result.ready?'PASS · OVER 1 SIGNAL READY':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
+    status.className='over1-status '+(result.ready?'ready':'wait');
+    holder.replaceChildren();
+    result.barriers.forEach(function(rule){
+      var card=document.createElement('div'),value=document.createElement('b'),label=document.createElement('small');
+      card.className='over1-rule '+(rule.passed?'pass':'fail');
+      value.textContent='OVER '+rule.barrier;
+      label.textContent=(result.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'%';
+      card.append(value,label);holder.appendChild(card);
+    });
   }
 
   function render(){
@@ -744,7 +773,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===third);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();updateParityStrength(distribution);renderMomentumHistogram(distribution);
+    updateTickWindow();updateParityStrength(distribution);renderMomentumHistogram(distribution);renderOver1Gate();
   }
 
   function moveCursor(i,flash){
