@@ -20,7 +20,7 @@ export class ZyntrixSignalGate {
         this.now = now;
         this.active = false;
         this.waiter = null;
-        this.consumedIds = new Set();
+        this.seenSignalIds = new Set();
         this.lastStatus = 'WAIT';
     }
 
@@ -75,16 +75,18 @@ export class ZyntrixSignalGate {
             this.lastStatus = 'WAIT';
             return { accepted: false, reason: validation.reason };
         }
-        if (!this.active || !this.waiter) {
-            return { accepted: false, reason: 'NO_ACTIVE_PURCHASE_WAIT' };
-        }
-        if (this.consumedIds.has(message.signalId)) {
+        if (this.seenSignalIds.has(message.signalId)) {
             this.lastStatus = 'WAIT';
             return { accepted: false, reason: 'DUPLICATE_SIGNAL' };
         }
-        this.consumedIds.add(message.signalId);
-        if (this.consumedIds.size > 1000) {
-            this.consumedIds.delete(this.consumedIds.values().next().value);
+        // Mark every valid PASS as seen, even if it arrived before a purchase
+        // was waiting. Replaying that old message must not authorize a later buy.
+        this.seenSignalIds.add(message.signalId);
+        if (this.seenSignalIds.size > 1000) {
+            this.seenSignalIds.delete(this.seenSignalIds.values().next().value);
+        }
+        if (!this.active || !this.waiter) {
+            return { accepted: false, reason: 'NO_ACTIVE_PURCHASE_WAIT' };
         }
         this.lastStatus = 'PASS';
         const waiter = this.waiter;
