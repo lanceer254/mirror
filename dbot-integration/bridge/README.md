@@ -1,28 +1,20 @@
 # Signal bridge prototype
 
-This folder contains the first isolated signal-gate prototype and its Node.js test suite.
+This folder preserves the original standalone gate prototype and its Node.js tests as a design reference. The production-facing implementation for the custom DBot fork is in `lanceer254/trading-bot-template` branch `zyntrix-signal-bridge`.
 
-## Contract
+The integrated version uses a popup rather than an iframe because the popup can be opened by a user click and its exact `WindowProxy` can be verified by DBot. It performs an origin-checked HELLO/INIT/READY handshake before sending signals.
 
-DBot accepts messages only from the exact configured Zyntrix origin **and** the exact embedded iframe window. A PASS is eligible only when DBot is already running and a purchase is actively waiting. A pre-RUN PASS is discarded.
+## Integrated contract
 
-A valid PASS must match:
-- market `1HZ100V` (initial baseline; DBot market must later be bound to the actual workspace selection);
+- type `ZYNTRIX_SIGNAL`, protocol version 1;
+- status `PASS` or `WAIT`;
 - strategy `OVER1`, contract `DIGITOVER`, prediction `1`;
-- exactly 60 samples;
-- OVER 0 >=95%, OVER 1 >=85%, OVER 2 >=75%, OVER 3 >=65%;
-- a timestamp no more than 3 seconds old.
+- selected market, 60-tick sample, and four threshold metrics;
+- unique session ID, per-session live tick sequence, signal ID, and timestamp;
+- PASS expires after 3 seconds and can authorize only one currently waiting purchase.
 
-Each signal ID can authorize only one waiting purchase. WAIT, invalid data, stale data, wrong origin/window, market mismatch, or stopping DBot cannot authorize a purchase.
+DBot obtains its expected market from its own Blockly trade-definition symbol. Zyntrix cannot choose or override the DBot market. Wrong origin/window, stale or replayed signals, WAIT, mismatch, or STOP cannot authorize a purchase.
 
-## Current status
+## Verification status
 
-This module is a prototype only. The test cases have been authored, but their execution has not yet been verified in this environment. It is **not yet wired into Deriv's DBot interpreter or the Zyntrix page**. The next implementation step is to integrate the gate into the official template's `Bot.purchase` path, bind it to the selected DBot market, and connect RUN/STOP lifecycle events, before enabling any trading.
-
-## Tests
-
-Run with Node.js 22 or 24:
-
-```sh
-node --test signal-gate.test.mjs
-```
+The Zyntrix branch quality workflow passed its analysis-engine tests and dashboard JavaScript syntax/markup checks. DBot payload validation tests have been authored but have not yet been executed in this environment. Full integration still requires both pull requests to be merged, DBot to be deployed with its own Deriv OAuth client ID, and an end-to-end browser test with a Deriv demo account.
