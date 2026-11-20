@@ -663,7 +663,7 @@ li span:first-child{color:#668b70}
   }
 
   $('#market').addEventListener('change',function(){mk=MK[+this.value];$('#status').textContent='Switching live feed to '+mk.n+'…';$('#activeMarket').textContent=mk.n;subscribeMarket();event('system','Market changed',mk.n+' selected.')});
-  $('#tickWindowToggle').addEventListener  $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
+  $('#tickWindowToggle').addEventListener('click',function(){var open=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!open));$('#tickWindowBody').hidden=open;$('#tickWindowChevron').textContent=open?'▾':'▴';if(!open)renderTickWindowDigits()});
   $('#tickWindowSwitch').addEventListener('click',function(e){var button=e.target.closest('button[data-window]');if(!button)return;selectedWindow=Number(button.getAttribute('data-window'));Array.prototype.forEach.call($('#tickWindowSwitch').querySelectorAll('button'),function(item){item.setAttribute('aria-pressed',String(item===button));});render();$('#status').textContent='All analysis components set to latest '+selectedWindow+' ticks.';event('system','ANALYSIS WINDOW CHANGED',selectedWindow+' latest ticks selected for every analysis component.');});
 
   
