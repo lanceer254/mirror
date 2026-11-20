@@ -6,25 +6,27 @@ Reviewed against the upstream `deriv-com/trading-bot-template` source on its `ma
 
 1. Blockly's `purchase` block generator emits `Bot.purchase('<contract>')`.
 2. The DBot interpreter registers `Bot.purchase` as an asynchronous interpreter function.
-3. `BotInterface` currently forwards that call to `tradeEngine.purchase(contract_type)`.
+3. `BotInterface` forwards the call to `tradeEngine.purchase(contract_type)`.
 4. The trade engine's purchase implementation checks that it is in the `BEFORE_PURCHASE` state before it submits the Deriv buy request.
 5. The DBot run loop returns to the `before` scope for subsequent trades after a `trade_again` block.
 
-## Integration decision
+## Implemented in the custom fork
 
-The strongest gate is at the Bot interface / trade-engine purchase boundary, not merely a decorative Blockly block. The interface can await a Promise from the signal gate before it calls the existing trade engine purchase method. The interpreter already wraps `Bot.purchase` as an asynchronous function, so this is a viable integration point.
+In `lanceer254/trading-bot-template` branch `zyntrix-signal-bridge`:
 
-This gate must run for **every** purchase call. That covers the first trade and later `trade_again` cycles. RUN must activate a fresh waiting session; STOP must cancel a pending wait. A PASS received before a purchase is waiting is discarded and cannot be replayed later.
+- `BotInterface.purchase` awaits the Zyntrix gate before calling the original `tradeEngine.purchase`.
+- The expected market comes from DBot's own `tradeEngine.options.symbol`, not from the untrusted signal.
+- The DBot builder opens Zyntrix in a popup. The two windows use a source- and origin-checked HELLO/INIT/READY handshake.
+- RUN activates the gate and STOP cancels a pending wait.
+- Every purchase call goes through the same gate, including later purchases after `trade_again`.
+- A PASS is one-use, no older than 3 seconds, and must match OVER1 / DIGITOVER / prediction 1, the same market, 60 samples, and all four configured thresholds.
+- The publisher uses the existing Zyntrix feed and emits at most one signal per live tick. Session ID and increasing tick sequence prevent a single tick from authorizing repeated purchases.
 
-## Still required before integration is complete
+## Remaining verification
 
-- Import and instantiate the gate in the actual custom DBot source.
-- Bind the expected market to the live Blockly trade-definition symbol, rather than trusting a symbol sent by Zyntrix.
-- Embed the existing Zyntrix page and retain its existing live feed; pass the exact iframe `contentWindow` and origin to the gate.
-- Wire RUN/STOP and iframe disconnect handling to the gate lifecycle.
-- Run upstream build, lint, and test suites after integration.
-- Verify the purchase boundary in Demo mode with no live-money trades.
+- Merge and deploy the Zyntrix publisher PR to GitHub Pages.
+- Merge and deploy the DBot fork with a Deriv OAuth client ID registered for its deployment domain.
+- Run `npm test -- --runInBand` and `npm run build` in the DBot fork.
+- Verify RUN waits, WAIT does not buy, PASS authorizes one purchase, a second purchase waits for a new live tick, market mismatch is rejected, and STOP cancels the wait using a Deriv demo account.
 
-## Prototype test status
-
-The standalone gate prototype has a 7-case Node.js test suite authored. Test execution has not yet been verified in this environment. Cases cover trusted source/origin, pre-RUN and pre-wait replay rejection, fresh PASS, WAIT, stale signal, market mismatch, thresholds, duplicate IDs, contract mismatch, and STOP cancellation.
+No live-money tests are part of this implementation.
