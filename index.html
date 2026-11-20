@@ -562,7 +562,7 @@ li span:first-child{color:#668b70}
     var holder=$('#scanResult');
     if(!best){holder.textContent='NO RESULT · Market history was unavailable or incomplete. Press SCAN to try again.';}
     else{
-      var strong=best.stats.lower>=80&&best.stats.recent>=80&&best.stats.total===windowSize;
+      var strong=completeMarkets===MK.length&&best.stats.lower>=80&&best.stats.recent>=80&&best.stats.total===windowSize;
       holder.innerHTML='<div class="scan-signal '+(strong?'scan-strong':'scan-weak')+'">'+(strong?'STRONG':'WEAK')+' · '+best.kind+'</div><div><strong>MARKET:</strong> '+best.market.n+'</div><div><strong>WIN RATE:</strong> '+best.stats.rate.toFixed(1)+'% ('+best.stats.wins+'/'+best.stats.total+')</div><div><strong>95% LOWER BOUND:</strong> '+best.stats.lower.toFixed(1)+'% · <strong>RECENT HALF:</strong> '+best.stats.recent.toFixed(1)+'%</div><small>Cross-analysis: '+completeMarkets+' / '+MK.length+' markets · '+(completeMarkets*2)+' contracts · '+windowSize+' ticks each. '+scanState.failures+' market(s) incomplete. Historical frequency is not a guarantee of the next tick.</small>';
     }
     $('#scanButton').disabled=false;$('#scanButton').setAttribute('aria-label','Run cross-market scan');
