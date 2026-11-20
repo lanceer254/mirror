@@ -39,11 +39,17 @@ test('ignores messages from untrusted origins or windows', async () => {
     assert.equal(await waiting, null);
 });
 
-test('discards PASS received before RUN or before a purchase waits', () => {
+test('does not accept or replay PASS messages received before RUN or before a purchase waits', async () => {
     const gate = makeGate();
     assert.equal(gate.handleMessage(event(pass())).reason, 'NO_ACTIVE_PURCHASE_WAIT');
     gate.startRun();
-    assert.equal(gate.handleMessage(event(pass())).reason, 'NO_ACTIVE_PURCHASE_WAIT');
+    assert.equal(gate.handleMessage(event(pass())).reason, 'DUPLICATE_SIGNAL');
+    const early = pass({ signalId: 'signal-before-wait-1234' });
+    assert.equal(gate.handleMessage(event(early)).reason, 'NO_ACTIVE_PURCHASE_WAIT');
+    const waiting = gate.waitForPass();
+    assert.equal(gate.handleMessage(event(early)).reason, 'DUPLICATE_SIGNAL');
+    gate.stopRun();
+    assert.equal(await waiting, null);
 });
 
 test('releases exactly one waiting purchase for a fresh valid PASS', async () => {
@@ -77,13 +83,13 @@ test('rejects stale signals, mismatched markets, and failed thresholds', () => {
 test('rejects duplicate signal IDs and wrong contract types', async () => {
     const gate = makeGate();
     gate.startRun();
-    let waiting = gate.waitForPass();
+    const waiting = gate.waitForPass();
     gate.handleMessage(event(pass()));
     await waiting;
-    waiting = gate.waitForPass();
+    const nextWaiting = gate.waitForPass();
     assert.equal(gate.handleMessage(event(pass())).reason, 'DUPLICATE_SIGNAL');
     gate.stopRun();
-    await waiting;
+    assert.equal(await nextWaiting, null);
     assert.equal(gate.validatePass(pass({ contractType: 'DIGITMATCH' })).reason, 'CONTRACT_MISMATCH');
 });
 
