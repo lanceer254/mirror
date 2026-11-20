@@ -366,7 +366,17 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,selectedWindow=60,bridgeReady=false,bridgeSignalSequence=0;
+  var events=[],lastDigit=0,selectedWindow=60;
+  var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0,lastLiveTickEpoch=null;
+  var bridgeSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():'zyntrix-session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+  window.addEventListener('message',function(messageEvent){
+    var message=messageEvent.data;
+    if(!window.opener||messageEvent.source!==window.opener||!message||message.type!=='ZYNTRIX_BRIDGE_INIT'||message.version!==1)return;
+    if(messageEvent.origin==='null'||!/^https:\/\//.test(messageEvent.origin))return;
+    bridgeParentOrigin=messageEvent.origin;
+    window.opener.postMessage({type:'ZYNTRIX_BRIDGE_READY',version:1},bridgeParentOrigin);
+  });
+  if(window.opener&&!window.opener.closed){window.opener.postMessage({type:'ZYNTRIX_BRIDGE_HELLO',version:1},'*');}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
@@ -441,13 +451,15 @@ li span:first-child{color:#668b70}
     tickEpochs.push(epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null);
     if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
+      liveTickSequence++;
+      lastLiveTickEpoch=epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null;
       moveCursor(lastDigit,true);
       render();
     }
     return true;
   }
   function clearMarketData(){
-    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;
+    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;lastLiveTickEpoch=null;
     historyReady=false;historyFailed=false;subscriptionFailed=false;pendingLiveTicks=[];
     $('#price').textContent='WAITING FOR TICKS';
     setTickWindowState('LOADING DERIV HISTORY');
@@ -623,21 +635,36 @@ li span:first-child{color:#668b70}
     };
   }
 
-  function sendZyntrixBridgeMessage(message){
-    if(!window.opener||window.opener.closed)return;
-    var target='*';
-    try{if(document.referrer)target=new URL(document.referrer).origin}catch(error){}
-    window.opener.postMessage(message,target);
+  function sendZyntrixBridgeSignal(result,passReady){
+    if(!bridgeParentOrigin||!window.opener||window.opener.closed)return;
+    if(liveTickSequence<1||liveTickSequence===lastPublishedLiveTickSequence)return;
+    lastPublishedLiveTickSequence=liveTickSequence;
+    bridgeSignalCounter++;
+    var metrics={};
+    result.barriers.forEach(function(rule){
+      metrics['over'+rule.barrier]={actualPercent:rule.actualPercent,thresholdPercent:rule.thresholdPercent};
+    });
+    var signalId=window.crypto&&typeof window.crypto.randomUUID==='function'
+      ?window.crypto.randomUUID()
+      :'zyntrix-'+Date.now()+'-'+bridgeSignalCounter;
+    window.opener.postMessage({
+      type:'ZYNTRIX_SIGNAL',
+      version:1,
+      signalId:bridgeSessionId+':'+mk.symbol+':'+liveTickSequence+':'+signalId,
+      sessionId:bridgeSessionId,
+      tickSequence:liveTickSequence,
+      tickEpoch:lastLiveTickEpoch,
+      status:passReady?'PASS':'WAIT',
+      strategy:'OVER1',
+      contract:'DIGITOVER',
+      prediction:1,
+      market:mk.symbol,
+      sampleSize:result.sampleSize,
+      metrics:metrics,
+      timestamp:Date.now()
+    },bridgeParentOrigin);
   }
-  window.addEventListener('message',function(event){
-    if(!window.opener||event.source!==window.opener)return;
-    var message=event.data||{};
-    if(message.type==='ZYNTRIX_BRIDGE_INIT'&&message.version===1){
-      bridgeReady=true;
-      sendZyntrixBridgeMessage({type:'ZYNTRIX_BRIDGE_READY',version:1});
-      renderOver1Gate();
-    }
-  });
+
   function renderOver1Gate(){
     var status=$('#over1GateStatus'),holder=$('#over1GateRules');
     if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1Gate!=='function')return;
@@ -652,16 +679,11 @@ li span:first-child{color:#668b70}
       label.textContent=(result.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'%';
       card.append(value,label);holder.appendChild(card);
     });
-    if(bridgeReady&&window.opener&&!window.opener.closed){
-      var metrics={};
-      result.barriers.forEach(function(rule){metrics['over'+rule.barrier]={actualPercent:rule.actualPercent,thresholdPercent:rule.thresholdPercent};});
-      sendZyntrixBridgeMessage({
-        type:'ZYNTRIX_SIGNAL',version:1,status:result.ready?'PASS':'WAIT',
-        strategy:'OVER1',contract:'DIGITOVER',prediction:1,market:mk.symbol,
-        sampleSize:result.sampleSize,metrics:metrics,
-        timestamp:Date.now(),signalId:'zyntrix-'+Date.now()+'-'+(++bridgeSignalSequence)
-      });
-    }
+    var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
+    var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
+    sendZyntrixBridgeSignal(result,passReady);
+    status.textContent=passReady?'PASS · OVER 1 SIGNAL READY':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
+    status.className='over1-status '+(passReady?'ready':'wait');
   }
 
   function render(){
@@ -694,7 +716,6 @@ li span:first-child{color:#668b70}
   
   window.addEventListener('resize',function(){if(ds.length)moveCursor(lastDigit,false)});
   window.addEventListener('beforeunload',function(){manuallyClosed=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(socket)socket.close()});
-  if(window.opener&&!window.opener.closed)sendZyntrixBridgeMessage({type:'ZYNTRIX_BRIDGE_HELLO',version:1});
   render();renderMomentumHistogram();$('#activeMarket').textContent=mk.n;connectMarketSocket();
 })();
 </script>
