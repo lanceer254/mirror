@@ -18,19 +18,21 @@ jobs:
           node-version: 20
       - name: Check analysis engine syntax
         run: node --check analysis-engine.js
-      - name: Run statistical engine tests
+      - name: Run OVER 1 gate tests
         run: node --test analysis-engine.test.cjs
       - name: Check dashboard JavaScript syntax and markup IDs
         run: |
           node - <<'NODE'
           const fs = require('node:fs');
           const html = fs.readFileSync('index.html', 'utf8');
-          const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]).filter(s => s.trim());
+          const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]).filter(s => s.trim());
           for (const source of scripts) new Function(source);
-          const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
+          const ids = [...html.matchAll(/\\bid=["']([^"']+)["']/g)].map(m => m[1]);
           const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
           if (duplicates.length) throw new Error('Duplicate IDs: ' + [...new Set(duplicates)].join(', '));
-          for (const id of ['scan','market','windowMatrix','engineStateLabel','rankedResults','validationSummary']) if (!ids.includes(id)) throw new Error('Missing ID: ' + id);
+          for (const id of ['market','momentumPanel','over1GateStatus','tickWindowSwitch','eventFeed']) if (!ids.includes(id)) throw new Error('Missing ID: ' + id);
+          if (ids.includes('scan') || ids.includes('analysisMode') || html.includes('parity-panel')) throw new Error('Removed parity/scanner UI has returned');
+          if (!html.includes('count:1000')) throw new Error('1000-tick mirror history request is missing');
           if (html.includes('GROQ_API_KEY') || html.includes('ANALYSIS_WORKER_URL') || html.includes('/analysis/rank') || html.includes('geminiState')) throw new Error('Legacy AI/Worker dependency remains');
-          console.log('Dashboard syntax and markup checks passed');
+          console.log('OVER/UNDER dashboard syntax and markup checks passed');
           NODE
