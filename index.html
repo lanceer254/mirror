@@ -370,7 +370,8 @@ li span:first-child{color:#668b70}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
-  var bridgeParentOrigin=null,bridgeSignalCounter=0;
+  var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0;
+  var bridgeSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():'zyntrix-session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
   window.addEventListener('message',function(messageEvent){
     var message=messageEvent.data;
     if(!window.opener||messageEvent.source!==window.opener||!message||message.type!=='ZYNTRIX_BRIDGE_INIT'||message.version!==1)return;
@@ -452,6 +453,7 @@ li span:first-child{color:#668b70}
     tickEpochs.push(epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null);
     if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
+      liveTickSequence++;
       moveCursor(lastDigit,true);
       render();
     }
@@ -636,6 +638,8 @@ li span:first-child{color:#668b70}
 
   function sendZyntrixBridgeSignal(result){
     if(!bridgeParentOrigin||!window.opener||window.opener.closed)return;
+    if(liveTickSequence<1||liveTickSequence===lastPublishedLiveTickSequence)return;
+    lastPublishedLiveTickSequence=liveTickSequence;
     bridgeSignalCounter++;
     var metrics={};
     result.barriers.forEach(function(rule){
@@ -647,7 +651,9 @@ li span:first-child{color:#668b70}
     window.opener.postMessage({
       type:'ZYNTRIX_SIGNAL',
       version:1,
-      signalId:signalId,
+      signalId:bridgeSessionId+':'+mk.symbol+':'+liveTickSequence+':'+signalId,
+      sessionId:bridgeSessionId,
+      tickSequence:liveTickSequence,
       status:result.ready?'PASS':'WAIT',
       strategy:'OVER1',
       contract:'DIGITOVER',
