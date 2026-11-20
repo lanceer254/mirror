@@ -48,3 +48,13 @@ node --test analysis-engine.test.cjs
 - No API keys or secrets are required by the static app.
 - No Deriv account connection or trading capability is included.
 - Signal history is stored locally in the browser only. Clearing site data removes that local validation history.
+
+
+## OVER 1 live gate
+
+- The live gate uses exactly the latest 60 digits from the currently selected live-display market.
+- It evaluates OVER 0 >= 95%, OVER 1 >= 85%, OVER 2 >= 75%, and OVER 3 >= 65% together on that same 60-tick sample.
+- Every incoming tick triggers a fresh evaluation; if any threshold fails, the status immediately returns to WAIT.
+- The default D-Circles window is 60 ticks. The gate waits if another window is selected, the feed is offline, or fewer than 60 valid digits are available.
+- The gate only displays a signal. It does not submit Deriv orders. DBot and Zyntrix market selections must currently be matched manually; there is no automatic cross-page DBot market bridge in this version.
+- These historical frequencies are descriptive and do not guarantee the next tick's outcome.
