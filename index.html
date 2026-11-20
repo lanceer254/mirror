@@ -316,12 +316,12 @@ li span:first-child{color:#668b70}
     <div class="ou-chart over-chart">
       <div class="ou-chart-head"><span class="ou-legend"><i></i> Over</span><strong id="overMomentumNow">—</strong></div>
       <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="overHistogram" role="img" aria-label="Over 0 through Over 9 cumulative winning digit percentages"></div></div></div>
-      <div class="ou-chart-foot"><span>OVER BARRIER</span><span id="overSample">0 TICKS</span></div>
+      <div class="ou-chart-foot"><span>OVER BARRIER</span><span id="overSample">0 DIGITS</span></div>
     </div>
     <div class="ou-chart under-chart">
       <div class="ou-chart-head"><span class="ou-legend"><i></i> Under</span><strong id="underMomentumNow">—</strong></div>
       <div class="ou-chart-body"><div class="ou-axis" aria-hidden="true"><span>90%</span><span>80%</span><span>70%</span><span>60%</span><span>50%</span><span>40%</span><span>30%</span><span>20%</span><span>10%</span><span>0%</span></div><div class="ou-plot"><div class="ou-bars" id="underHistogram" role="img" aria-label="Under 0 through Under 9 cumulative winning digit percentages"></div></div></div>
-      <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 TICKS</span></div>
+      <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 DIGITS</span></div>
     </div>
   </section>
     <section class="tick-window" aria-label="Deriv rolling time window">
@@ -577,7 +577,7 @@ li span:first-child{color:#668b70}
     if(scanTimeout)clearTimeout(scanTimeout);
     var runId=++scanRunId,windowSize=selectedWindow,startEpoch=Math.floor(Date.now()/1000)-selectedWindow,activeMarket=mk,activeDigits=selectedDigits(ds).slice();
     scanState={id:runId,window:windowSize,startEpoch:startEpoch,pending:MK.length-1,results:[],failures:0};
-    $('#scanButton').disabled=true;$('#scanButton').title='Scanning markets';$('#scanWindowLabel').textContent=windowSize+'-tick';
+    $('#scanButton').disabled=true;$('#scanButton').title='Scanning markets';$('#scanWindowLabel').textContent=windowSize+'-second';
     $('#scanResult').textContent='SCANNING · Comparing '+MK.length+' markets and both contracts…';
     scanCompleteMarket(activeMarket,activeDigits,runId);
     MK.forEach(function(market){
