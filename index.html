@@ -631,7 +631,7 @@ li span:first-child{color:#668b70}
     subscribeRequestId=requestId++;
     historyRequestId=requestId++;
     sendSocket({ticks:mk.symbol,subscribe:1,req_id:subscribeRequestId});
-    sendSocket({ticks_history:mk.symbol,count:1000,end:'latest',style:'ticks',req_id:historyRequestId});
+    sendSocket({ticks_history:mk.symbol,count:100,end:'latest',style:'ticks',req_id:historyRequestId});
   }
   function stopMarketHeartbeat(){
     if(marketPingTimer){clearInterval(marketPingTimer);marketPingTimer=null;}
