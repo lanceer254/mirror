@@ -370,7 +370,7 @@ li span:first-child{color:#668b70}
   var socket=null,reconnectTimer=null,reconnectDelay=1000,tickSubscriptionId=null,requestId=10,marketPipSize=2,manuallyClosed=false;
   var marketPingTimer=null,marketPingTimeout=null,marketPingRequestId=0;
   var historyRequestId=null,subscribeRequestId=null,historyReady=false,historyFailed=false,subscriptionFailed=false,pendingLiveTicks=[];
-  var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0;
+  var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0,lastLiveTickEpoch=null;
   var bridgeSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():'zyntrix-session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
   window.addEventListener('message',function(messageEvent){
     var message=messageEvent.data;
@@ -454,6 +454,7 @@ li span:first-child{color:#668b70}
     if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
       liveTickSequence++;
+      lastLiveTickEpoch=epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null;
       moveCursor(lastDigit,true);
       render();
     }
@@ -636,7 +637,7 @@ li span:first-child{color:#668b70}
     };
   }
 
-  function sendZyntrixBridgeSignal(result){
+  function sendZyntrixBridgeSignal(result,passReady){
     if(!bridgeParentOrigin||!window.opener||window.opener.closed)return;
     if(liveTickSequence<1||liveTickSequence===lastPublishedLiveTickSequence)return;
     lastPublishedLiveTickSequence=liveTickSequence;
@@ -654,7 +655,8 @@ li span:first-child{color:#668b70}
       signalId:bridgeSessionId+':'+mk.symbol+':'+liveTickSequence+':'+signalId,
       sessionId:bridgeSessionId,
       tickSequence:liveTickSequence,
-      status:result.ready?'PASS':'WAIT',
+      tickEpoch:lastLiveTickEpoch,
+      status:passReady?'PASS':'WAIT',
       strategy:'OVER1',
       contract:'DIGITOVER',
       prediction:1,
@@ -669,9 +671,11 @@ li span:first-child{color:#668b70}
     var status=$('#over1GateStatus'),holder=$('#over1GateRules');
     if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1Gate!=='function')return;
     var result=window.ZyntrixEngine.evaluateOver1Gate(selectedDigits(ds),selectedWindow,!!(socket&&socket.readyState===WebSocket.OPEN));
-    sendZyntrixBridgeSignal(result);
-    status.textContent=result.ready?'PASS · OVER 1 SIGNAL READY':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
-    status.className='over1-status '+(result.ready?'ready':'wait');
+    var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
+    var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
+    sendZyntrixBridgeSignal(result,passReady);
+    status.textContent=passReady?'PASS · OVER 1 SIGNAL READY':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
+    status.className='over1-status '+(passReady?'ready':'wait');
     holder.replaceChildren();
     result.barriers.forEach(function(rule){
       var card=document.createElement('div'),value=document.createElement('b'),label=document.createElement('small');
