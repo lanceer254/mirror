@@ -273,6 +273,14 @@ li span:first-child{color:#668b70}
 @media(max-width:600px){.ou-histograms{grid-template-columns:1fr;gap:10px}.ou-chart{padding:10px 8px 8px}.ou-chart-body{grid-template-columns:24px minmax(0,1fr);gap:5px;height:230px}.ou-bars{gap:5px}.ou-value{font-size:9px;letter-spacing:0}.ou-bar{max-width:34px}.ou-chart-head{font-size:11px}.ou-chart-head strong{font-size:14px}.ou-axis{font-size:8px}}
 @media(max-width:600px){.stage-toolbar{justify-content:space-between}.tick-window-switch button{min-width:38px;padding:6px 5px}.contract-fields{grid-template-columns:1fr}}
 
+
+/* OVER 1 gate: soften unmet thresholds and emphasize passed ones */
+.over1-rule{transition:opacity .2s ease,transform .2s ease,background .2s ease,box-shadow .2s ease}
+.over1-rule.fail{opacity:.58;filter:saturate(.7)}
+.over1-rule.pass{opacity:1;transform:translateY(-1px);background:#092013;box-shadow:inset 0 0 10px rgba(85,245,154,.09),0 0 8px rgba(85,245,154,.08)}
+.over1-rule.pass b{font-weight:900;color:#d5ffe0}
+.over1-rule.pass small{font-weight:800;color:#55f59a}
+@media(prefers-reduced-motion:reduce){.over1-rule{transition:none}}
 </style>
 </head>
 <body>
