@@ -459,7 +459,7 @@ li span:first-child{color:#668b70}
     return true;
   }
   function clearMarketData(){
-    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;
+    ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;lastLiveTickEpoch=null;
     historyReady=false;historyFailed=false;subscriptionFailed=false;pendingLiveTicks=[];
     $('#price').textContent='WAITING FOR TICKS';
     setTickWindowState('LOADING DERIV HISTORY');
