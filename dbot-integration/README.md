@@ -1,48 +1,50 @@
 # Zyntrix × Deriv DBot Integration
 
-This branch is an isolated development workspace for the Zyntrix–DBot integration. The existing `main` branch and the live Zyntrix website are not changed by this work.
+This branch contains the Zyntrix-side publisher for the DBot signal bridge. It does not change the production `main` branch until this pull request is merged.
 
 ## Product direction
 
 - Use Deriv's official Trading Bot Template as the technical foundation for a custom-hosted DBot-style application.
-- Preserve the familiar Deriv Blockly workspace and the user's Full Margin strategy flow.
-- Keep Zyntrix analysis-only. It may publish an OVER 1 signal; it must never submit or execute orders.
-- DBot remains the only trade executor and must wait for a fresh, valid Zyntrix signal after RUN.
-- Keep the Zyntrix live tick feed as the source of analysis. Do not add a second Zyntrix tick subscription.
+- Preserve the familiar Deriv Blockly workspace and the user's existing Full Margin strategy flow.
+- Keep Zyntrix analysis-only. It publishes an OVER 1 signal; it never submits or executes orders.
+- DBot remains the only trade executor and waits for a fresh, valid Zyntrix signal after RUN.
+- Reuse Zyntrix's existing live tick feed. Do not add a second tick subscription.
 
-## Signal contract (initial proposal)
+## Signal contract
 
-A signal message must include:
-- protocol version;
-- status: `PASS` or `WAIT`;
-- market symbol;
-- strategy: `DIGITOVER`;
-- prediction: `1`;
-- sample size: `60`;
-- timestamp and unique signal ID.
+A version 1 message contains:
+- type `ZYNTRIX_SIGNAL`, status `PASS` or `WAIT`;
+- strategy `OVER1`, contract `DIGITOVER`, prediction `1`;
+- Deriv market symbol and sample size;
+- OVER 0 >=95%, OVER 1 >=85%, OVER 2 >=75%, OVER 3 >=65% metrics;
+- session ID, monotonically increasing live-tick sequence, unique signal ID, and timestamp.
 
-DBot must reject a signal if the origin is not allow-listed, the payload is malformed, the market differs from the configured DBot market, the signal is stale, or its ID has already been consumed. A `WAIT` message, disconnection, market mismatch, stale signal, or missing signal must leave the bot waiting and must never trigger a purchase.
+The publisher emits at most one message for each newly received live tick. A PASS is only published when the existing evaluator says all four conditions pass on the latest 60 ticks and the feed is connected. DBot checks the exact popup window and Zyntrix origin, the selected market, contract, sample, thresholds, signal age (3 seconds), signal ID, and live-tick sequence.
 
-## Execution safety requirements
+## Execution safety
 
-1. RUN starts in a waiting state; it must not buy immediately.
-2. Every purchase, including purchases after a win or a `trade_again` loop, requires a new one-use PASS signal.
-3. A signal is consumed before the purchase is dispatched; it cannot authorize a second purchase.
-4. Loss-stop behavior and the user's existing Full Margin stake logic must be preserved unless the user explicitly requests a change.
-5. The uploaded XML's current settings are the baseline: market `1HZ100V`, one-tick duration, prediction `1`, `DIGITOVER`, and `max_trades = 3`. Do not silently change them.
-6. No live-money test. Verify the wait gate and execution path in a safe test/demo setup first.
-7. Never put Deriv passwords, OTPs, API tokens, or OAuth secrets in source code or chat.
+1. RUN activates the gate; the first Blockly purchase waits for a fresh PASS instead of buying immediately.
+2. Every later purchase, including a `trade_again` cycle, waits for another one-use PASS.
+3. WAIT, missing or closed popup, stale/duplicate/replayed signals, wrong origin/window, wrong market, invalid thresholds, or STOP cannot authorize a purchase.
+4. STOP cancels a pending signal wait.
+5. Zyntrix remains analysis-only. The Deriv purchase call stays inside DBot.
+6. Preserve the uploaded XML baseline unless the user explicitly requests a strategy change: market `1HZ100V`, one-tick duration, prediction `1`, `DIGITOVER`, and `max_trades = 3`.
+7. Demo-only end-to-end verification before any live-money use. Never put passwords, OTPs, API tokens, or OAuth secrets in source code or chat.
 
-## Implementation sequence
+## Implementation status
 
-- [ ] Review the official template's license, app architecture, Blockly blocks, interpreter, and purchase lifecycle.
-- [ ] Establish the custom DBot project without changing Zyntrix's production branch.
-- [ ] Implement and unit-test a strict signal receiver and one-use gate.
-- [ ] Add a Blockly wait-for-signal block or equivalent runtime gate at every purchase boundary.
-- [ ] Connect Zyntrix to the receiver using a strict origin-checked message bridge.
-- [ ] Verify WAIT, stale signal, duplicate signal, disconnect, market mismatch, first trade, and post-win re-entry behavior.
-- [ ] Configure OAuth only after a deployment domain is chosen; credentials remain user-controlled.
+- [x] Review official template purchase path and interpreter async support.
+- [x] Add origin-checked popup handshake and live-tick signal publisher in this branch.
+- [x] Add DBot-side purchase gate, RUN/STOP lifecycle, panel, and payload validation tests in `lanceer254/trading-bot-template` branch `zyntrix-signal-bridge`.
+- [ ] Merge this Zyntrix pull request so GitHub Pages serves the publisher.
+- [ ] Merge the DBot pull request, configure Deriv OAuth for its deployment domain, and deploy the custom DBot app.
+- [ ] Run DBot unit tests/build and complete a browser + Deriv demo-account end-to-end test.
+
+## Related pull requests
+
+- Zyntrix publisher: https://github.com/lanceer254/mirror/pull/7
+- DBot purchase gate: https://github.com/lanceer254/trading-bot-template/pull/1
 
 ## Upstream source and license
 
-The planned upstream is `deriv-com/trading-bot-template`. Its repository declares the MIT License (Copyright 2024 deriv.com). Any copied or modified portions must retain the upstream copyright and license notice. The upstream README describes this as a white-label starter/template, not a ready-deployed finished product.
+The upstream is `deriv-com/trading-bot-template`. Its repository declares the MIT License (Copyright 2024 deriv.com). Any copied or modified portions must retain the upstream copyright and license notice. The upstream README describes this as a white-label starter/template, not a ready-deployed finished product.
