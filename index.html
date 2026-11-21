@@ -366,7 +366,7 @@ li span:first-child{color:#668b70}
 
 
   <section class="autoscan-panel" id="autoScanPanel" aria-label="Automatic cross-market Over and Under scanner">
-    <div class="autoscan-head"><div class="autoscan-title">AUTOSCAN // CROSS-MARKET OVER / UNDER</div><span class="autoscan-status wait" id="autoScanStatus">STARTING SCANNER</span></div>
+    <div class="autoscan-head"><div class="autoscan-title">ZYNTRIX AUTOSCAN <span style="color:#55f59a">· OVER / UNDER ONLY</span></div><span class="autoscan-status wait" id="autoScanStatus">STARTING SCANNER</span></div>
     <div class="autoscan-metrics">
       <div class="autoscan-metric"><small>MARKETS READY</small><b id="autoScanMarkets">0 / 10</b></div>
       <div class="autoscan-metric"><small>LIVE TICKS</small><b id="autoScanTicks">0</b></div>
@@ -377,7 +377,7 @@ li span:first-child{color:#668b70}
       <div><small>OVER / UNDER CONTRACT</small><strong class="contract-value" id="autoScanContract">—</strong></div>
       <div><small>CONTRACT EXPIRY</small><strong id="autoScanExpiry">5 TICKS</strong></div>
     </div>
-    <div class="autoscan-meta" id="autoScanMeta" aria-live="polite">AutoScan starts with Zyntrix, scans all ten supported markets and waits for a statistically qualified Over/Under opportunity.</div>
+    <div class="autoscan-meta" id="autoScanMeta" aria-live="polite">AutoScan is ON with Zyntrix. It continuously cross-scans all ten markets for OVER and UNDER only. No other contract types are evaluated.</div>
     <div class="autoscan-note">ANALYSIS AND LIVE PROPOSAL CHECK ONLY · NO TRADE IS PLACED · SIGNAL EXPIRES AFTER FIVE NEW TICKS ON ITS MARKET</div>
   </section>
 
@@ -891,7 +891,7 @@ li span:first-child{color:#668b70}
       MK.forEach(function(m){
         var raw=autoScanBuffers[m.symbol]||[];
         if(!autoScanLiveAt[m.symbol]||Date.now()-autoScanLiveAt[m.symbol]>30000||raw.length<300)return;
-        var result=window.ZyntrixEntryEngine.scanMarket(raw,{market:m.symbol,minTicks:300,minTrainSignals:10,minHoldoutSignals:20,contractScope:'OVER_UNDER'});
+        var result=window.ZyntrixEntryEngine.scanMarket(raw,{market:m.symbol,minTicks:300,minTrainSignals:10,minHoldoutSignals:20});
         if(result.ready)ready++;
         if(result.best)candidates.push(Object.assign({market:m.symbol},result.best));
       });
