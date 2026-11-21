@@ -1,7 +1,7 @@
 name: Zyntrix quality checks
 on:
   push:
-    branches: [main, zyntrix-data-engine-rebuild]
+    branches: [main, zyntrix-data-engine-rebuild, zyntrix-full-scale-integration]
   pull_request:
     branches: [main]
 permissions:
@@ -18,8 +18,18 @@ jobs:
           node-version: 20
       - name: Check analysis engine syntax
         run: node --check analysis-engine.js
+      - name: Check intelligence engine syntax
+        run: node --check intelligence-engine.js
+      - name: Check intelligence Worker syntax
+        run: node --check src/index.js
+      - name: Run intelligence engine tests
+        run: node --test intelligence-engine.test.cjs
       - name: Run OVER 1 gate tests
         run: node --test analysis-engine.test.cjs
+      - name: Smoke-test deployed intelligence API
+        run: |
+          curl --retry 5 --retry-delay 2 --retry-all-errors --fail --silent --show-error https://zyntrix-intelligence-api.fiverlancer51.workers.dev/health > /tmp/zyntrix-health.json
+          node -e "const h=require('/tmp/zyntrix-health.json'); if(!h.ok || h.database!=='connected' || h.markets!==10) throw new Error('Unexpected health response: '+JSON.stringify(h)); console.log('Worker health OK: '+h.markets+' markets, D1 '+h.database);"
       - name: Check dashboard JavaScript syntax and markup IDs
         run: |
           node - <<'NODE'
@@ -30,7 +40,7 @@ jobs:
           const ids = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(m => m[1]);
           const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
           if (duplicates.length) throw new Error('Duplicate IDs: ' + [...new Set(duplicates)].join(', '));
-          for (const id of ['market','momentumPanel','over1GateStatus','tickWindowSwitch','eventFeed']) if (!ids.includes(id)) throw new Error('Missing ID: ' + id);
+          for (const id of ['market','momentumPanel','over1GateStatus','tickWindowSwitch','eventFeed','intelligenceArchive','runIntelValidation']) if (!ids.includes(id)) throw new Error('Missing ID: ' + id);
           if (ids.includes('scan') || ids.includes('analysisMode') || html.includes('parity-panel')) throw new Error('Removed parity/scanner UI has returned');
           if (!html.includes("start:Math.floor(Date.now()/1000)-1000") || !html.includes("end:'latest'") || !html.includes("style:'ticks'")) throw new Error('1000-second Deriv history request is missing');
           if (html.includes('processMarketTick')) throw new Error('Removed scanner tick hook remains');

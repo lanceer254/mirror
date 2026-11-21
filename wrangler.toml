@@ -1,0 +1,15 @@
+name = "zyntrix-intelligence-api"
+main = "src/index.js"
+compatibility_date = "2026-11-21"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zyntrix-intelligence"
+database_id = "d7158b4c-48bb-4e0f-aa4c-b4ae275f01e4"
+
+[observability]
+enabled = true
+
+[observability.traces]
+enabled = true
