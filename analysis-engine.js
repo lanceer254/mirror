@@ -12,6 +12,21 @@ function evaluateOver1Gate(digits,selectedWindow,feedConnected){
   return{state:state,ready:state==="READY",windowSize:60,sampleSize:sample.length,barriers:rules};
 }
 
+function evaluateOver1TimeWindows(samples,feedConnected){
+  var thresholds=[95,85,75,65],barriers=[0,1,2,3],requiredSamples=10,windows={},collected=0,allPassed=true;
+  [10,30,60].forEach(function(seconds){
+    var sample=Array.isArray(samples&&samples[seconds])?samples[seconds].filter(function(d){return Number.isInteger(d)&&d>=0&&d<=9;}):[];
+    var rules=barriers.map(function(barrier,index){
+      var count=sample.filter(function(d){return d>barrier;}).length,actual=sample.length?count/sample.length*100:0;
+      return{barrier:barrier,count:count,actualPercent:Math.round(actual*100)/100,thresholdPercent:thresholds[index],passed:sample.length>=requiredSamples&&actual+1e-9>=thresholds[index]};
+    });
+    if(sample.length>=requiredSamples)collected++;
+    if(!rules.every(function(rule){return rule.passed;}))allPassed=false;
+    windows[seconds]={sampleSize:sample.length,barriers:rules,ready:rules.every(function(rule){return rule.passed;})};
+  });
+  var state=!feedConnected?"FEED_OFFLINE":collected<3?"COLLECTING":allPassed?"READY":"WAIT";
+  return{state:state,ready:state==="READY",collected:collected,requiredSamples:requiredSamples,windows:windows};
+}
 function median(values){
   if(!Array.isArray(values)||!values.length)return null;
   var sorted=values.slice().sort(function(a,b){return a-b;}),mid=Math.floor(sorted.length/2);
@@ -94,5 +109,5 @@ function analyzeSeries(values,options){
   smoothed.forEach(function(value){if(Number.isFinite(value))drift.push(updateADWIN(adwin,value));});
   return{rawData:raw,outlierFilteredData:hampel.filteredValues,smoothedData:smoothed,outlierFlags:hampel.outliers,outlierDetails:hampel.details,drift:drift,adwinState:adwin};
 }
-return{evaluateOver1Gate:evaluateOver1Gate,median:median,medianAbsoluteDeviation:medianAbsoluteDeviation,exponentialMovingAverage:exponentialMovingAverage,hampelFilter:hampelFilter,createADWINState:createADWINState,updateADWIN:updateADWIN,analyzeSeries:analyzeSeries};
+return{evaluateOver1Gate:evaluateOver1Gate,evaluateOver1TimeWindows:evaluateOver1TimeWindows,median:median,medianAbsoluteDeviation:medianAbsoluteDeviation,exponentialMovingAverage:exponentialMovingAverage,hampelFilter:hampelFilter,createADWINState:createADWINState,updateADWIN:updateADWIN,analyzeSeries:analyzeSeries};
 });
