@@ -330,7 +330,7 @@ li span:first-child{color:#668b70}
 
   <div class="layout">
     <section class="panel stage" id="stage" aria-label="Last digit distribution">
-      <div class="stage-toolbar"><span class="stage-toolbar-label">D-CIRCLES TIME WINDOW</span><div class="tick-window-switch" id="tickWindowSwitch" role="group" aria-label="D-Circles time window"><button type="button" data-window="1000" aria-pressed="false">1000s</button><button type="button" data-window="500" aria-pressed="false">500s</button><button type="button" data-window="250" aria-pressed="false">250s</button><button type="button" data-window="60" aria-pressed="true">60s</button><button type="button" data-window="30" aria-pressed="false">30s</button></div></div>
+      <div class="stage-toolbar"><span class="stage-toolbar-label">D-CIRCLES TIME WINDOW</span><div class="tick-window-switch" id="tickWindowSwitch" role="group" aria-label="D-Circles time window"><button type="button" data-window="10" aria-pressed="true">10s</button><button type="button" data-window="30" aria-pressed="false">30s</button><button type="button" data-window="60" aria-pressed="false">60s</button><button type="button" data-window="120" aria-pressed="false">2m</button><button type="button" data-window="300" aria-pressed="false">5m</button></div></div>
       <div class="digits" id="digits"><div class="cursor" id="cursor"></div></div>
       <div class="sweep"></div>
 
@@ -417,7 +417,7 @@ li span:first-child{color:#668b70}
     {n:'Volatility 100',g:'Standard indices',symbol:'R_100'}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
-  var events=[],lastDigit=0,selectedWindow=60;
+  var events=[],lastDigit=0,selectedWindow=10;
   var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0,lastLiveTickEpoch=null;
   var bridgeSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():'zyntrix-session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
   window.addEventListener('message',function(messageEvent){
@@ -543,7 +543,7 @@ li span:first-child{color:#668b70}
     lastDigit=Number(digits.charAt(digits.length-1));
     ds.push(lastDigit);ps.push(price);
     tickEpochs.push(epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null);
-    if(ds.length>1000){ds.shift();ps.shift();tickEpochs.shift()}
+    if(ds.length>10000){ds.shift();ps.shift();tickEpochs.shift()}
     if(processLive){
       liveTickSequence++;
       lastLiveTickEpoch=epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null;
