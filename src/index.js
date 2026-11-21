@@ -85,6 +85,14 @@ export default {
     const r=await env.DB.prepare("UPDATE signal_observations SET status='RESOLVED',resolved_at=?,outcome=?,settlement_quote=? WHERE id=? AND status='PENDING'").bind(Math.floor(Date.now()/1000),Number(b.outcome),b.settlement_quote==null?null:String(b.settlement_quote),String(b.id)).run();
     return json({resolved:(r.meta?.changes||0)===1,id:b.id});
    }
+   if(path==="/api/validation"&&request.method==="POST"){
+    const b=await request.json(),r=b.result||{},h=r.holdout||{},tr=r.training||{};
+    if(!validMarket(String(b.market||""))||!r.contract||!Number.isInteger(Number(r.horizonTicks)))return json({error:"Invalid validation record"},400);
+    const id=crypto.randomUUID(),now=Math.floor(Date.now()/1000),split=Number(r.splitEpoch)||null;
+    await env.DB.prepare("INSERT INTO validation_runs(id,created_at,model_version,market,contract_type,barrier,horizon_ticks,train_start,train_end,test_start,test_end,sample_size,wins,losses,hit_rate,baseline_rate,lower_95,upper_95,expected_value,metadata_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .bind(id,now,String(r.version||"walk-forward-1.0"),b.market,r.contract,String(r.barrier??""),Number(r.horizonTicks),null,split,split,null,Number(h.signals||0),Number(h.wins||0),Number(h.losses||0),h.hitRate??null,h.baseline??null,h.wilson95?.lower??null,h.wilson95?.upper??null,h.expectedValuePerContract??null,JSON.stringify(r).slice(0,20000)).run();
+    return json({stored:true,id});
+   }
    if(path==="/api/validation"){
     const market=url.searchParams.get("market");
     if(market&&!validMarket(market))return json({error:"Unknown market"},400);
