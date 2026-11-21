@@ -20,6 +20,8 @@ jobs:
         run: node --check analysis-engine.js
       - name: Check intelligence engine syntax
         run: node --check intelligence-engine.js
+      - name: Check intelligence Worker syntax
+        run: node --check src/index.js
       - name: Run intelligence engine tests
         run: node --test intelligence-engine.test.cjs
       - name: Run OVER 1 gate tests
