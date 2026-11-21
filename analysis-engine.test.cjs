@@ -25,6 +25,39 @@ test("OVER 1 gate rejects invalid digits",()=>{
  assert.equal(r.state,"INVALID_DATA");assert.equal(r.ready,false);
 });
 
+
+test("OVER 1 entry requires all three time windows to meet their individual thresholds",()=>{
+ const result=Engine.evaluateOver1Entry({10:Array(10).fill(9),30:Array(10).fill(9),60:Array(10).fill(9)},true);
+ assert.equal(result.ready,true);
+ assert.deepEqual([10,30,60].map(s=>result.windows[s].barriers[0].thresholdPercent),[90,85,80]);
+});
+test("OVER 1 entry applies 90/85/80 percent thresholds independently",()=>{
+ const result=Engine.evaluateOver1Entry({
+  10:[...Array(9).fill(9),1],
+  30:[...Array(8).fill(9),...Array(2).fill(1)],
+  60:[...Array(8).fill(9),...Array(2).fill(1)]
+ },true);
+ assert.equal(result.windows[10].barriers[0].passed,true);
+ assert.equal(result.windows[30].barriers[0].passed,false);
+ assert.equal(result.windows[60].barriers[0].passed,true);
+ assert.equal(result.ready,false);
+});
+test("OVER 1 entry waits for at least 10 valid ticks in every time window",()=>{
+ const result=Engine.evaluateOver1Entry({10:Array(9).fill(9),30:Array(10).fill(9),60:Array(10).fill(9)},true);
+ assert.equal(result.state,"COLLECTING");
+ assert.equal(result.ready,false);
+});
+test("OVER 1 entry rejects invalid digit samples",()=>{
+ const result=Engine.evaluateOver1Entry({10:[...Array(9).fill(9),10],30:Array(10).fill(9),60:Array(10).fill(9)},true);
+ assert.equal(result.state,"INVALID_DATA");
+ assert.equal(result.ready,false);
+});
+test("OVER 1 entry requires a live feed",()=>{
+ const result=Engine.evaluateOver1Entry({10:Array(10).fill(9),30:Array(10).fill(9),60:Array(10).fill(9)},false);
+ assert.equal(result.state,"FEED_OFFLINE");
+ assert.equal(result.ready,false);
+});
+
 test("EMA smooths a series without changing the raw input",()=>{
  const raw=[10,20,30],copy=raw.slice();
  assert.deepEqual(Engine.exponentialMovingAverage(raw,0.5),[10,15,22.5]);
