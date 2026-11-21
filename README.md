@@ -58,3 +58,13 @@ node --test analysis-engine.test.cjs
 - The default D-Circles window is 60 ticks. The gate waits if another window is selected, the feed is offline, or fewer than 60 valid digits are available.
 - The gate only displays a signal. It does not submit Deriv orders. DBot and Zyntrix market selections must currently be matched manually; there is no automatic cross-page DBot market bridge in this version.
 - These historical frequencies are descriptive and do not guarantee the next tick's outcome.
+
+## Persistent intelligence integration
+
+The `zyntrix-full-scale-integration` branch adds a Cloudflare Worker API and D1 archive for the ten configured volatility indices. The browser collector subscribes to all ten markets independently of the selected display market and batches timestamped ticks to the archive. It also stores Deriv contract-availability snapshots.
+
+The dashboard includes a chronological train/holdout validation lab. It selects thresholds using the earlier training segment, evaluates non-overlapping forward outcomes on a later holdout, and reports sample size, hit rate, baseline, and a Wilson 95% interval. A holdout result is not treated as a validated edge unless its lower confidence bound exceeds the contract baseline and the minimum holdout sample is met. Contract payout/expected value remains unavailable until actual proposal prices and settlement details are captured.
+
+**Collection is browser-session-driven:** the dashboard must remain open for live tick collection. The API does not claim to run an always-on Deriv collector. The current integration is analysis and research only; it does not log in to a Deriv account or place trades.
+
+See [INTELLIGENCE_BACKEND.md](INTELLIGENCE_BACKEND.md) for API routes, storage design, and operating notes.
