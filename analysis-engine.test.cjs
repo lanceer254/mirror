@@ -26,9 +26,11 @@ test("OVER 1 gate rejects invalid digits",()=>{
 });
 
 
-test("OVER 1 entry requires all three time windows to meet their individual thresholds",()=>{
+test("OVER 1 historical thresholds create an observation candidate, never an entry signal",()=>{
  const result=Engine.evaluateOver1Entry({10:Array(10).fill(9),30:Array(10).fill(9),60:Array(10).fill(9)},true);
- assert.equal(result.ready,true);
+ assert.equal(result.candidateReady,true);
+ assert.equal(result.ready,false);
+ assert.equal(result.state,"VALIDATION_REQUIRED");
  assert.deepEqual([10,30,60].map(s=>result.windows[s].barriers[0].thresholdPercent),[90,85,80]);
 });
 test("OVER 1 entry applies 90/85/80 percent thresholds independently",()=>{
