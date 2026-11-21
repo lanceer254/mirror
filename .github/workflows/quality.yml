@@ -32,7 +32,7 @@ jobs:
           if (duplicates.length) throw new Error('Duplicate IDs: ' + [...new Set(duplicates)].join(', '));
           for (const id of ['market','momentumPanel','over1GateStatus','tickWindowSwitch','eventFeed']) if (!ids.includes(id)) throw new Error('Missing ID: ' + id);
           if (ids.includes('scan') || ids.includes('analysisMode') || html.includes('parity-panel')) throw new Error('Removed parity/scanner UI has returned');
-          if (!html.includes('count:1000')) throw new Error('1000-tick mirror history request is missing');
+          if (!html.includes("start:Math.floor(Date.now()/1000)-1000") || !html.includes("end:'latest'") || !html.includes("style:'ticks'")) throw new Error('1000-second Deriv history request is missing');
           if (html.includes('processMarketTick')) throw new Error('Removed scanner tick hook remains');
           console.log('OVER/UNDER dashboard syntax and markup checks passed');
           NODE
