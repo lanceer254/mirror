@@ -61,7 +61,7 @@ node --test analysis-engine.test.cjs
 
 ## Persistent intelligence integration
 
-The `zyntrix-full-scale-integration` branch adds a Cloudflare Worker API and D1 archive for the ten configured volatility indices. The browser collector subscribes to all ten markets independently of the selected display market and batches timestamped ticks to the archive. It also stores Deriv contract-availability snapshots.
+The `zyntrix-full-scale-integration` branch adds a Cloudflare Worker API and D1 archive for the ten configured volatility indices. On startup, the browser collector requests the latest 5,000 ticks for each market, subscribes to all ten markets independently of the selected display market, and batches timestamped ticks to the archive. It also stores Deriv contract-availability snapshots.
 
 The dashboard includes a chronological train/holdout validation lab. It selects thresholds using the earlier training segment, evaluates non-overlapping forward outcomes on a later holdout, and reports sample size, hit rate, baseline, and a Wilson 95% interval. A holdout result is not treated as a validated edge unless its lower confidence bound exceeds the contract baseline and the minimum holdout sample is met. Contract payout/expected value remains unavailable until actual proposal prices and settlement details are captured.
 
