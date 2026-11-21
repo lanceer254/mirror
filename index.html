@@ -329,6 +329,8 @@ li span:first-child{color:#668b70}
 .intel-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.intel-metric{border:1px solid #17452e;background:#030806;padding:8px;border-radius:5px}.intel-metric small{display:block;color:#668b70;font-size:8px}.intel-metric b{display:block;margin-top:3px;color:#b4f8c8;font-size:13px;font-variant-numeric:tabular-nums}
 .intel-table{width:100%;border-collapse:collapse;font:9px ui-monospace,SFMono-Regular,Consolas,monospace}.intel-table th,.intel-table td{text-align:left;padding:6px 5px;border-top:1px solid #153323}.intel-table th{color:#668b70;font-weight:500}.intel-table td{color:#b4f8c8}.intel-table .muted{color:#668b70}.intel-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:9px;color:#668b70;font-size:8px}
 @media(max-width:600px){.intel-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.intel-table{font-size:8px}.intel-table th,.intel-table td{padding:5px 3px}}
+
+.entry-scan{border:1px solid rgba(70,210,150,.3);background:linear-gradient(135deg,rgba(10,35,29,.96),rgba(7,14,22,.98));border-radius:10px;padding:13px;margin:12px 0}.entry-scan .entry-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.entry-scan h2{font-size:11px;letter-spacing:1.5px;color:#a8f3ce;margin:0}.entry-controls{display:grid;grid-template-columns:1fr 110px 110px;gap:8px;align-items:end}.entry-controls .field{min-width:0}.entry-scan button{margin-top:9px;width:100%;border:1px solid #39c98b;background:rgba(22,125,81,.2);color:#b7f8d8;border-radius:6px;padding:11px;font-weight:800;letter-spacing:1px;cursor:pointer}.entry-scan button:disabled{opacity:.55;cursor:wait}.entry-result{margin-top:10px;padding:10px;border:1px solid rgba(130,160,180,.18);border-radius:7px;background:rgba(0,0,0,.2);font-size:11px;line-height:1.65;white-space:pre-wrap;color:#d6e7e0}.entry-result .muted{color:#8da49b}.entry-result .good{color:#63efaa}.entry-result .bad{color:#ff8b8b}.entry-rank{width:100%;border-collapse:collapse;font-size:10px;margin-top:9px}.entry-rank th,.entry-rank td{padding:6px 5px;border-bottom:1px solid rgba(130,160,180,.14);text-align:left}.entry-rank th{color:#8da49b;font-weight:600}@media(max-width:600px){.entry-controls{grid-template-columns:1fr 1fr}.entry-controls .field:first-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -354,6 +356,19 @@ li span:first-child{color:#668b70}
   <div class="intel-metric"><small>LAST ARCHIVE UPDATE</small><b id="intelLastUpdate">—</b></div>
  </div>
  <table class="intel-table"><thead><tr><th>MARKET</th><th>ARCHIVED</th><th>FIRST TICK</th><th>LAST TICK</th><th>STATE</th></tr></thead><tbody id="intelMarketRows"><tr><td colspan="5" class="muted">Waiting for archive response…</td></tr></tbody></table>
+
+
+ <div class="entry-scan" id="bestEntryScanner">
+  <div class="entry-title"><h2>FIVE-TICK BEST ENTRY // ALL TEN MARKETS</h2><span class="intel-state">STRICT HOLDOUT + 5-WIN STREAK</span></div>
+  <div class="entry-controls">
+   <label class="field">ACCOUNT CURRENCY<select id="entryCurrency"><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></label>
+   <label class="field">STAKE<input id="entryStake" type="number" min="0.35" step="0.01" value="1"></label>
+   <label class="field">EXPIRY<input type="text" value="5 TICKS" disabled></label>
+  </div>
+  <button type="button" id="runBestEntryScan">SCAN ALL MARKETS FOR BEST VALID ENTRY</button>
+  <div id="bestEntryResult" class="entry-result" aria-live="polite">READY · Scans all ten archived markets separately. Requires a chronological holdout edge, at least one five-win consecutive sequence, and a live Deriv proposal with positive conservative expected value before displaying ENTRY QUALIFIED.</div>
+  <div id="bestEntryRank"></div>
+ </div>
 
  <div class="intel-validation">
   <div class="intel-head"><h2>WALK-FORWARD VALIDATION LAB</h2><span class="intel-state">HISTORICAL HOLDOUT ONLY</span></div>
@@ -458,6 +473,7 @@ li span:first-child{color:#668b70}
 
 <script src="analysis-engine.js"></script>
 <script src="intelligence-engine.js"></script>
+<script src="entry-engine.js"></script>
 <script>
 (function(){
   var $=function(s){return document.querySelector(s)};
