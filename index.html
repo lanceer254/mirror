@@ -762,6 +762,7 @@ li span:first-child{color:#668b70}
     result.barriers.forEach(function(rule){
       metrics['over'+rule.barrier]={actualPercent:rule.actualPercent,thresholdPercent:rule.thresholdPercent};
     });
+    if(result.confirmationWindows){metrics.timeWindows={};[10,30,60].forEach(function(seconds){var windowResult=result.confirmationWindows[seconds];metrics.timeWindows[seconds+'s']={sampleSize:windowResult.sampleSize,ready:windowResult.ready,barriers:windowResult.barriers.map(function(rule){return{barrier:rule.barrier,actualPercent:rule.actualPercent,thresholdPercent:rule.thresholdPercent,passed:rule.passed};})};});}
     var signalId=window.crypto&&typeof window.crypto.randomUUID==='function'
       ?window.crypto.randomUUID()
       :'zyntrix-'+Date.now()+'-'+bridgeSignalCounter;
@@ -801,6 +802,7 @@ li span:first-child{color:#668b70}
     });
     var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
     var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
+    primary.confirmationWindows=result.windows;
     sendZyntrixBridgeSignal(primary,passReady);
     status.textContent=passReady?'PASS · 10s / 30s / 60s ALIGNED':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · ONE OR MORE WINDOWS FAILED';
     status.className='over1-status '+(passReady?'ready':'wait');
