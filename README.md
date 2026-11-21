@@ -1,6 +1,6 @@
 # Zyntrix — Data Analysis Engine
 
-Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. It collects public tick history, transforms last digits into statistical features, ranks markets for a selected EVEN or ODD contract, and records later outcomes for local validation.
+Zyntrix is an analysis-only market-data workbench for Deriv synthetic indices. It collects public tick history, transforms last digits into statistical features, ranks markets for Over and Under contracts only, and records later outcomes for local validation.
 
 ## Architecture
 
@@ -69,9 +69,9 @@ The dashboard includes a chronological train/holdout validation lab. It selects 
 
 See [INTELLIGENCE_BACKEND.md](INTELLIGENCE_BACKEND.md) for API routes, storage design, and operating notes.
 
-## Five-tick best-entry scanner
+## Automatic five-tick Over/Under cross-market scanner
 
-The dashboard includes a five-tick entry scanner across all ten configured indices. Each market is evaluated independently. The engine tests digit Over/Under, Matches/Differs, and Even/Odd candidates using a five-step conditional digit-transition model with Bayesian shrinkage. It selects a confidence threshold on an inner chronological validation slice, then evaluates it on a later untouched holdout using non-overlapping five-tick outcomes.
+The dashboard includes a five-tick AutoScan across all ten configured indices. Each market is evaluated independently. The engine tests digit Over and Under candidates only using a five-step conditional digit-transition model with Bayesian shrinkage. It selects a confidence threshold on an inner chronological validation slice, then evaluates it on a later untouched holdout using non-overlapping five-tick outcomes.
 
 A candidate is sequence-qualified only when the holdout's 95% Wilson lower bound exceeds the contract's theoretical hit-rate baseline, the holdout has at least 20 independent signals, and at least one five-win consecutive sequence is observed. The scanner then requests a live five-tick Deriv proposal at the entered stake/currency. It only displays ENTRY QUALIFIED when the proposal's conservative expected value, calculated using the holdout lower confidence bound, is positive. Otherwise it displays NO ENTRY. It never places an order.
 
