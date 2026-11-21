@@ -24,3 +24,35 @@ test("OVER 1 gate rejects invalid digits",()=>{
  const r=Engine.evaluateOver1Gate([...Array(59).fill(9),10],60,true);
  assert.equal(r.state,"INVALID_DATA");assert.equal(r.ready,false);
 });
+
+test("EMA smooths a series without changing the raw input",()=>{
+ const raw=[10,20,30],copy=raw.slice();
+ assert.deepEqual(Engine.exponentialMovingAverage(raw,0.5),[10,15,22.5]);
+ assert.deepEqual(raw,copy);
+});
+test("MAD uses the median absolute deviation",()=>{
+ assert.equal(Engine.medianAbsoluteDeviation([1,2,3,4,100]),1);
+});
+test("Hampel filter flags and replaces an isolated spike while preserving raw values",()=>{
+ const raw=[10,10,10,10,100,10,10,10,10];
+ const result=Engine.hampelFilter(raw,{windowSize:5,nSigma:3});
+ assert.equal(result.outliers[4],true);
+ assert.equal(result.filteredValues[4],10);
+ assert.equal(raw[4],100);
+ assert.equal(result.rawValues[4],100);
+});
+test("ADWIN detects a sustained mean shift",()=>{
+ const state=Engine.createADWINState({delta:0.01,minWindow:5,maxWindow:100});
+ for(let i=0;i<40;i++)Engine.updateADWIN(state,0);
+ let detected=false;
+ for(let i=0;i<40;i++)if(Engine.updateADWIN(state,10).driftDetected)detected=true;
+ assert.equal(detected,true);
+});
+test("combined analysis keeps raw, filtered and smoothed series separate",()=>{
+ const raw=[10,10,10,10,100,10,10,10,10];
+ const result=Engine.analyzeSeries(raw,{windowSize:5,alpha:0.5,minWindow:3,delta:0.01});
+ assert.deepEqual(result.rawData,raw);
+ assert.notEqual(result.outlierFilteredData[4],raw[4]);
+ assert.equal(result.smoothedData.length,raw.length);
+ assert.equal(result.outlierFlags[4],true);
+});
