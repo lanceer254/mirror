@@ -392,14 +392,14 @@ li span:first-child{color:#668b70}
     </div>
   </section>
   <section class="over1-gate" aria-label="OVER 1 live entry gate">
-      <h3>OVER 1 // THREE-WINDOW ENTRY</h3>
+      <h3>OVER 1 // CANDIDATE OBSERVER</h3>
       <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING TIME-WINDOW DATA</div>
       <div class="over1-rules" id="over1GateRules">
         <div class="over1-rule"><b>10s</b><small>— / 90%</small></div>
         <div class="over1-rule"><b>30s</b><small>— / 85%</small></div>
         <div class="over1-rule"><b>60s</b><small>— / 80%</small></div>
       </div>
-      <div class="over1-note">Entry signal requires Over 1 (last digit 2–9) to meet all three thresholds simultaneously. Each window needs at least 10 valid ticks. A signal is recorded once per qualifying run; the next 1, 2, 3 and 5 ticks are observed for outcome testing. No trade is submitted.</div>
+      <div class="over1-note">The 90% / 85% / 80% readings are historical candidate filters only, not entry signals. When all three align, Zyntrix records the candidate and observes the next 1, 2, 3 and 5 ticks. Entry status remains disabled until forward testing demonstrates a repeatable advantage. No trade is submitted.</div>
       <div class="over1-tracking">
         <div class="over1-tracking-title">FORWARD OUTCOME TRACKER</div>
         <div class="over1-tracking-grid" id="over1TrackingGrid">
@@ -838,7 +838,7 @@ li span:first-child{color:#668b70}
     var samples={10:digitsForWindow(10),30:digitsForWindow(30),60:digitsForWindow(60)};
     var result=window.ZyntrixEngine.evaluateOver1Entry(samples,!!(socket&&socket.readyState===WebSocket.OPEN));
     var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
-    var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
+    var candidateReady=result.candidateReady&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
     holder.replaceChildren();
     [10,30,60].forEach(function(seconds){
       var windowResult=result.windows[seconds],rule=windowResult.barriers[0];
@@ -848,17 +848,17 @@ li span:first-child{color:#668b70}
       label.textContent=(windowResult.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'% · '+windowResult.sampleSize+' ticks';
       card.append(value,label);holder.appendChild(card);
     });
-    if(passReady&&over1Tracking.armed){
+    if(candidateReady&&over1Tracking.armed){
       var entry={id:over1Tracking.nextId++,age:0,market:mk.symbol,epoch:lastLiveTickEpoch,outcomes:{}};
       over1Tracking.pending.push(entry);over1Tracking.latest=entry;over1Tracking.armed=false;
-      event('decision','OVER 1 ENTRY DETECTED','Entry #'+entry.id+' · 10s ≥90% · 30s ≥85% · 60s ≥80%. Tracking next 1, 2, 3 and 5 ticks; no trade submitted.');
-    }else if(!passReady){
+      event('observation','OVER 1 CANDIDATE OBSERVED','Candidate #'+entry.id+' · Historical thresholds aligned. Tracking next 1, 2, 3 and 5 ticks; NOT an entry signal.');
+    }else if(!candidateReady){
       over1Tracking.armed=true;
     }
     result.confirmationWindows=result.windows;
-    sendZyntrixBridgeSignal(result,passReady);
-    status.textContent=passReady?'ENTRY READY · ALL 3 WINDOWS PASS':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='INVALID_DATA'?'WAIT · INVALID DIGIT DATA':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':'WAIT · ENTRY CONDITIONS NOT MET';
-    status.className='over1-status '+(passReady?'ready':'wait');
+    sendZyntrixBridgeSignal(result,false);
+    status.textContent=candidateReady?'OBSERVING · CANDIDATE ONLY · NOT AN ENTRY':result.state==='VALIDATION_REQUIRED'?'SIGNAL DISABLED · FORWARD VALIDATION REQUIRED':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='INVALID_DATA'?'WAIT · INVALID DIGIT DATA':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · HISTORICAL CONDITIONS NOT MET';
+    status.className='over1-status wait';
     renderOver1Tracking();
   }
 
