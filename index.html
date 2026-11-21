@@ -283,6 +283,18 @@ li span:first-child{color:#668b70}
 @media(prefers-reduced-motion:reduce){.over1-rule{transition:none}}
 
 
+.filter-panel{margin-top:12px;padding:13px;border:1px solid #17452e;border-radius:8px;background:#050b09;color:#c9f7d5;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.filter-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.filter-head h2{margin:0;color:#aaf8bf;font-size:10px;letter-spacing:.12em}
+.filter-head>span{color:#8bdba2;font-size:9px}
+.filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.filter-stat{min-width:0;padding:8px;border:1px solid #17452e;background:#030806;border-radius:4px}
+.filter-stat span,.filter-stat small{display:block;color:#668b70;font-size:8px;letter-spacing:.05em}
+.filter-stat b{display:block;margin:4px 0;color:#c9f7d5;font-size:16px;font-variant-numeric:tabular-nums}
+.filter-stat small{font-size:8px;color:#8bdba2}
+.filter-stat b.drift-alert{color:#ffcf7a}
+.filter-comparison{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid #153323;color:#8ca6a0;font-size:8px;line-height:1.5}
+@media(max-width:600px){.filter-panel{padding:10px}.filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filter-stat b{font-size:14px}}
 </style>
 </head>
 <body>
@@ -318,7 +330,17 @@ li span:first-child{color:#668b70}
       <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 DIGITS</span></div>
     </div>
   </section>
-    <section class="tick-window" aria-label="Deriv rolling time window">
+    <section class="filter-panel" id="statisticalFilterPanel" aria-label="Statistical noise filter and drift monitor">
+    <div class="filter-head"><h2>STATISTICAL FILTER // LIVE DIAGNOSTICS</h2><span id="filterMode">EMA + HAMPEL + MAD</span></div>
+    <div class="filter-grid">
+      <div class="filter-stat"><span>OVER 1 RAW</span><b id="rawOver1">—</b><small id="filteredOver1">FILTERED —</small></div>
+      <div class="filter-stat"><span>UNDER 8 RAW</span><b id="rawUnder8">—</b><small id="filteredUnder8">FILTERED —</small></div>
+      <div class="filter-stat"><span>OUTLIERS</span><b id="outlierCount">0</b><small>Hampel / MAD</small></div>
+      <div class="filter-stat"><span>DRIFT MONITOR</span><b id="driftStatus">COLLECTING</b><small id="driftDetail">ADWIN · waiting for samples</small></div>
+    </div>
+    <div class="filter-comparison"><span>RAW DATA remains unchanged. Filtered values are a separate statistical view.</span><span id="filterSample">0 samples · last 60s</span></div>
+  </section>
+  <section class="tick-window" aria-label="Deriv rolling time window">
     <button class="tick-window-toggle" id="tickWindowToggle" type="button" aria-expanded="false" aria-controls="tickWindowBody">
       <span class="tick-window-heading">TIME ROLLING WINDOW</span>
       <span class="tick-window-latest"><small>LATEST DIGIT</small><b id="latestDigit">—</b></span>
@@ -411,9 +433,50 @@ li span:first-child{color:#668b70}
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds,epochs=values===ds?tickEpochs:[],cutoff=Date.now()/1000-selectedWindow,result=[];values.forEach(function(d,index){var epoch=epochs[index];if(epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch))&&Number(epoch)>=cutoff)result.push(d);});return result;}
   function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
+  function buildFilteredDistribution(){
+    var histories=Array.from({length:10},function(){return[];}),counts=Array(10).fill(0),left=0,validTicks=0;
+    for(var i=0;i<ds.length;i++){
+      var epoch=tickEpochs[i];
+      if(epoch===null||epoch===undefined||!Number.isFinite(Number(epoch)))continue;
+      while(left<i&&Number(tickEpochs[left])<Number(epoch)-selectedWindow){var old=ds[left];if(Number.isInteger(old)&&old>=0&&old<=9)counts[old]--;left++;}
+      var digit=ds[i];if(Number.isInteger(digit)&&digit>=0&&digit<=9){counts[digit]++;validTicks++;}
+      var total=0;for(var d=0;d<10;d++)total+=counts[d];
+      if(total)for(var k=0;k<10;k++)histories[k].push(counts[k]/total*100);
+    }
+    var filtered=[],outliers=0;
+    for(var d=0;d<10;d++){
+      var series=histories[d],hampel=window.ZyntrixEngine.hampelFilter(series,{windowSize:7,nSigma:3});
+      var ema=window.ZyntrixEngine.exponentialMovingAverage(hampel.filteredValues,0.2);
+      if(series.length)outliers+=hampel.outliers.filter(Boolean).length;
+      filtered[d]=ema.length?ema[ema.length-1]:0;
+    }
+    var sum=filtered.reduce(function(a,b){return a+b;},0);
+    if(sum>0)filtered=filtered.map(function(v){return v/sum*100;});
+    var overState=window.ZyntrixEngine.createADWINState({delta:0.01,minWindow:8,maxWindow:64});
+    var underState=window.ZyntrixEngine.createADWINState({delta:0.01,minWindow:8,maxWindow:64});
+    var overDrift=false,underDrift=false,rawDigits=selectedDigits(ds);
+    rawDigits.forEach(function(value){if(window.ZyntrixEngine.updateADWIN(overState,value>1?1:0).driftDetected)overDrift=true;if(window.ZyntrixEngine.updateADWIN(underState,value<8?1:0).driftDetected)underDrift=true;});
+    return{percentages:filtered,outliers:outliers,overDrift:overDrift,underDrift:underDrift,overState:overState,underState:underState,rawDigits:rawDigits};
+  }
   function momentumFromPercentages(percentages,mode,barrier){var momentum=0;for(var d=0;d<=9;d++)if(mode==='OVER'?d>barrier:d<barrier)momentum+=percentages[d];return{momentum:momentum,required:(mode==='OVER'?9-barrier:barrier)*10};}
   function renderOneBarrierHistogram(holder,mode,percentages,sampleSize){holder.replaceChildren();for(var barrier=0;barrier<=9;barrier++){var stats=momentumFromPercentages(percentages,mode,barrier),col=document.createElement('div');col.className='ou-column';var value=document.createElement('span');value.className='ou-value';value.textContent=sampleSize?stats.momentum.toFixed(1)+'%':'—';var track=document.createElement('div');track.className='ou-bar-track';var bar=document.createElement('div');bar.className='ou-bar';bar.style.height=(sampleSize?Math.max(0,Math.min(100,stats.momentum/90*100)):0)+'%';bar.setAttribute('aria-label',mode+' '+barrier+': '+(sampleSize?stats.momentum.toFixed(1)+'%':'no data'));track.appendChild(bar);var label=document.createElement('span');label.className='ou-digit';label.textContent=String(barrier);col.append(value,track,label);holder.appendChild(col);}}
-  function renderMomentumHistogram(distribution){var panel=$('#momentumPanel');if(!panel)return;var shared=distribution||buildSelectedDistribution(),sample=shared.sampleSize,percentages=shared.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);$('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';$('#overSample').textContent=sample+' DIGITS / '+selectedWindow+'s';$('#underSample').textContent=sample+' DIGITS / '+selectedWindow+'s';}
+  function renderMomentumHistogram(distribution,filtered){
+    var panel=$('#momentumPanel');if(!panel)return;
+    var shared=distribution||buildSelectedDistribution(),clean=filtered||buildFilteredDistribution(),sample=shared.sampleSize;
+    var percentages=clean.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);
+    renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);
+    $('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';
+    $('#overSample').textContent=sample+' DIGITS / '+selectedWindow+'s · FILTERED';$('#underSample').textContent=sample+' DIGITS / '+selectedWindow+'s · FILTERED';
+    var rawOver=momentumFromPercentages(shared.percentages,'OVER',1).momentum,rawUnder=momentumFromPercentages(shared.percentages,'UNDER',8).momentum;
+    var filteredOver=momentumFromPercentages(percentages,'OVER',1).momentum,filteredUnder=momentumFromPercentages(percentages,'UNDER',8).momentum;
+    $('#rawOver1').textContent=sample?rawOver.toFixed(1)+'%':'—';$('#filteredOver1').textContent='FILTERED '+(sample?filteredOver.toFixed(1)+'%':'—');
+    $('#rawUnder8').textContent=sample?rawUnder.toFixed(1)+'%':'—';$('#filteredUnder8').textContent='FILTERED '+(sample?filteredUnder.toFixed(1)+'%':'—');
+    $('#outlierCount').textContent=String(clean.outliers);
+    var drift=clean.overDrift||clean.underDrift,driftEl=$('#driftStatus');
+    driftEl.textContent=drift?'CHANGE DETECTED':'NO DRIFT';driftEl.className=drift?'drift-alert':'';
+    $('#driftDetail').textContent='ADWIN · O1 '+(clean.overDrift?'SHIFT':'STABLE')+' / U8 '+(clean.underDrift?'SHIFT':'STABLE');
+    $('#filterSample').textContent=sample+' raw digits · last '+selectedWindow+'s';
+  }
 
   function setTickWindowState(label){
     $('#tickWindowState').textContent=label;
@@ -698,7 +761,7 @@ li span:first-child{color:#668b70}
   }
 
   function render(){
-    var distribution=buildSelectedDistribution(),counts=distribution.counts,n=distribution.sampleSize||1,hi=0,lo=0;
+    var distribution=buildSelectedDistribution(),filtered=buildFilteredDistribution(),counts=distribution.counts,n=distribution.sampleSize||1,hi=0,lo=0;
     for(var i=1;i<10;i++){if(counts[i]>counts[hi])hi=i;if(counts[i]<counts[lo])lo=i}
     var ranked=counts.map(function(count,digit){return{digit:digit,count:count}}).sort(function(a,b){return b.count-a.count||a.digit-b.digit;});
     var third=distribution.sampleSize>=3?ranked[2].digit:-1;
@@ -710,7 +773,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===third);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();renderMomentumHistogram(distribution);renderOver1Gate();
+    updateTickWindow();renderMomentumHistogram(distribution,filtered);renderOver1Gate();
   }
 
   function moveCursor(i,flash){
