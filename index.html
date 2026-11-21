@@ -814,7 +814,7 @@ li span:first-child{color:#668b70}
 
   // Persistent multi-market archive collector. This is separate from the selected-market display feed.
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
-  var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveHistoryRequests={},archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+  var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveHistoryRequests={},archiveNextHistoryId=50000,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var archiveSubscriptions={},archiveContractRequests={},archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
   function archiveStatus(text,offline){var el=$('#intelCollectorState');if(el){el.textContent=text;el.classList.toggle('offline',!!offline);}}
   function archiveDigit(quote,pipSize){var p=Number(pipSize);var q=Number(quote);if(!Number.isFinite(q))return -1;var formatted=Number.isInteger(p)&&p>=0&&p<=8?q.toFixed(p):String(quote);var digits=formatted.replace(/\D/g,'');return digits?Number(digits.charAt(digits.length-1)):-1;}
@@ -853,12 +853,12 @@ li span:first-child{color:#668b70}
     try{archiveSocket=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public');}catch(error){archiveStatus('FEED CONNECTION FAILED',true);return;}
     archiveSocket.onopen=function(){
       archiveStatus('LIVE · SUBSCRIBING 10 MARKETS',false);
-      archiveHistoryRequests={};
+      archiveHistoryRequests={};archiveNextHistoryId=50000;
       MK.forEach(function(m){
         var marketIndex=MK.indexOf(m),tickId=20000+marketIndex,contractId=30000+marketIndex,historyId=40000+marketIndex;
-        archiveSubscriptions[tickId]=m.symbol;archiveContractRequests[contractId]=m.symbol;archiveHistoryRequests[historyId]=m.symbol;
+        archiveSubscriptions[tickId]=m.symbol;archiveContractRequests[contractId]=m.symbol;archiveHistoryRequests[historyId]={market:m.symbol,page:1};
         archiveSocket.send(JSON.stringify({ticks:m.symbol,subscribe:1,req_id:tickId}));
-        archiveSocket.send(JSON.stringify({ticks_history:m.symbol,count:5000,end:'latest',style:'ticks',req_id:historyId}));
+        archiveSocket.send(JSON.stringify({ticks_history:m.symbol,count:1000,end:'latest',style:'ticks',req_id:historyId}));
         archiveSocket.send(JSON.stringify({contracts_for:m.symbol,req_id:contractId}));
       });
       if(archiveFlushTimer)clearInterval(archiveFlushTimer);archiveFlushTimer=setInterval(flushArchiveQueue,1000);
@@ -868,10 +868,11 @@ li span:first-child{color:#668b70}
       var data;try{data=JSON.parse(eventMessage.data);}catch(error){return;}
       if(data.error){event('warning','ARCHIVE FEED WARNING',data.error.message||'Deriv request rejected');return;}
       if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)&&archiveHistoryRequests[data.req_id]){
-        var historyMarket=archiveHistoryRequests[data.req_id],prices=data.history.prices,times=data.history.times||[],pipSize=data.pip_size!==undefined?data.pip_size:data.history.pip_size,loaded=0;
-        prices.forEach(function(quote,index){var epoch=Number(times[index]),digit=archiveDigit(quote,pipSize);if(Number.isFinite(epoch)&&digit>=0){archiveQueue.push({market:historyMarket,epoch:epoch,quote:String(quote),digit:digit});loaded++;}});
+        var historyRequest=archiveHistoryRequests[data.req_id],historyMarket=historyRequest.market,prices=data.history.prices,times=data.history.times||[],pipSize=data.pip_size!==undefined?data.pip_size:data.history.pip_size,loaded=0,validTimes=[];
+        prices.forEach(function(quote,index){var epoch=Number(times[index]),digit=archiveDigit(quote,pipSize);if(Number.isFinite(epoch)&&digit>=0){archiveQueue.push({market:historyMarket,epoch:epoch,quote:String(quote),digit:digit});loaded++;validTimes.push(epoch);}});
         delete archiveHistoryRequests[data.req_id];
-        event('system','HISTORICAL BACKFILL QUEUED',historyMarket+' · '+loaded+' ticks requested from Deriv history.');
+        if(historyRequest.page<5&&validTimes.length){var oldest=Math.min.apply(null,validTimes),nextHistoryId=archiveNextHistoryId++;archiveHistoryRequests[nextHistoryId]={market:historyMarket,page:historyRequest.page+1};archiveSocket.send(JSON.stringify({ticks_history:historyMarket,count:1000,end:String(oldest-1),style:'ticks',req_id:nextHistoryId}));}
+        else{event('system','HISTORICAL BACKFILL COMPLETE',historyMarket+' · '+loaded+' ticks on final page '+historyRequest.page+'.');}
         if(archiveQueue.length>=250)flushArchiveQueue();
       }else if(data.msg_type==='tick'&&data.tick){
         var tick=data.tick,market=String(tick.symbol||''),digit=archiveDigit(tick.quote,tick.pip_size);
