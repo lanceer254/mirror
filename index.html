@@ -237,7 +237,7 @@ li span:first-child{color:#668b70}
 .window-matrix{display:grid;gap:4px;margin-top:12px;padding-top:9px;border-top:1px solid #153323}.window-row{display:grid;grid-template-columns:64px repeat(2,minmax(0,1fr));gap:8px;align-items:center;font-size:9px;color:#9fc6a9}.window-row b{color:#d2f5dc;text-align:right;font-variant-numeric:tabular-nums}.window-row.header{color:#668b70;text-transform:uppercase;letter-spacing:.05em}.window-empty{font-size:9px;color:#668b70}
 @media(max-width:600px){.engine-panel{padding:10px}.engine-metrics{gap:9px}.engine-metric{font-size:9px}.window-row{grid-template-columns:54px repeat(2,minmax(0,1fr));gap:5px}.digit-frequency-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
 
-.over1-gate{margin:12px 0;padding:12px;border:1px solid #287447;background:#06130b;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.over1-gate h3{margin:0 0 7px;color:#aaf8bf;font-size:11px;letter-spacing:.1em}.over1-status{font-size:12px;font-weight:700;color:#c9f7d5}.over1-status.ready{color:#55f59a}.over1-status.wait{color:#ffcf7a}.over1-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.over1-rule{padding:7px 5px;border:1px solid #17452e;background:#030806;text-align:center;border-radius:4px}.over1-rule b{display:block;color:#c9f7d5;font-size:12px}.over1-rule small{display:block;color:#8bdba2;font-size:9px}.over1-rule.pass{border-color:#55f59a}.over1-rule.fail{border-color:#a65b52}.over1-note{margin-top:8px;color:#8cae95;font-size:9px;line-height:1.5}@media(max-width:520px){.over1-rules{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.over1-gate{margin:12px 0;padding:12px;border:1px solid #287447;background:#06130b;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.over1-gate h3{margin:0 0 7px;color:#aaf8bf;font-size:11px;letter-spacing:.1em}.over1-status{font-size:12px;font-weight:700;color:#c9f7d5}.over1-status.ready{color:#55f59a}.over1-status.wait{color:#ffcf7a}.over1-rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:9px}.over1-rule{padding:7px 5px;border:1px solid #17452e;background:#030806;text-align:center;border-radius:4px}.over1-rule b{display:block;color:#c9f7d5;font-size:12px}.over1-rule small{display:block;color:#8bdba2;font-size:9px}.over1-rule.pass{border-color:#55f59a}.over1-rule.fail{border-color:#a65b52}.over1-note{margin-top:8px;color:#8cae95;font-size:9px;line-height:1.5}.over1-tracking{margin-top:10px;padding-top:9px;border-top:1px solid #17452e}.over1-tracking-title{color:#aaf8bf;font-size:9px;letter-spacing:.1em}.over1-tracking-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}.over1-tracking-grid>div{padding:6px 3px;background:#030806;border:1px solid #17452e;text-align:center;border-radius:4px}.over1-tracking-grid small,.over1-tracking-grid b{display:block}.over1-tracking-grid small{font-size:8px;color:#789681}.over1-tracking-grid b{margin-top:3px;font-size:10px;color:#c9f7d5;font-variant-numeric:tabular-nums}.over1-latest{margin-top:7px;color:#8cae95;font-size:9px;line-height:1.5}@media(max-width:520px){.over1-rules{grid-template-columns:repeat(3,minmax(0,1fr))}.over1-tracking-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}
 .window-confirmation{margin:10px 0;padding:11px;border:1px solid #17452e;border-radius:7px;background:#030806;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .window-confirmation-head{display:flex;justify-content:space-between;gap:8px;color:#aaf8bf;font-size:9px;letter-spacing:.08em}
@@ -394,15 +394,21 @@ li span:first-child{color:#668b70}
     </div>
   </section>
   <section class="over1-gate" aria-label="OVER 1 live entry gate">
-      <h3>OVER 1 // LIVE ENTRY GATE</h3>
+      <h3>OVER 1 // THREE-WINDOW ENTRY</h3>
       <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING TIME-WINDOW DATA</div>
       <div class="over1-rules" id="over1GateRules">
-        <div class="over1-rule"><b>OVER 0</b><small>— / 95%</small></div>
-        <div class="over1-rule"><b>OVER 1</b><small>— / 85%</small></div>
-        <div class="over1-rule"><b>OVER 2</b><small>— / 75%</small></div>
-        <div class="over1-rule"><b>OVER 3</b><small>— / 65%</small></div>
+        <div class="over1-rule"><b>10s</b><small>— / 90%</small></div>
+        <div class="over1-rule"><b>30s</b><small>— / 85%</small></div>
+        <div class="over1-rule"><b>60s</b><small>— / 80%</small></div>
       </div>
-      <div class="over1-note">All four thresholds must pass in each of the 10s, 30s and 60s windows. Each window needs at least 10 observed ticks. Signal updates on every tick. This is a signal only; no trade is submitted.</div>
+      <div class="over1-note">Entry signal requires Over 1 (last digit 2–9) to meet all three thresholds simultaneously. Each window needs at least 10 valid ticks. A signal is recorded once per qualifying run; the next 1, 2, 3 and 5 ticks are observed for outcome testing. No trade is submitted.</div>
+      <div class="over1-tracking">
+        <div class="over1-tracking-title">FORWARD OUTCOME TRACKER</div>
+        <div class="over1-tracking-grid" id="over1TrackingGrid">
+          <div><small>1 TICK</small><b>0/0 · —</b></div><div><small>2 TICKS</small><b>0/0 · —</b></div><div><small>3 TICKS</small><b>0/0 · —</b></div><div><small>5 TICKS</small><b>0/0 · —</b></div>
+        </div>
+        <div class="over1-latest" id="over1LatestOutcome">NO QUALIFYING ENTRY RECORDED</div>
+      </div>
     </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -438,6 +444,7 @@ li span:first-child{color:#668b70}
   ];
   var mSel=$('#market'),og={};MK.forEach(function(m,i){var g=og[m.g];if(!g){g=document.createElement('optgroup');g.label=m.g;mSel.appendChild(g);og[m.g]=g}var o=document.createElement('option');o.value=i;o.textContent=m.n;g.appendChild(o)});
   var events=[],lastDigit=0,selectedWindow=10;
+  var over1Tracking=createOver1Tracking();
   var bridgeParentOrigin=null,bridgeSignalCounter=0,liveTickSequence=0,lastPublishedLiveTickSequence=0,lastLiveTickEpoch=null;
   var bridgeSessionId=window.crypto&&typeof window.crypto.randomUUID==='function'?window.crypto.randomUUID():'zyntrix-session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
   window.addEventListener('message',function(messageEvent){
@@ -570,6 +577,7 @@ li span:first-child{color:#668b70}
     if(processLive){
       liveTickSequence++;
       lastLiveTickEpoch=epoch!==undefined&&epoch!==null&&Number.isFinite(Number(epoch))?Number(epoch):null;
+      recordOver1OutcomeTick(lastDigit);
       moveCursor(lastDigit,true);
       render();
     }
@@ -577,6 +585,7 @@ li span:first-child{color:#668b70}
   }
   function clearMarketData(){
     ds=[];ps=[];tickEpochs=[];lastPrice='';price=0;lastDigit=0;marketPipSize=2;lastLiveTickEpoch=null;
+    resetOver1Tracking();
     historyReady=false;historyFailed=false;subscriptionFailed=false;pendingLiveTicks=[];
     $('#price').textContent='WAITING FOR TICKS';
     setTickWindowState('LOADING DERIV HISTORY');
@@ -753,6 +762,47 @@ li span:first-child{color:#668b70}
     };
   }
 
+
+  function createOver1Tracking(){
+    return{armed:true,nextId:1,pending:[],totals:{1:{wins:0,losses:0},2:{wins:0,losses:0},3:{wins:0,losses:0},5:{wins:0,losses:0}},latest:null};
+  }
+  function resetOver1Tracking(){
+    over1Tracking=createOver1Tracking();
+    renderOver1Tracking();
+  }
+  function recordOver1OutcomeTick(digit){
+    var horizons=[1,2,3,5];
+    over1Tracking.pending.forEach(function(entry){
+      entry.age++;
+      horizons.forEach(function(horizon){
+        if(entry.age===horizon){
+          var result=over1Tracking.totals[horizon];
+          if(digit>1)result.wins++;else result.losses++;
+          entry.outcomes[horizon]=digit>1?'WIN':'LOSS';
+        }
+      });
+      if(entry.age===5){
+        event('result','OVER 1 FOLLOW-THROUGH','Entry #'+entry.id+' · 1T '+entry.outcomes[1]+' · 2T '+entry.outcomes[2]+' · 3T '+entry.outcomes[3]+' · 5T '+entry.outcomes[5]+'.');
+      }
+    });
+    over1Tracking.pending=over1Tracking.pending.filter(function(entry){return entry.age<5;});
+  }
+  function renderOver1Tracking(){
+    var grid=$('#over1TrackingGrid'),latest=$('#over1LatestOutcome');
+    if(!grid||!latest)return;
+    grid.replaceChildren();
+    [1,2,3,5].forEach(function(horizon){
+      var stats=over1Tracking.totals[horizon],total=stats.wins+stats.losses,rate=total?(stats.wins/total*100).toFixed(1)+'%':'—';
+      var cell=document.createElement('div'),label=document.createElement('small'),value=document.createElement('b');
+      label.textContent=horizon+' TICK'+(horizon===1?'':'S');
+      value.textContent=stats.wins+'/'+total+' · '+rate;
+      cell.append(label,value);grid.appendChild(cell);
+    });
+    if(!over1Tracking.latest){latest.textContent='NO QUALIFYING ENTRY RECORDED';return;}
+    var entry=over1Tracking.latest,completed=[1,2,3,5].filter(function(h){return entry.outcomes[h];});
+    latest.textContent='LAST ENTRY #'+entry.id+' · '+entry.market+' · '+(completed.length?completed.map(function(h){return h+'T '+entry.outcomes[h];}).join(' / '):'WAITING FOR NEXT TICK')+' · '+over1Tracking.pending.length+' TRACKING';
+  }
+
   function sendZyntrixBridgeSignal(result,passReady){
     if(!bridgeParentOrigin||!window.opener||window.opener.closed)return;
     if(liveTickSequence<1||liveTickSequence===lastPublishedLiveTickSequence)return;
@@ -786,26 +836,32 @@ li span:first-child{color:#668b70}
 
   function renderOver1Gate(){
     var status=$('#over1GateStatus'),holder=$('#over1GateRules');
-    if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1TimeWindows!=='function')return;
+    if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1Entry!=='function')return;
     var samples={10:digitsForWindow(10),30:digitsForWindow(30),60:digitsForWindow(60)};
-    var result=window.ZyntrixEngine.evaluateOver1TimeWindows(samples,!!(socket&&socket.readyState===WebSocket.OPEN));
-    var primary=result.windows[10];
-    status.textContent=result.ready?'PASS · 10s / 30s / 60s ALIGNED':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · ONE OR MORE WINDOWS FAILED';
-    status.className='over1-status '+(result.ready?'ready':'wait');
-    holder.replaceChildren();
-    primary.barriers.forEach(function(rule){
-      var card=document.createElement('div'),value=document.createElement('b'),label=document.createElement('small');
-      card.className='over1-rule '+(result.ready&&rule.passed?'pass':'fail');
-      value.textContent='OVER '+rule.barrier;
-      label.textContent=(primary.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'% · 10s';
-      card.append(value,label);holder.appendChild(card);
-    });
+    var result=window.ZyntrixEngine.evaluateOver1Entry(samples,!!(socket&&socket.readyState===WebSocket.OPEN));
     var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
     var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
-    primary.confirmationWindows=result.windows;
-    sendZyntrixBridgeSignal(primary,passReady);
-    status.textContent=passReady?'PASS · 10s / 30s / 60s ALIGNED':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · ONE OR MORE WINDOWS FAILED';
+    holder.replaceChildren();
+    [10,30,60].forEach(function(seconds){
+      var windowResult=result.windows[seconds],rule=windowResult.barriers[0];
+      var card=document.createElement('div'),value=document.createElement('b'),label=document.createElement('small');
+      card.className='over1-rule '+(rule.passed?'pass':'fail');
+      value.textContent=seconds+'s';
+      label.textContent=(windowResult.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'% · '+windowResult.sampleSize+' ticks';
+      card.append(value,label);holder.appendChild(card);
+    });
+    if(passReady&&over1Tracking.armed){
+      var entry={id:over1Tracking.nextId++,age:0,market:mk.symbol,epoch:lastLiveTickEpoch,outcomes:{}};
+      over1Tracking.pending.push(entry);over1Tracking.latest=entry;over1Tracking.armed=false;
+      event('decision','OVER 1 ENTRY DETECTED','Entry #'+entry.id+' · 10s ≥90% · 30s ≥85% · 60s ≥80%. Tracking next 1, 2, 3 and 5 ticks; no trade submitted.');
+    }else if(!passReady){
+      over1Tracking.armed=true;
+    }
+    result.confirmationWindows=result.windows;
+    sendZyntrixBridgeSignal(result,passReady);
+    status.textContent=passReady?'ENTRY READY · ALL 3 WINDOWS PASS':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='INVALID_DATA'?'WAIT · INVALID DIGIT DATA':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':'WAIT · ENTRY CONDITIONS NOT MET';
     status.className='over1-status '+(passReady?'ready':'wait');
+    renderOver1Tracking();
   }
 
   function render(){
