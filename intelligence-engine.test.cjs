@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const E=require('./intelligence-engine.js');
+test('Wilson interval contains observed proportion',()=>{const r=E.wilson(50,100);assert.ok(r.lower<.5&&r.upper>.5);});
+test('feature extraction preserves digit distribution',()=>{const ts=Array.from({length:100},(_,i)=>({epoch:i+1,quote:100+i/100,digit:i%10}));const f=E.extractFeatures(ts,100,100);assert.equal(f.sampleSize,100);assert.equal(f.digitCounts[0],10);assert.equal(f.evenRate,.5);});
+test('walk-forward validation uses chronological holdout',()=>{const ts=Array.from({length:5000},(_,i)=>({epoch:i+1,quote:100+i*.001,digit:i%10<7?8:i%10}));const r=E.runWalkForwardValidation(ts,{contract:'DIGITOVER',barrier:1,horizonTicks:1,windowSize:100,minSignals:20});assert.equal(r.totalTicks,5000);assert.ok(r.trainTicks<r.totalTicks);assert.ok(r.testTicks>0);assert.ok(['INSUFFICIENT_HOLDOUT_SAMPLE','HOLDOUT_ABOVE_BASELINE','NO_VALIDATED_EDGE'].includes(r.verdict));});
+test('rejects unsupported contract and insufficient data',()=>{assert.throws(()=>E.runWalkForwardValidation([],{contract:'BOGUS'}));});
