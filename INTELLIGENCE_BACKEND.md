@@ -34,3 +34,6 @@ The public ingest route validates market names, timestamps, payload size and dig
 ## Deployment smoke check
 
 The repository quality workflow probes the deployed `/health` endpoint and requires the API to report a connected D1 binding and all ten configured markets before the integration is merged.
+
+
+Last integration verification: 2026-11-21.
