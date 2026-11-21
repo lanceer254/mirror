@@ -5,3 +5,4 @@ test('candidate scanner enforces five-tick expiry and chronological split',()=>{
 test('scanner refuses insufficient history',()=>{const r=E.scanMarket(ticks(100,i=>i%10),{minTicks:300});assert.equal(r.ready,false);assert.equal(r.reason,'INSUFFICIENT_HISTORY');});
 test('five-tick scoring never overlaps entry outcomes',()=>{const ts=ticks(100,i=>i%10);const m=E.fitFiveTickModel(ts);const c={contract:'DIGITOVER',barrier:1,baseline:.8};const r=E.scoreRange(ts,m,c,0);assert.ok(r.signals<=19);assert.equal(r.signals,10);});
 test('Wilson interval is bounded',()=>{const r=E.wilson(5,5);assert.ok(r.lower>=0&&r.upper<=1&&r.upper===1);});
+test('scanner contract allowlist is strictly Over and Under',()=>{assert.deepEqual(E.SUPPORTED_CONTRACTS,['DIGITOVER','DIGITUNDER']);});
