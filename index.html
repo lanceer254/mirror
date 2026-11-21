@@ -862,7 +862,7 @@ li span:first-child{color:#668b70}
         if(MK.some(function(m){return m.symbol===market;})&&digit>=0){archiveQueue.push({market:market,epoch:Number(tick.epoch),quote:String(tick.quote),digit:digit});if(archiveQueue.length>=100)flushArchiveQueue();}
       }else if(data.msg_type==='contracts_for'){
         var symbol=archiveContractRequests[data.req_id];if(!symbol)return;
-        var contracts=(data.contracts_for&&data.contracts_for.available||[]).map(function(c){return{contract_type:c.contract_type,barrier:c.barrier,duration:c.min_contract_duration,duration_unit:c.contract_category,contract_display:c.contract_display,expiry_type:c.expiry_type,raw:c};});
+        var contracts=(data.contracts_for&&data.contracts_for.available||[]).map(function(c){return{contract_type:c.contract_type,barrier:c.barrier,duration:c.min_contract_duration,duration_unit:c.duration_unit||c.min_contract_duration_unit||null,contract_display:c.contract_display,expiry_type:c.expiry_type,raw:c};});
         fetch(INTELLIGENCE_API+'/api/contracts/snapshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({market:symbol,contracts:contracts})}).catch(function(){});
         event('system','CONTRACT CATALOG UPDATED',symbol+' · '+contracts.length+' available contract definitions.');
       }
