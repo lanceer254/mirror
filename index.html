@@ -828,10 +828,75 @@ li span:first-child{color:#668b70}
     finally{button.disabled=false;button.textContent='RUN CHRONOLOGICAL HOLDOUT TEST';}
   }
 
+
+  function requestEntryProposal(candidate,stake,currency){
+    return new Promise(function(resolve,reject){
+      if(!archiveSocket||archiveSocket.readyState!==WebSocket.OPEN){reject(new Error('Deriv proposal feed is offline'));return;}
+      var reqId=entryProposalCounter++,request={proposal:1,amount:stake,basis:'stake',contract_type:candidate.contract, currency:currency,duration:5,duration_unit:'t',underlying_symbol:candidate.market,req_id:reqId};
+      if(candidate.barrier!==null&&candidate.barrier!==undefined)request.barrier=String(candidate.barrier);
+      var timer=setTimeout(function(){if(entryProposalRequests[reqId]){delete entryProposalRequests[reqId];reject(new Error('Proposal request timed out'));}},9000);
+      entryProposalRequests[reqId]={resolve:function(value){clearTimeout(timer);resolve(value);},reject:function(error){clearTimeout(timer);reject(error);}};
+      try{archiveSocket.send(JSON.stringify(request));}catch(error){clearTimeout(timer);delete entryProposalRequests[reqId];reject(error);}
+    });
+  }
+  async function runBestEntryScan(){
+    var button=$('#runBestEntryScan'),resultEl=$('#bestEntryResult'),rankEl=$('#bestEntryRank');
+    button.disabled=true;button.textContent='SCANNING TEN MARKETS…';resultEl.textContent='Downloading archived tick histories and evaluating five-tick outcomes. No market is being traded.';rankEl.replaceChildren();
+    try{
+      if(!window.ZyntrixEntryEngine)throw new Error('Five-tick entry engine did not load');
+      var fetched=await Promise.all(MK.map(async function(m){
+        var response=await fetch(INTELLIGENCE_API+'/api/ticks?market='+encodeURIComponent(m.symbol)+'&limit=5000',{cache:'no-store'});
+        if(!response.ok)throw new Error(m.symbol+' archive request failed: HTTP '+response.status);
+        var payload=await response.json();return{symbol:m.symbol,ticks:payload.ticks||[]};
+      }));
+      var byMarket={};fetched.forEach(function(item){byMarket[item.symbol]=item.ticks;});
+      var results=window.ZyntrixEntryEngine.scanAll(byMarket,{minTicks:300,minTrainSignals:10,minHoldoutSignals:20});
+      var qualified=results.filter(function(r){return r.best;});
+      var ranked=document.createElement('table');ranked.className='entry-rank';
+      ranked.innerHTML='<thead><tr><th>MARKET</th><th>5T CANDIDATE</th><th>HOLDOUT</th><th>95% LOWER</th><th>5-WIN RUN</th></tr></thead>';
+      var body=document.createElement('tbody');
+      results.forEach(function(r){
+        var best=r.best||r.top[0],tr=document.createElement('tr'),values=[
+          r.market,
+          best?(best.contract+(best.barrier===null?'':' '+best.barrier)):'NO QUALIFIED SETUP',
+          best?(best.holdout.wins+'/'+best.holdout.signals+' · '+(best.holdout.hitRate*100).toFixed(1)+'%'):'—',
+          best&&best.holdout.interval.lower!==null?(best.holdout.interval.lower*100).toFixed(1)+'%':'—',
+          best?(best.holdout.maxConsecutiveWins+' · '+best.holdout.fiveWinSequences+' sequences'):'—'
+        ];
+        values.forEach(function(value){var td=document.createElement('td');td.textContent=value;tr.appendChild(td);});body.appendChild(tr);
+      });
+      ranked.appendChild(body);rankEl.appendChild(ranked);
+      if(!qualified.length){
+        var top=results.flatMap(function(r){return(r.top||[]).slice(0,1).map(function(c){return{market:r.market,candidate:c};});}).sort(function(a,b){return((b.candidate.holdout.interval.lower||0)-b.candidate.baseline)-((a.candidate.holdout.interval.lower||0)-a.candidate.baseline);})[0];
+        resultEl.textContent='NO ENTRY QUALIFIED · None of the ten markets passed the strict holdout + five-consecutive-win requirement. '+(top?'Closest candidate: '+top.market+' '+top.candidate.contract+(top.candidate.barrier===null?'':' '+top.candidate.barrier)+' · '+top.candidate.holdout.wins+'/'+top.candidate.holdout.signals+' holdout wins · 95% lower bound '+(top.candidate.holdout.interval.lower*100).toFixed(1)+'% versus baseline '+(top.candidate.baseline*100).toFixed(1)+'% · longest run '+top.candidate.holdout.maxConsecutiveWins+'.':'More archived history is required.');event('warning','NO FIVE-TICK ENTRY QUALIFIED','All ten markets failed the strict holdout / consecutive-win filter.');return;
+      }
+      var currency=$('#entryCurrency').value,stake=Number($('#entryStake').value);
+      if(!(stake>0))throw new Error('Stake must be greater than zero');
+      var lastError=null;
+      for(var i=0;i<qualified.length;i++){
+        var marketResult=qualified[i],candidate=Object.assign({market:marketResult.market},marketResult.best);
+        try{
+          var quote=await requestEntryProposal(candidate,stake,currency);
+          if(!quote||!Number.isFinite(Number(quote.ask_price))||!Number.isFinite(Number(quote.payout)))throw new Error('Proposal did not include a valid ask price and payout');
+          var ask=Number(quote.ask_price),payout=Number(quote.payout),lower=candidate.holdout.interval.lower,breakEven=ask/payout,conservativeEV=lower*payout-ask;
+          if(conservativeEV>0){
+            resultEl.textContent='ENTRY QUALIFIED · '+candidate.market+' · '+candidate.contract+(candidate.barrier===null?'':' BARRIER '+candidate.barrier)+' · EXPIRY 5 TICKS\nHOLDOUT '+candidate.holdout.wins+'/'+candidate.holdout.signals+' WINS ('+(candidate.holdout.hitRate*100).toFixed(2)+'%) · 95% LOWER '+(lower*100).toFixed(2)+'% · BASELINE '+(candidate.baseline*100).toFixed(2)+'%\nCONSECUTIVE: MAX '+candidate.holdout.maxConsecutiveWins+' WINS · '+candidate.holdout.fiveWinSequences+' FIVE-WIN SEQUENCES\nLIVE PROPOSAL: '+currency+' '+ask.toFixed(2)+' STAKE · '+currency+' '+payout.toFixed(2)+' PAYOUT · BREAK-EVEN '+(breakEven*100).toFixed(2)+'%\nCONSERVATIVE EV USING 95% LOWER BOUND: '+currency+' '+conservativeEV.toFixed(3)+' PER CONTRACT. Analysis signal only; no trade was placed.';
+            event('result','FIVE-TICK ENTRY QUALIFIED',candidate.market+' '+candidate.contract+' · '+candidate.holdout.wins+'/'+candidate.holdout.signals+' holdout wins · positive conservative proposal EV.');
+            return;
+          }
+          lastError='Top validated candidate '+candidate.market+' '+candidate.contract+' failed conservative payout test (EV '+currency+' '+conservativeEV.toFixed(3)+').';
+        }catch(error){lastError=candidate.market+' '+candidate.contract+': '+String(error.message||error);}
+      }
+      resultEl.textContent='NO ENTRY · Historical candidates passed the statistical filter, but none passed the live Deriv proposal / conservative expected-value check. '+(lastError||'No usable proposal was returned.')+' No trade was placed.';
+      event('warning','ENTRY BLOCKED BY PRICE CHECK',lastError||'No candidate had positive conservative expected value.');
+    }catch(error){resultEl.textContent='SCAN NOT COMPLETED · '+String(error.message||error);}
+    finally{button.disabled=false;button.textContent='SCAN ALL MARKETS FOR BEST VALID ENTRY';}
+  }
+
   // Persistent multi-market archive collector. This is separate from the selected-market display feed.
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
   var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveHistoryRequests={},archiveNextHistoryId=50000,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-  var archiveSubscriptions={},archiveContractRequests={},archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
+  var archiveSubscriptions={},archiveContractRequests={},entryProposalRequests={},entryProposalCounter=61000,archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
   function archiveStatus(text,offline){var el=$('#intelCollectorState');if(el){el.textContent=text;el.classList.toggle('offline',!!offline);}}
   function archiveDigit(quote,pipSize){var p=Number(pipSize);var q=Number(quote);if(!Number.isFinite(q))return -1;var formatted=Number.isInteger(p)&&p>=0&&p<=8?q.toFixed(p):String(quote);var digits=formatted.replace(/\D/g,'');return digits?Number(digits.charAt(digits.length-1)):-1;}
   var archiveFlushInProgress=false;
@@ -882,7 +947,8 @@ li span:first-child{color:#668b70}
     };
     archiveSocket.onmessage=function(eventMessage){
       var data;try{data=JSON.parse(eventMessage.data);}catch(error){return;}
-      if(data.error){event('warning','ARCHIVE FEED WARNING',data.error.message||'Deriv request rejected');return;}
+      if(data.error){var proposalFailure=entryProposalRequests[data.req_id];if(proposalFailure){delete entryProposalRequests[data.req_id];proposalFailure.reject(new Error(data.error.message||'Proposal rejected'));}event('warning','ARCHIVE FEED WARNING',data.error.message||'Deriv request rejected');return;}
+      if(data.msg_type==='proposal'&&entryProposalRequests[data.req_id]){var proposalRequest=entryProposalRequests[data.req_id];delete entryProposalRequests[data.req_id];proposalRequest.resolve(data.proposal||null);}
       if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)&&archiveHistoryRequests[data.req_id]){
         var historyRequest=archiveHistoryRequests[data.req_id],historyMarket=historyRequest.market,prices=data.history.prices,times=data.history.times||[],pipSize=data.pip_size!==undefined?data.pip_size:data.history.pip_size,loaded=0,validTimes=[];
         prices.forEach(function(quote,index){var epoch=Number(times[index]),digit=archiveDigit(quote,pipSize);if(Number.isFinite(epoch)&&digit>=0){archiveQueue.push({market:historyMarket,epoch:epoch,quote:String(quote),digit:digit});loaded++;validTimes.push(epoch);}});
@@ -905,6 +971,7 @@ li span:first-child{color:#668b70}
   }
   window.addEventListener('beforeunload',function(){if(archiveFlushTimer)clearInterval(archiveFlushTimer);if(archiveSocket)archiveSocket.close();});
   $('#runIntelValidation').addEventListener('click',runArchiveValidation);
+  $('#runBestEntryScan').addEventListener('click',runBestEntryScan);
   refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
 
   function createOver1Tracking(){
