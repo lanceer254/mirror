@@ -366,7 +366,8 @@ li span:first-child{color:#668b70}
   <button type="button" class="ghost" id="runIntelValidation">RUN CHRONOLOGICAL HOLDOUT TEST</button>
   <div id="intelValidationResult" class="tline" aria-live="polite">Collect archived ticks first. Validation requires enough historical data and uses an untouched chronological holdout.</div>
  </div>
-\n <div class="intel-foot"><span id="intelQueueState">QUEUE: 0 PENDING</span><span>SERVER-SIDE DEDUPLICATION · UTC EPOCH STORAGE</span></div>
+
+ <div class="intel-foot"><span id="intelQueueState">QUEUE: 0 PENDING</span><span>SERVER-SIDE DEDUPLICATION · UTC EPOCH STORAGE</span></div>
 </section>
 
   <div class="layout">
@@ -455,7 +456,8 @@ li span:first-child{color:#668b70}
   </section>
 </div>
 
-<script src="analysis-engine.js"></script>\n<script src="intelligence-engine.js"></script>
+<script src="analysis-engine.js"></script>
+<script src="intelligence-engine.js"></script>
 <script>
 (function(){
   var $=function(s){return document.querySelector(s)};
@@ -809,7 +811,8 @@ li span:first-child{color:#668b70}
     }catch(error){resultEl.textContent='VALIDATION NOT COMPLETED · '+String(error.message||error);}
     finally{button.disabled=false;button.textContent='RUN CHRONOLOGICAL HOLDOUT TEST';}
   }
-\n  // Persistent multi-market archive collector. This is separate from the selected-market display feed.
+
+  // Persistent multi-market archive collector. This is separate from the selected-market display feed.
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
   var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var archiveSubscriptions={},archiveContractRequests={},archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
@@ -868,7 +871,8 @@ li span:first-child{color:#668b70}
     archiveSocket.onclose=function(){archiveStatus('ARCHIVE FEED DISCONNECTED · RECONNECTING',true);if(archiveFlushTimer){clearInterval(archiveFlushTimer);archiveFlushTimer=null;}setTimeout(startIntelligenceCollector,3000);};
   }
   window.addEventListener('beforeunload',function(){if(archiveFlushTimer)clearInterval(archiveFlushTimer);if(archiveSocket)archiveSocket.close();});
-  $('#runIntelValidation').addEventListener('click',runArchiveValidation);\n  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
+  $('#runIntelValidation').addEventListener('click',runArchiveValidation);
+  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
 
   function createOver1Tracking(){
     return{armed:true,nextId:1,pending:[],totals:{1:{wins:0,losses:0},2:{wins:0,losses:0},3:{wins:0,losses:0},5:{wins:0,losses:0}},latest:null};
