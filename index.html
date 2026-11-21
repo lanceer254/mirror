@@ -890,7 +890,7 @@ li span:first-child{color:#668b70}
       var candidates=[],ready=0;
       MK.forEach(function(m){
         var raw=autoScanBuffers[m.symbol]||[];
-        if(raw.length<300)return;
+        if(!autoScanLiveAt[m.symbol]||Date.now()-autoScanLiveAt[m.symbol]>30000||raw.length<300)return;
         var result=window.ZyntrixEntryEngine.scanMarket(raw,{market:m.symbol,minTicks:300,minTrainSignals:10,minHoldoutSignals:20,contractScope:'OVER_UNDER'});
         if(result.ready)ready++;
         if(result.best)candidates.push(Object.assign({market:m.symbol},result.best));
@@ -997,21 +997,17 @@ li span:first-child{color:#668b70}
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
   var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveHistoryRequests={},archiveNextHistoryId=50000,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var archiveSubscriptions={},archiveContractRequests={},entryProposalRequests={},entryProposalCounter=61000,archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
-  var autoScanBuffers=Object.create(null),autoScanSeen=Object.create(null),autoScanTimer=null,autoScanSignal=null,autoScanBusy=false,autoScanTotalTicks=0,autoScanReadyMarkets=0;
+  var autoScanBuffers=Object.create(null),autoScanLiveAt=Object.create(null),autoScanTimer=null,autoScanSignal=null,autoScanBusy=false,autoScanTotalTicks=0,autoScanReadyMarkets=0;
   function archiveStatus(text,offline){var el=$('#intelCollectorState');if(el){el.textContent=text;el.classList.toggle('offline',!!offline);}}
   function archiveDigit(quote,pipSize){var p=Number(pipSize);var q=Number(quote);if(!Number.isFinite(q))return -1;var formatted=Number.isInteger(p)&&p>=0&&p<=8?q.toFixed(p):String(quote);var digits=formatted.replace(/\D/g,'');return digits?Number(digits.charAt(digits.length-1)):-1;}
   function autoScanStoreTick(symbol,epoch,quote,digit){
     if(!MK.some(function(m){return m.symbol===symbol;})||!Number.isFinite(Number(epoch))||!Number.isFinite(Number(quote))||!Number.isInteger(digit)||digit<0||digit>9)return false;
-    if(!autoScanBuffers[symbol]){autoScanBuffers[symbol]=[];autoScanSeen[symbol]=Object.create(null);}
-    var key=String(epoch)+'|'+String(quote);
-    if(autoScanSeen[symbol][key])return false;
-    autoScanSeen[symbol][key]=true;
+    if(!autoScanBuffers[symbol])autoScanBuffers[symbol]=[];
     autoScanBuffers[symbol].push({epoch:Number(epoch),quote:Number(quote),digit:digit});
     autoScanTotalTicks++;
     if(autoScanBuffers[symbol].length>6000){
       autoScanBuffers[symbol].sort(function(a,b){return a.epoch-b.epoch;});
-      var removed=autoScanBuffers[symbol].splice(0,autoScanBuffers[symbol].length-6000);
-      removed.forEach(function(t){delete autoScanSeen[symbol][String(t.epoch)+'|'+String(t.quote)];});
+      autoScanBuffers[symbol].splice(0,autoScanBuffers[symbol].length-6000);
     }
     return true;
   }
@@ -1036,6 +1032,7 @@ li span:first-child{color:#668b70}
   }
   function autoScanRecordLiveTick(symbol,epoch,quote,digit){
     if(!autoScanStoreTick(symbol,epoch,quote,digit))return;
+    autoScanLiveAt[symbol]=Date.now();
     if(autoScanSignal&&autoScanSignal.market===symbol){
       autoScanSignal.ticksRemaining--;
       if(autoScanSignal.ticksRemaining<=0){
