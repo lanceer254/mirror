@@ -37,3 +37,14 @@ The repository quality workflow probes the deployed `/health` endpoint and requi
 
 
 Last integration verification: 2026-11-21.
+
+## Five-tick entry engine
+
+- Frontend engine: `entry-engine.js`; tests: `entry-engine.test.cjs`.
+- `POST` order execution is not implemented; the scanner is signal/research only.
+- `GET /api/ticks` supplies up to 5,000 archived rows per market to the browser scanner.
+- Every market is assessed separately. The scanner's 5-tick terminal-digit model is trained on the first 70% of each market's history; an inner chronological slice selects the probability margin, and the final 30% is held out for evaluation.
+- Outcomes are sampled at non-overlapping 5-tick intervals. Candidate families: DIGITOVER, DIGITUNDER, DIGITMATCH, DIGITDIFF, DIGITEVEN, DIGITODD.
+- Sequence qualification requires at least 20 holdout signals, a Wilson 95% lower bound above the theoretical baseline, and at least one run of five consecutive holdout wins.
+- A fresh Deriv proposal is requested for the candidate at the configured stake and currency. Entry is shown only if the 95% lower-bound win probability times gross payout exceeds the ask price. This is a conservative quote-time check, not a promise of future execution price.
+- If no candidate passes, the correct output is NO ENTRY.
