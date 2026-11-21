@@ -308,6 +308,10 @@ li span:first-child{color:#668b70}
 .ou-difference.is-under strong{color:#ff806f}
 .ou-difference.is-equal{border-color:#8ca6a0;box-shadow:0 0 10px rgba(140,166,160,.28),0 0 20px rgba(140,166,160,.12),inset 0 0 10px rgba(140,166,160,.06)}
 .ou-difference.is-equal strong{color:#c9f7d5}
+.ou-difference.is-over.is-extreme{border-width:2px;box-shadow:0 0 16px rgba(85,245,154,.85),0 0 34px rgba(85,245,154,.62),0 0 58px rgba(85,245,154,.38),inset 0 0 18px rgba(85,245,154,.2)}
+.ou-difference.is-over.is-extreme strong{text-shadow:0 0 8px #55f59a,0 0 18px #55f59a,0 0 30px rgba(85,245,154,.9)}
+.ou-difference.is-under.is-extreme{border-width:2px;box-shadow:0 0 16px rgba(255,128,111,.85),0 0 34px rgba(255,128,111,.62),0 0 58px rgba(255,128,111,.38),inset 0 0 18px rgba(255,128,111,.2)}
+.ou-difference.is-under.is-extreme strong{text-shadow:0 0 8px #ff806f,0 0 18px #ff806f,0 0 30px rgba(255,128,111,.9)}
 @media(max-width:600px){.ou-difference{min-width:82px;padding:7px 8px}.ou-difference strong{font-size:13px}}
 </style>
 </head>
@@ -480,7 +484,7 @@ li span:first-child{color:#668b70}
     var shared=distribution||buildSelectedDistribution(),clean=filtered||buildFilteredDistribution(),sample=shared.sampleSize;
     var percentages=clean.percentages,over=momentumFromPercentages(percentages,'OVER',0),under=momentumFromPercentages(percentages,'UNDER',9);
     var difference=over.momentum-under.momentum,differenceEl=$('#ouDifference'),differenceValue=$('#ouDifferenceValue');
-    if(differenceEl&&differenceValue){differenceValue.textContent=sample?(difference>0?'+':'')+difference.toFixed(1)+' pp':'—';differenceEl.classList.toggle('is-over',sample>0&&difference>0);differenceEl.classList.toggle('is-under',sample>0&&difference<0);differenceEl.classList.toggle('is-equal',sample>0&&difference===0);differenceEl.setAttribute('aria-label',sample?'Over overall '+over.momentum.toFixed(1)+' percent minus Under overall '+under.momentum.toFixed(1)+' percent equals '+difference.toFixed(1)+' percentage points':'Waiting for percentage data');}
+    if(differenceEl&&differenceValue){differenceValue.textContent=sample?(difference>0?'+':'')+difference.toFixed(1)+' pp':'—';differenceEl.classList.toggle('is-over',sample>0&&difference>0);differenceEl.classList.toggle('is-under',sample>0&&difference<0);differenceEl.classList.toggle('is-equal',sample>0&&difference===0);differenceEl.classList.toggle('is-extreme',sample>0&&Math.abs(difference)>=10);differenceEl.setAttribute('aria-label',sample?'Over overall '+over.momentum.toFixed(1)+' percent minus Under overall '+under.momentum.toFixed(1)+' percent equals '+difference.toFixed(1)+' percentage points':'Waiting for percentage data');}
     renderOneBarrierHistogram($('#overHistogram'),'OVER',percentages,sample);renderOneBarrierHistogram($('#underHistogram'),'UNDER',percentages,sample);
     $('#overMomentumNow').textContent=sample?over.momentum.toFixed(1)+'%':'—';$('#underMomentumNow').textContent=sample?under.momentum.toFixed(1)+'%':'—';
     $('#overSample').textContent=sample+' DIGITS / '+selectedWindow+'s · FILTERED';$('#underSample').textContent=sample+' DIGITS / '+selectedWindow+'s · FILTERED';
