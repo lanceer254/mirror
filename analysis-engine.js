@@ -27,6 +27,26 @@ function evaluateOver1TimeWindows(samples,feedConnected){
   var state=!feedConnected?"FEED_OFFLINE":collected<3?"COLLECTING":allPassed?"READY":"WAIT";
   return{state:state,ready:state==="READY",collected:collected,requiredSamples:requiredSamples,windows:windows};
 }
+
+function evaluateOver1Entry(samples,feedConnected){
+  var thresholds={10:90,30:85,60:80},requiredSamples=10,windows={},collected=0,allPassed=true,invalid=false;
+  [10,30,60].forEach(function(seconds){
+    var source=Array.isArray(samples&&samples[seconds])?samples[seconds]:[];
+    var valid=source.every(function(d){return Number.isInteger(d)&&d>=0&&d<=9;});
+    if(!valid)invalid=true;
+    var sample=valid?source:[];
+    var count=sample.filter(function(d){return d>1;}).length;
+    var actual=sample.length?count/sample.length*100:0;
+    var passed=valid&&sample.length>=requiredSamples&&actual+1e-9>=thresholds[seconds];
+    var rule={barrier:1,count:count,actualPercent:Math.round(actual*100)/100,thresholdPercent:thresholds[seconds],passed:passed};
+    if(sample.length>=requiredSamples&&valid)collected++;
+    if(!passed)allPassed=false;
+    windows[seconds]={sampleSize:sample.length,barriers:[rule],ready:passed};
+  });
+  var state=!feedConnected?"FEED_OFFLINE":invalid?"INVALID_DATA":collected<3?"COLLECTING":allPassed?"READY":"WAIT";
+  return{state:state,ready:state==="READY",collected:collected,requiredSamples:requiredSamples,windows:windows,barriers:windows[10].barriers,sampleSize:windows[10].sampleSize};
+}
+
 function median(values){
   if(!Array.isArray(values)||!values.length)return null;
   var sorted=values.slice().sort(function(a,b){return a-b;}),mid=Math.floor(sorted.length/2);
@@ -109,5 +129,5 @@ function analyzeSeries(values,options){
   smoothed.forEach(function(value){if(Number.isFinite(value))drift.push(updateADWIN(adwin,value));});
   return{rawData:raw,outlierFilteredData:hampel.filteredValues,smoothedData:smoothed,outlierFlags:hampel.outliers,outlierDetails:hampel.details,drift:drift,adwinState:adwin};
 }
-return{evaluateOver1Gate:evaluateOver1Gate,evaluateOver1TimeWindows:evaluateOver1TimeWindows,median:median,medianAbsoluteDeviation:medianAbsoluteDeviation,exponentialMovingAverage:exponentialMovingAverage,hampelFilter:hampelFilter,createADWINState:createADWINState,updateADWIN:updateADWIN,analyzeSeries:analyzeSeries};
+return{evaluateOver1Gate:evaluateOver1Gate,evaluateOver1TimeWindows:evaluateOver1TimeWindows,evaluateOver1Entry:evaluateOver1Entry,median:median,medianAbsoluteDeviation:medianAbsoluteDeviation,exponentialMovingAverage:exponentialMovingAverage,hampelFilter:hampelFilter,createADWINState:createADWINState,updateADWIN:updateADWIN,analyzeSeries:analyzeSeries};
 });
