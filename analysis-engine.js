@@ -43,8 +43,9 @@ function evaluateOver1Entry(samples,feedConnected){
     if(!passed)allPassed=false;
     windows[seconds]={sampleSize:sample.length,barriers:[rule],ready:passed};
   });
-  var state=!feedConnected?"FEED_OFFLINE":invalid?"INVALID_DATA":collected<3?"COLLECTING":allPassed?"READY":"WAIT";
-  return{state:state,ready:state==="READY",collected:collected,requiredSamples:requiredSamples,windows:windows,barriers:windows[10].barriers,sampleSize:windows[10].sampleSize};
+  var candidateReady=feedConnected&&!invalid&&collected===3&&allPassed;
+  var state=!feedConnected?"FEED_OFFLINE":invalid?"INVALID_DATA":collected<3?"COLLECTING":candidateReady?"VALIDATION_REQUIRED":"WAIT";
+  return{state:state,ready:false,candidateReady:candidateReady,collected:collected,requiredSamples:requiredSamples,windows:windows,barriers:windows[10].barriers,sampleSize:windows[10].sampleSize};
 }
 
 function median(values){
