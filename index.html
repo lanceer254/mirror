@@ -239,6 +239,17 @@ li span:first-child{color:#668b70}
 
 .over1-gate{margin:12px 0;padding:12px;border:1px solid #287447;background:#06130b;border-radius:6px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.over1-gate h3{margin:0 0 7px;color:#aaf8bf;font-size:11px;letter-spacing:.1em}.over1-status{font-size:12px;font-weight:700;color:#c9f7d5}.over1-status.ready{color:#55f59a}.over1-status.wait{color:#ffcf7a}.over1-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.over1-rule{padding:7px 5px;border:1px solid #17452e;background:#030806;text-align:center;border-radius:4px}.over1-rule b{display:block;color:#c9f7d5;font-size:12px}.over1-rule small{display:block;color:#8bdba2;font-size:9px}.over1-rule.pass{border-color:#55f59a}.over1-rule.fail{border-color:#a65b52}.over1-note{margin-top:8px;color:#8cae95;font-size:9px;line-height:1.5}@media(max-width:520px){.over1-rules{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .analysis-note{margin:8px 0 0;color:#668b70;font-size:9px}
+.window-confirmation{margin:10px 0;padding:11px;border:1px solid #17452e;border-radius:7px;background:#030806;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.window-confirmation-head{display:flex;justify-content:space-between;gap:8px;color:#aaf8bf;font-size:9px;letter-spacing:.08em}
+.window-confirmation-head span{color:#668b70}
+.window-confirmation-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:9px}
+.window-confirmation-item{padding:8px 5px;border:1px solid #17452e;border-radius:4px;text-align:center;background:#07110b}
+.window-confirmation-item small,.window-confirmation-item span{display:block;color:#789681;font-size:8px}
+.window-confirmation-item b{display:block;margin:4px 0;color:#c9f7d5;font-size:15px;font-variant-numeric:tabular-nums}
+.window-confirmation-item.is-over b{color:#55f59a;text-shadow:0 0 8px rgba(85,245,154,.45)}
+.window-confirmation-item.is-under b{color:#ff6b6b;text-shadow:0 0 8px rgba(255,107,107,.45)}
+.window-confirmation-note{margin-top:8px;color:#668b70;font-size:8px;line-height:1.5}
+@media(max-width:520px){.window-confirmation-grid{gap:4px}.window-confirmation-item{padding:7px 2px}.window-confirmation-item b{font-size:12px}}
 
 
 /* Selectable D-Circles window and contract momentum histogram */
@@ -349,6 +360,15 @@ li span:first-child{color:#668b70}
       <div class="ou-chart-foot"><span>UNDER BARRIER</span><span id="underSample">0 DIGITS</span></div>
     </div>
   </section>
+  <section class="window-confirmation" id="windowConfirmation" aria-label="Simultaneous time window confirmation">
+    <div class="window-confirmation-head"><strong>ENTRY CONFIRMATION // LIVE WINDOWS</strong><span>RAW DISTRIBUTION</span></div>
+    <div class="window-confirmation-grid">
+      <div class="window-confirmation-item" data-confirm-window="10"><small>10s · ENTRY</small><b id="windowDiff10">—</b><span id="windowSample10">0 ticks</span></div>
+      <div class="window-confirmation-item" data-confirm-window="30"><small>30s · CONFIRM</small><b id="windowDiff30">—</b><span id="windowSample30">0 ticks</span></div>
+      <div class="window-confirmation-item" data-confirm-window="60"><small>60s · CONTEXT</small><b id="windowDiff60">—</b><span id="windowSample60">0 ticks</span></div>
+    </div>
+    <div class="window-confirmation-note">All three readings update on every incoming tick. Matching direction across windows indicates alignment, not a guaranteed profitable signal.</div>
+  </section>
     <section class="filter-panel" id="statisticalFilterPanel" aria-label="Statistical noise filter and drift monitor">
     <div class="filter-head"><h2>STATISTICAL FILTER // LIVE DIAGNOSTICS</h2><span id="filterMode">EMA + HAMPEL + MAD</span></div>
     <div class="filter-grid">
@@ -375,14 +395,14 @@ li span:first-child{color:#668b70}
   </section>
   <section class="over1-gate" aria-label="OVER 1 live entry gate">
       <h3>OVER 1 // LIVE ENTRY GATE</h3>
-      <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING 60 TICKS</div>
+      <div class="over1-status wait" id="over1GateStatus" aria-live="polite">WAIT · COLLECTING TIME-WINDOW DATA</div>
       <div class="over1-rules" id="over1GateRules">
         <div class="over1-rule"><b>OVER 0</b><small>— / 95%</small></div>
         <div class="over1-rule"><b>OVER 1</b><small>— / 85%</small></div>
         <div class="over1-rule"><b>OVER 2</b><small>— / 75%</small></div>
         <div class="over1-rule"><b>OVER 3</b><small>— / 65%</small></div>
       </div>
-      <div class="over1-note">All four thresholds must pass together on the same latest 60 ticks. Signal updates on every tick. This is a signal only; no trade is submitted. Select the same market manually in DBot and Zyntrix.</div>
+      <div class="over1-note">All four thresholds must pass in each of the 10s, 30s and 60s windows. Each window needs at least 10 observed ticks. Signal updates on every tick. This is a signal only; no trade is submitted.</div>
     </section>
   <section class="activity" aria-label="Compact live system log">
     <div class="panel">
@@ -451,6 +471,9 @@ li span:first-child{color:#668b70}
 
   var mk=MK[0];
   function selectedDigits(source){var values=Array.isArray(source)?source:ds,epochs=values===ds?tickEpochs:[],cutoff=Date.now()/1000-selectedWindow,result=[];values.forEach(function(d,index){var epoch=epochs[index];if(epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch))&&Number(epoch)>=cutoff)result.push(d);});return result;}
+  function digitsForWindow(seconds){var cutoff=Date.now()/1000-seconds,result=[];for(var i=0;i<ds.length;i++){var epoch=tickEpochs[i];if(epoch!==null&&epoch!==undefined&&Number.isFinite(Number(epoch))&&Number(epoch)>=cutoff)result.push(ds[i]);}return result;}
+  function distributionForWindow(seconds){var digits=digitsForWindow(seconds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var n=digits.length;return{digits:digits,counts:counts,sampleSize:n,percentages:counts.map(function(v){return n?v/n*100:0;})};}
+  function renderWindowConfirmation(){[10,30,60].forEach(function(seconds){var dist=distributionForWindow(seconds),over=momentumFromPercentages(dist.percentages,'OVER',0).momentum,under=momentumFromPercentages(dist.percentages,'UNDER',9).momentum,diff=over-under,item=document.querySelector('[data-confirm-window="'+seconds+'"]'),value=$('#windowDiff'+seconds),sample=$('#windowSample'+seconds);value.textContent=dist.sampleSize?(diff>0?'+':'')+diff.toFixed(1)+' pp':'—';sample.textContent=dist.sampleSize+' ticks';item.classList.toggle('is-over',dist.sampleSize>0&&diff>0);item.classList.toggle('is-under',dist.sampleSize>0&&diff<0);});}
   function buildSelectedDistribution(){var digits=selectedDigits(ds),counts=Array(10).fill(0);digits.forEach(function(d){if(Number.isInteger(d)&&d>=0&&d<=9)counts[d]++;});var sampleSize=digits.length;return{digits:digits,counts:counts,sampleSize:sampleSize,percentages:counts.map(function(count){return sampleSize?count/sampleSize*100:0;})};}
   function buildFilteredDistribution(){
     var histories=Array.from({length:10},function(){return[];}),counts=Array(10).fill(0),left=0,validTicks=0;
@@ -762,22 +785,24 @@ li span:first-child{color:#668b70}
 
   function renderOver1Gate(){
     var status=$('#over1GateStatus'),holder=$('#over1GateRules');
-    if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1Gate!=='function')return;
-    var result=window.ZyntrixEngine.evaluateOver1Gate(ds.slice(-60),60,!!(socket&&socket.readyState===WebSocket.OPEN));
-    status.textContent=result.ready?'PASS · OVER 1 SIGNAL READY':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
+    if(!status||!holder||!window.ZyntrixEngine||typeof window.ZyntrixEngine.evaluateOver1TimeWindows!=='function')return;
+    var samples={10:digitsForWindow(10),30:digitsForWindow(30),60:digitsForWindow(60)};
+    var result=window.ZyntrixEngine.evaluateOver1TimeWindows(samples,!!(socket&&socket.readyState===WebSocket.OPEN));
+    var primary=result.windows[10];
+    status.textContent=result.ready?'PASS · 10s / 30s / 60s ALIGNED':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · ONE OR MORE WINDOWS FAILED';
     status.className='over1-status '+(result.ready?'ready':'wait');
     holder.replaceChildren();
-    result.barriers.forEach(function(rule){
+    primary.barriers.forEach(function(rule){
       var card=document.createElement('div'),value=document.createElement('b'),label=document.createElement('small');
-      card.className='over1-rule '+(rule.passed?'pass':'fail');
+      card.className='over1-rule '+(result.ready&&rule.passed?'pass':'fail');
       value.textContent='OVER '+rule.barrier;
-      label.textContent=(result.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'%';
+      label.textContent=(primary.sampleSize?rule.actualPercent.toFixed(1)+'%':'—')+' / '+rule.thresholdPercent+'% · 10s';
       card.append(value,label);holder.appendChild(card);
     });
     var liveAgeSeconds=lastLiveTickEpoch===null?Infinity:Date.now()/1000-lastLiveTickEpoch;
     var passReady=result.ready&&liveTickSequence>0&&liveAgeSeconds>=0&&liveAgeSeconds<=3;
-    sendZyntrixBridgeSignal(result,passReady);
-    status.textContent=passReady?'PASS · OVER 1 SIGNAL READY':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='SELECT_60'?'WAIT · SELECT 60-TICK WINDOW':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.sampleSize+' / 60 TICKS':'WAIT · ONE OR MORE CONDITIONS FAILED';
+    sendZyntrixBridgeSignal(primary,passReady);
+    status.textContent=passReady?'PASS · 10s / 30s / 60s ALIGNED':result.ready?'WAIT · WAITING FOR A FRESH LIVE TICK':result.state==='FEED_OFFLINE'?'WAIT · DERIV FEED OFFLINE':result.state==='COLLECTING'?'WAIT · COLLECTING '+result.collected+' / 3 WINDOWS':'WAIT · ONE OR MORE WINDOWS FAILED';
     status.className='over1-status '+(passReady?'ready':'wait');
   }
 
@@ -794,7 +819,7 @@ li span:first-child{color:#668b70}
       c.classList.toggle('hi',i===hi);c.classList.toggle('lo',i===lo);c.classList.toggle('third',i===third);
     });
     if(lastPrice)$('#price').innerHTML=lastPrice.slice(0,-1)+'<em>'+lastPrice.slice(-1)+'</em>';
-    updateTickWindow();renderMomentumHistogram(distribution,filtered);renderOver1Gate();
+    updateTickWindow();renderMomentumHistogram(distribution,filtered);renderWindowConfirmation();renderOver1Gate();
   }
 
   function moveCursor(i,flash){
