@@ -68,3 +68,11 @@ The dashboard includes a chronological train/holdout validation lab. It selects 
 **Collection is browser-session-driven:** the dashboard must remain open for live tick collection. The API does not claim to run an always-on Deriv collector. The current integration is analysis and research only; it does not log in to a Deriv account or place trades.
 
 See [INTELLIGENCE_BACKEND.md](INTELLIGENCE_BACKEND.md) for API routes, storage design, and operating notes.
+
+## Five-tick best-entry scanner
+
+The dashboard includes a five-tick entry scanner across all ten configured indices. Each market is evaluated independently. The engine tests digit Over/Under, Matches/Differs, and Even/Odd candidates using a five-step conditional digit-transition model with Bayesian shrinkage. It selects a confidence threshold on an inner chronological validation slice, then evaluates it on a later untouched holdout using non-overlapping five-tick outcomes.
+
+A candidate is sequence-qualified only when the holdout's 95% Wilson lower bound exceeds the contract's theoretical hit-rate baseline, the holdout has at least 20 independent signals, and at least one five-win consecutive sequence is observed. The scanner then requests a live five-tick Deriv proposal at the entered stake/currency. It only displays ENTRY QUALIFIED when the proposal's conservative expected value, calculated using the holdout lower confidence bound, is positive. Otherwise it displays NO ENTRY. It never places an order.
+
+This is a strict research filter. Current data coverage and candidate counts can produce no entry; the scanner does not relax the gates to force a signal. Contract proposal currency must match the user's Deriv account currency.
