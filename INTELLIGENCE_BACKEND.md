@@ -29,3 +29,8 @@ The current browser feed must remain open for live collection. The frontend inte
 
 ## Security and operations
 The public ingest route validates market names, timestamps, payload size and digit values, and deduplicates repeated events. It does not accept account tokens or trading credentials. For production abuse protection, place a Cloudflare Turnstile/rate-limit policy in front of ingestion before making the collector broadly public. Do not put secrets in GitHub Pages.
+
+
+## Deployment smoke check
+
+The repository quality workflow probes the deployed `/health` endpoint and requires the API to report a connected D1 binding and all ten configured markets before the integration is merged.
