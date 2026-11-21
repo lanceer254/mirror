@@ -454,7 +454,7 @@ li span:first-child{color:#668b70}
     if(sum>0)filtered=filtered.map(function(v){return v/sum*100;});
     var overState=window.ZyntrixEngine.createADWINState({delta:0.01,minWindow:8,maxWindow:64});
     var underState=window.ZyntrixEngine.createADWINState({delta:0.01,minWindow:8,maxWindow:64});
-    var overDrift=false,underDrift=false,rawDigits=selectedDigits(ds);
+    var overDrift=false,underDrift=false,rawDigits=selectedDigits(ds).slice(-64);
     rawDigits.forEach(function(value){if(window.ZyntrixEngine.updateADWIN(overState,value>1?1:0).driftDetected)overDrift=true;if(window.ZyntrixEngine.updateADWIN(underState,value<8?1:0).driftDetected)underDrift=true;});
     return{percentages:filtered,outliers:outliers,overDrift:overDrift,underDrift:underDrift,overState:overState,underState:underState,rawDigits:rawDigits};
   }
