@@ -354,7 +354,19 @@ li span:first-child{color:#668b70}
   <div class="intel-metric"><small>LAST ARCHIVE UPDATE</small><b id="intelLastUpdate">—</b></div>
  </div>
  <table class="intel-table"><thead><tr><th>MARKET</th><th>ARCHIVED</th><th>FIRST TICK</th><th>LAST TICK</th><th>STATE</th></tr></thead><tbody id="intelMarketRows"><tr><td colspan="5" class="muted">Waiting for archive response…</td></tr></tbody></table>
- <div class="intel-foot"><span id="intelQueueState">QUEUE: 0 PENDING</span><span>SERVER-SIDE DEDUPLICATION · UTC EPOCH STORAGE</span></div>
+
+ <div class="intel-validation">
+  <div class="intel-head"><h2>WALK-FORWARD VALIDATION LAB</h2><span class="intel-state">HISTORICAL HOLDOUT ONLY</span></div>
+  <div class="row" style="margin-bottom:9px">
+   <label class="field">CONTRACT<select id="intelContract"><option value="DIGITOVER">DIGIT OVER</option><option value="DIGITUNDER">DIGIT UNDER</option><option value="DIGITMATCH">DIGIT MATCH</option><option value="DIGITDIFF">DIGIT DIFFERS</option><option value="DIGITEVEN">DIGIT EVEN</option><option value="DIGITODD">DIGIT ODD</option><option value="CALL">RISE / CALL</option><option value="PUT">FALL / PUT</option></select></label>
+   <label class="field">BARRIER / DIGIT<input id="intelBarrier" type="number" min="0" max="9" value="1"></label>
+   <label class="field">EXPIRY TICKS<input id="intelHorizon" type="number" min="1" max="100" value="1"></label>
+   <label class="field">FEATURE WINDOW<input id="intelWindow" type="number" min="30" max="2000" value="250"></label>
+  </div>
+  <button type="button" class="ghost" id="runIntelValidation">RUN CHRONOLOGICAL HOLDOUT TEST</button>
+  <div id="intelValidationResult" class="tline" aria-live="polite">Collect archived ticks first. Validation requires enough historical data and uses an untouched chronological holdout.</div>
+ </div>
+\n <div class="intel-foot"><span id="intelQueueState">QUEUE: 0 PENDING</span><span>SERVER-SIDE DEDUPLICATION · UTC EPOCH STORAGE</span></div>
 </section>
 
   <div class="layout">
@@ -443,7 +455,7 @@ li span:first-child{color:#668b70}
   </section>
 </div>
 
-<script src="analysis-engine.js"></script>
+<script src="analysis-engine.js"></script>\n<script src="intelligence-engine.js"></script>
 <script>
 (function(){
   var $=function(s){return document.querySelector(s)};
@@ -782,7 +794,22 @@ li span:first-child{color:#668b70}
 
 
 
-  // Persistent multi-market archive collector. This is separate from the selected-market display feed.
+
+  async function runArchiveValidation(){
+    var button=$('#runIntelValidation'),resultEl=$('#intelValidationResult');button.disabled=true;button.textContent='VALIDATING…';resultEl.textContent='Loading chronological archive and evaluating independent forward outcomes…';
+    try{
+      if(!window.ZyntrixIntelligence)throw new Error('Validation engine failed to load');
+      var market=mk.symbol,query=INTELLIGENCE_API+'/api/ticks?market='+encodeURIComponent(market)+'&limit=5000',response=await fetch(query,{cache:'no-store'});if(!response.ok)throw new Error('Archive request failed: HTTP '+response.status);
+      var data=await response.json(),contract=$('#intelContract').value,barrier=Number($('#intelBarrier').value),horizon=Number($('#intelHorizon').value),windowSize=Number($('#intelWindow').value);
+      var result=window.ZyntrixIntelligence.runWalkForwardValidation(data.ticks,{contract:contract,barrier:barrier,horizonTicks:horizon,windowSize:windowSize,minSignals:50});
+      var pct=result.holdout.hitRate===null?'—':(result.holdout.hitRate*100).toFixed(2)+'%',base=(result.holdout.baseline*100).toFixed(2)+'%',ci=result.holdout.wilson95.lower===null?'—':(result.holdout.wilson95.lower*100).toFixed(2)+'%–'+(result.holdout.wilson95.upper*100).toFixed(2)+'%';
+      resultEl.textContent=result.verdict+' · '+market+' · '+contract+' · HOLDOUT '+result.holdout.signals+' SIGNALS · '+result.holdout.wins+' W / '+result.holdout.losses+' L · HIT RATE '+pct+' · BASELINE '+base+' · 95% CI '+ci+' · TRAIN '+result.trainTicks+' / TEST '+result.testTicks+' TICKS';
+      await fetch(INTELLIGENCE_API+'/api/validation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({market:market,result:result})});
+      event('result','WALK-FORWARD VALIDATION COMPLETE',result.verdict+' · '+pct+' holdout hit rate versus '+base+' baseline.');
+    }catch(error){resultEl.textContent='VALIDATION NOT COMPLETED · '+String(error.message||error);}
+    finally{button.disabled=false;button.textContent='RUN CHRONOLOGICAL HOLDOUT TEST';}
+  }
+\n  // Persistent multi-market archive collector. This is separate from the selected-market display feed.
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
   var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var archiveSubscriptions={},archiveContractRequests={},archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
@@ -841,7 +868,7 @@ li span:first-child{color:#668b70}
     archiveSocket.onclose=function(){archiveStatus('ARCHIVE FEED DISCONNECTED · RECONNECTING',true);if(archiveFlushTimer){clearInterval(archiveFlushTimer);archiveFlushTimer=null;}setTimeout(startIntelligenceCollector,3000);};
   }
   window.addEventListener('beforeunload',function(){if(archiveFlushTimer)clearInterval(archiveFlushTimer);if(archiveSocket)archiveSocket.close();});
-  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
+  $('#runIntelValidation').addEventListener('click',runArchiveValidation);\n  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
 
   function createOver1Tracking(){
     return{armed:true,nextId:1,pending:[],totals:{1:{wins:0,losses:0},2:{wins:0,losses:0},3:{wins:0,losses:0},5:{wins:0,losses:0}},latest:null};
