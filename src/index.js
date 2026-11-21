@@ -69,7 +69,7 @@ export default {
     const body=await request.json(),market=String(body.market||""),items=Array.isArray(body.contracts)?body.contracts:[];
     if(!validMarket(market)||items.length>300)return json({error:"Invalid market or contract list"},400);
     const now=Math.floor(Date.now()/1000);
-    const statements=items.map(c=>env.DB.prepare("INSERT INTO contract_catalog(market,contract_type,barrier,duration,duration_unit,payout_currency,payout,ask_price,raw_json,observed_at) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(market,String(c.contract_type||"").slice(0,32),c.barrier==null?null:String(c.barrier),Number.isFinite(Number(c.duration))?Number(c.duration):null,c.duration_unit||null,c.currency||null,Number.isFinite(Number(c.payout))?Number(c.payout):null,Number.isFinite(Number(c.ask_price))?Number(c.ask_price):null,JSON.stringify(c).slice(0,5000),now));
+    const statements=items.map(c=>env.DB.prepare("INSERT INTO contract_catalog(market,contract_type,barrier,duration,duration_unit,payout_currency,payout,ask_price,raw_json,observed_at) VALUES(?,?,?,?,?,?,?,?,?,?)").bind(market,String(c.contract_type||"").slice(0,32),c.barrier==null?null:String(c.barrier),c.duration!==undefined&&c.duration!==null&&Number.isFinite(Number(c.duration))?Number(c.duration):null,c.duration_unit||null,c.currency||null,Number.isFinite(Number(c.payout))?Number(c.payout):null,Number.isFinite(Number(c.ask_price))?Number(c.ask_price):null,JSON.stringify(c).slice(0,5000),now));
     if(statements.length)await env.DB.batch(statements);
     return json({stored:statements.length,market,observedAt:now});
    }
