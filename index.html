@@ -331,6 +331,26 @@ li span:first-child{color:#668b70}
 @media(max-width:600px){.intel-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.intel-table{font-size:8px}.intel-table th,.intel-table td{padding:5px 3px}}
 
 .entry-scan{border:1px solid rgba(70,210,150,.3);background:linear-gradient(135deg,rgba(10,35,29,.96),rgba(7,14,22,.98));border-radius:10px;padding:13px;margin:12px 0}.entry-scan .entry-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.entry-scan h2{font-size:11px;letter-spacing:1.5px;color:#a8f3ce;margin:0}.entry-controls{display:grid;grid-template-columns:1fr 110px 110px;gap:8px;align-items:end}.entry-controls .field{min-width:0}.entry-scan button{margin-top:9px;width:100%;border:1px solid #39c98b;background:rgba(22,125,81,.2);color:#b7f8d8;border-radius:6px;padding:11px;font-weight:800;letter-spacing:1px;cursor:pointer}.entry-scan button:disabled{opacity:.55;cursor:wait}.entry-result{margin-top:10px;padding:10px;border:1px solid rgba(130,160,180,.18);border-radius:7px;background:rgba(0,0,0,.2);font-size:11px;line-height:1.65;white-space:pre-wrap;color:#d6e7e0}.entry-result .muted{color:#8da49b}.entry-result .good{color:#63efaa}.entry-result .bad{color:#ff8b8b}.entry-rank{width:100%;border-collapse:collapse;font-size:10px;margin-top:9px}.entry-rank th,.entry-rank td{padding:6px 5px;border-bottom:1px solid rgba(130,160,180,.14);text-align:left}.entry-rank th{color:#8da49b;font-weight:600}@media(max-width:600px){.entry-controls{grid-template-columns:1fr 1fr}.entry-controls .field:first-child{grid-column:1/-1}}
+
+/* Automatic cross-market Over/Under scanner */
+.autoscan-panel{margin:0 0 12px;padding:13px;background:#050b09;border:1px solid #245b3a;border-radius:8px;box-shadow:0 0 18px rgba(0,255,120,.05);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.autoscan-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.autoscan-title{font-size:11px;font-weight:700;letter-spacing:.13em;color:#aaf8bf}
+.autoscan-status{font-size:9px;letter-spacing:.1em;color:#8bdba2;border:1px solid #245b3a;border-radius:4px;padding:4px 7px}
+.autoscan-status.active{color:#55f59a;border-color:#55f59a;box-shadow:0 0 10px rgba(0,255,120,.12)}
+.autoscan-status.wait{color:#d9c27a;border-color:#76652c}
+.autoscan-metrics{display:flex;gap:14px;flex-wrap:wrap;padding:0 0 9px;border-bottom:1px solid #153323}
+.autoscan-metric{display:flex;gap:6px;align-items:baseline;font-size:9px}
+.autoscan-metric small{color:#668b70;letter-spacing:.08em}
+.autoscan-metric b{color:#b4f8c8;font-size:10px}
+.autoscan-signal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 0 7px}
+.autoscan-signal small{display:block;color:#668b70;font-size:8px;letter-spacing:.1em;margin-bottom:4px}
+.autoscan-signal strong{display:block;color:#c9f7d5;font-size:13px;overflow-wrap:anywhere}
+.autoscan-signal .contract-value{color:#55f59a;font-size:17px}
+.autoscan-meta{color:#a9cbb2;font-size:9px;line-height:1.6;overflow-wrap:anywhere}
+.autoscan-note{margin-top:7px;color:#668b70;font-size:8px;line-height:1.5}
+@media(max-width:600px){.autoscan-panel{padding:10px}.autoscan-metrics{gap:9px}.autoscan-signal{gap:6px}.autoscan-signal strong{font-size:11px}.autoscan-signal .contract-value{font-size:15px}}
+
 </style>
 </head>
 <body>
@@ -343,6 +363,23 @@ li span:first-child{color:#668b70}
     <div class="price" id="price" aria-label="Latest price">0000.00</div>
   </header>
 
+
+
+  <section class="autoscan-panel" id="autoScanPanel" aria-label="Automatic cross-market Over and Under scanner">
+    <div class="autoscan-head"><div class="autoscan-title">AUTOSCAN // CROSS-MARKET OVER / UNDER</div><span class="autoscan-status wait" id="autoScanStatus">STARTING SCANNER</span></div>
+    <div class="autoscan-metrics">
+      <div class="autoscan-metric"><small>MARKETS READY</small><b id="autoScanMarkets">0 / 10</b></div>
+      <div class="autoscan-metric"><small>LIVE TICKS</small><b id="autoScanTicks">0</b></div>
+      <div class="autoscan-metric"><small>LAST CROSS-SCAN</small><b id="autoScanLastScan">—</b></div>
+    </div>
+    <div class="autoscan-signal">
+      <div><small>RECOMMENDED MARKET</small><strong id="autoScanMarket">COLLECTING DATA</strong></div>
+      <div><small>OVER / UNDER CONTRACT</small><strong class="contract-value" id="autoScanContract">—</strong></div>
+      <div><small>CONTRACT EXPIRY</small><strong id="autoScanExpiry">5 TICKS</strong></div>
+    </div>
+    <div class="autoscan-meta" id="autoScanMeta" aria-live="polite">AutoScan starts with Zyntrix, scans all ten supported markets and waits for a statistically qualified Over/Under opportunity.</div>
+    <div class="autoscan-note">ANALYSIS AND LIVE PROPOSAL CHECK ONLY · NO TRADE IS PLACED · SIGNAL EXPIRES AFTER FIVE NEW TICKS ON ITS MARKET</div>
+  </section>
 
   <section class="analysis-market panel"><label class="field">LIVE DISPLAY MARKET<select id="market"></select></label><p class="analysis-note">OVER / UNDER analysis uses the selected market and the existing live tick feed. Zyntrix is analysis-only; trading remains separate in DBot.</p></section>
 
@@ -839,6 +876,69 @@ li span:first-child{color:#668b70}
       try{archiveSocket.send(JSON.stringify(request));}catch(error){clearTimeout(timer);delete entryProposalRequests[reqId];reject(error);}
     });
   }
+
+  async function runAutoScan(){
+    if(autoScanBusy||autoScanSignal)return;
+    if(!window.ZyntrixEntryEngine||!archiveSocket||archiveSocket.readyState!==WebSocket.OPEN){
+      var waitStatus=$('#autoScanStatus');if(waitStatus){waitStatus.textContent='WAITING FOR LIVE FEED';waitStatus.className='autoscan-status wait';}
+      return;
+    }
+    autoScanBusy=true;
+    var status=$('#autoScanStatus'),last=$('#autoScanLastScan'),meta=$('#autoScanMeta');
+    if(status){status.textContent='CROSS-SCANNING';status.className='autoscan-status wait';}
+    try{
+      var candidates=[],ready=0;
+      MK.forEach(function(m){
+        var raw=autoScanBuffers[m.symbol]||[];
+        if(raw.length<300)return;
+        var result=window.ZyntrixEntryEngine.scanMarket(raw,{market:m.symbol,minTicks:300,minTrainSignals:10,minHoldoutSignals:20,contractScope:'OVER_UNDER'});
+        if(result.ready)ready++;
+        if(result.best)candidates.push(Object.assign({market:m.symbol},result.best));
+      });
+      autoScanReadyMarkets=ready;
+      if(last)last.textContent=new Date().toLocaleTimeString();
+      $('#autoScanMarkets').textContent=ready+' / '+MK.length;
+      if(!candidates.length){
+        if(meta){meta.dataset.message='no-candidate';meta.textContent='NO VALID OPPORTUNITY · '+ready+' markets have enough history; none passed the Over/Under holdout and five-consecutive-win qualification. Scanning continues.';}
+        if(status){status.textContent='NO VALID OPPORTUNITY';status.className='autoscan-status wait';}
+        return;
+      }
+      candidates.sort(function(a,b){
+        var ae=(a.holdout.interval.lower??0)-a.baseline,be=(b.holdout.interval.lower??0)-b.baseline;
+        return be-ae||(b.holdout.hitRate??0)-(a.holdout.hitRate??0)||b.holdout.signals-a.holdout.signals;
+      });
+      var stake=Number($('#entryStake').value),currency=$('#entryCurrency').value;
+      if(!(stake>0)){throw new Error('Set a valid stake in the existing scanner settings.');}
+      var checked=await Promise.all(candidates.map(async function(candidate){
+        try{
+          var quote=await requestEntryProposal(candidate,stake,currency);
+          if(!quote||!Number.isFinite(Number(quote.ask_price))||!Number.isFinite(Number(quote.payout)))return null;
+          var ask=Number(quote.ask_price),payout=Number(quote.payout),lower=candidate.holdout.interval.lower,ev=lower*payout-ask;
+          if(!(ev>0))return null;
+          return{candidate:candidate,ask:ask,payout:payout,ev:ev};
+        }catch(error){return null;}
+      }));
+      var viable=checked.filter(Boolean).sort(function(a,b){return b.ev-a.ev||((b.candidate.holdout.interval.lower-b.candidate.baseline)-(a.candidate.holdout.interval.lower-a.candidate.baseline));});
+      if(!viable.length){
+        if(meta){meta.dataset.message='no-live-value';meta.textContent='NO VALID OPPORTUNITY · Historical Over/Under candidates did not pass the current live Deriv proposal and conservative expected-value check. The scanner will try again.';}
+        if(status){status.textContent='NO VALID OPPORTUNITY';status.className='autoscan-status wait';}
+        return;
+      }
+      var best=viable[0],c=best.candidate;
+      autoScanSignal={market:c.market,contract:c.contract,barrier:c.barrier,ticksRemaining:5,wins:c.holdout.wins,signals:c.holdout.signals,hitRate:c.holdout.hitRate,lower:c.holdout.interval.lower,baseline:c.baseline,currency:currency,ask:best.ask,payout:best.payout,ev:best.ev};
+      if(meta)delete meta.dataset.message;
+      renderAutoScan();
+      event('result','AUTOSCAN OPPORTUNITY FOUND',c.market+' '+(c.contract==='DIGITOVER'?'OVER':'UNDER')+' '+c.barrier+' · 5-tick expiry · '+c.holdout.wins+'/'+c.holdout.signals+' holdout wins · positive conservative proposal EV.');
+    }catch(error){
+      if(meta){meta.dataset.message='scanner-error';meta.textContent='AUTOSCAN ERROR · '+String(error.message||error);}
+      if(status){status.textContent='SCANNER ERROR';status.className='autoscan-status wait';}
+      event('warning','AUTOSCAN ERROR',String(error.message||error));
+    }finally{
+      autoScanBusy=false;
+      if(!autoScanSignal)renderAutoScan();
+    }
+  }
+
   async function runBestEntryScan(){
     var button=$('#runBestEntryScan'),resultEl=$('#bestEntryResult'),rankEl=$('#bestEntryRank');
     button.disabled=true;button.textContent='SCANNING TEN MARKETS…';resultEl.textContent='Downloading archived tick histories and evaluating five-tick outcomes. No market is being traded.';rankEl.replaceChildren();
@@ -897,8 +997,56 @@ li span:first-child{color:#668b70}
   var INTELLIGENCE_API='https://zyntrix-intelligence-api.fiverlancer51.workers.dev';
   var archiveSocket=null,archiveQueue=[],archiveFlushTimer=null,archiveSummaryTimer=null,archiveHistoryRequests={},archiveNextHistoryId=50000,archiveSessionId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():'archive-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var archiveSubscriptions={},archiveContractRequests={},entryProposalRequests={},entryProposalCounter=61000,archiveTickCount=0,archiveInsertCount=0,archiveClientId='zyntrix-web-'+Math.random().toString(36).slice(2,10);
+  var autoScanBuffers=Object.create(null),autoScanSeen=Object.create(null),autoScanTimer=null,autoScanSignal=null,autoScanBusy=false,autoScanTotalTicks=0,autoScanReadyMarkets=0;
   function archiveStatus(text,offline){var el=$('#intelCollectorState');if(el){el.textContent=text;el.classList.toggle('offline',!!offline);}}
   function archiveDigit(quote,pipSize){var p=Number(pipSize);var q=Number(quote);if(!Number.isFinite(q))return -1;var formatted=Number.isInteger(p)&&p>=0&&p<=8?q.toFixed(p):String(quote);var digits=formatted.replace(/\D/g,'');return digits?Number(digits.charAt(digits.length-1)):-1;}
+  function autoScanStoreTick(symbol,epoch,quote,digit){
+    if(!MK.some(function(m){return m.symbol===symbol;})||!Number.isFinite(Number(epoch))||!Number.isFinite(Number(quote))||!Number.isInteger(digit)||digit<0||digit>9)return false;
+    if(!autoScanBuffers[symbol]){autoScanBuffers[symbol]=[];autoScanSeen[symbol]=Object.create(null);}
+    var key=String(epoch)+'|'+String(quote);
+    if(autoScanSeen[symbol][key])return false;
+    autoScanSeen[symbol][key]=true;
+    autoScanBuffers[symbol].push({epoch:Number(epoch),quote:Number(quote),digit:digit});
+    autoScanTotalTicks++;
+    if(autoScanBuffers[symbol].length>6000){
+      autoScanBuffers[symbol].sort(function(a,b){return a.epoch-b.epoch;});
+      var removed=autoScanBuffers[symbol].splice(0,autoScanBuffers[symbol].length-6000);
+      removed.forEach(function(t){delete autoScanSeen[symbol][String(t.epoch)+'|'+String(t.quote)];});
+    }
+    return true;
+  }
+  function renderAutoScan(){
+    var status=$('#autoScanStatus'),market=$('#autoScanMarket'),contract=$('#autoScanContract'),expiry=$('#autoScanExpiry'),meta=$('#autoScanMeta');
+    if(!status||!market||!contract||!expiry||!meta)return;
+    $('#autoScanMarkets').textContent=autoScanReadyMarkets+' / '+MK.length;
+    $('#autoScanTicks').textContent=autoScanTotalTicks.toLocaleString();
+    if(autoScanSignal){
+      var m=MK.find(function(item){return item.symbol===autoScanSignal.market;});
+      status.textContent='SIGNAL ACTIVE';status.className='autoscan-status active';
+      market.textContent=(m?m.n:autoScanSignal.market)+' · '+autoScanSignal.market;
+      contract.textContent=(autoScanSignal.contract==='DIGITOVER'?'OVER > ':'UNDER < ')+autoScanSignal.barrier;
+      expiry.textContent=autoScanSignal.ticksRemaining+' TICKS LEFT';
+      meta.textContent='HOLDOUT '+autoScanSignal.wins+'/'+autoScanSignal.signals+' WINS ('+(autoScanSignal.hitRate*100).toFixed(1)+'%) · 95% LOWER '+(autoScanSignal.lower*100).toFixed(1)+'% · BASELINE '+(autoScanSignal.baseline*100).toFixed(1)+'% · LIVE '+autoScanSignal.currency+' '+autoScanSignal.ask.toFixed(2)+' STAKE / '+autoScanSignal.payout.toFixed(2)+' PAYOUT · CONSERVATIVE EV +'+autoScanSignal.ev.toFixed(3)+'.';
+    }else{
+      market.textContent='NO ACTIVE RECOMMENDATION';contract.textContent='—';expiry.textContent='—';
+      if(status.textContent!=='CROSS-SCANNING'&&status.textContent!=='WAITING FOR LIVE FEED')status.textContent='SEARCHING';
+      status.className='autoscan-status wait';
+      if(!meta.dataset.message)meta.textContent='No qualifying Over/Under opportunity yet. Scanner continues to rescan all supported markets.';
+    }
+  }
+  function autoScanRecordLiveTick(symbol,epoch,quote,digit){
+    if(!autoScanStoreTick(symbol,epoch,quote,digit))return;
+    if(autoScanSignal&&autoScanSignal.market===symbol){
+      autoScanSignal.ticksRemaining--;
+      if(autoScanSignal.ticksRemaining<=0){
+        var expired=autoScanSignal;autoScanSignal=null;
+        event('system','AUTOSCAN SIGNAL EXPIRED',expired.market+' '+expired.contract+' '+expired.barrier+' reached its five-tick expiry. Cross-market rescan started.');
+        renderAutoScan();
+        setTimeout(runAutoScan,0);
+      }else renderAutoScan();
+    }
+  }
+
   var archiveFlushInProgress=false;
   async function flushArchiveQueue(){
     if(archiveFlushInProgress||!archiveQueue.length)return;
@@ -951,14 +1099,14 @@ li span:first-child{color:#668b70}
       if(data.msg_type==='proposal'&&entryProposalRequests[data.req_id]){var proposalRequest=entryProposalRequests[data.req_id];delete entryProposalRequests[data.req_id];proposalRequest.resolve(data.proposal||null);}
       if(data.msg_type==='history'&&data.history&&Array.isArray(data.history.prices)&&archiveHistoryRequests[data.req_id]){
         var historyRequest=archiveHistoryRequests[data.req_id],historyMarket=historyRequest.market,prices=data.history.prices,times=data.history.times||[],pipSize=data.pip_size!==undefined?data.pip_size:data.history.pip_size,loaded=0,validTimes=[];
-        prices.forEach(function(quote,index){var epoch=Number(times[index]),digit=archiveDigit(quote,pipSize);if(Number.isFinite(epoch)&&digit>=0){archiveQueue.push({market:historyMarket,epoch:epoch,quote:String(quote),digit:digit});loaded++;validTimes.push(epoch);}});
+        prices.forEach(function(quote,index){var epoch=Number(times[index]),digit=archiveDigit(quote,pipSize);if(Number.isFinite(epoch)&&digit>=0){archiveQueue.push({market:historyMarket,epoch:epoch,quote:String(quote),digit:digit});autoScanStoreTick(historyMarket,epoch,quote,digit);loaded++;validTimes.push(epoch);}});
         delete archiveHistoryRequests[data.req_id];
         if(historyRequest.page<5&&validTimes.length){var oldest=Math.min.apply(null,validTimes),nextHistoryId=archiveNextHistoryId++;archiveHistoryRequests[nextHistoryId]={market:historyMarket,page:historyRequest.page+1};archiveSocket.send(JSON.stringify({ticks_history:historyMarket,count:1000,end:String(oldest-1),style:'ticks',req_id:nextHistoryId}));}
         else{event('system','HISTORICAL BACKFILL COMPLETE',historyMarket+' · '+loaded+' ticks on final page '+historyRequest.page+'.');}
         if(archiveQueue.length>=250)flushArchiveQueue();
       }else if(data.msg_type==='tick'&&data.tick){
         var tick=data.tick,market=String(tick.symbol||''),digit=archiveDigit(tick.quote,tick.pip_size);
-        if(MK.some(function(m){return m.symbol===market;})&&digit>=0){archiveQueue.push({market:market,epoch:Number(tick.epoch),quote:String(tick.quote),digit:digit});if(archiveQueue.length>=250)flushArchiveQueue();}
+        if(MK.some(function(m){return m.symbol===market;})&&digit>=0){archiveQueue.push({market:market,epoch:Number(tick.epoch),quote:String(tick.quote),digit:digit});autoScanRecordLiveTick(market,Number(tick.epoch),tick.quote,digit);if(archiveQueue.length>=250)flushArchiveQueue();}
       }else if(data.msg_type==='contracts_for'){
         var symbol=archiveContractRequests[data.req_id];if(!symbol)return;
         var contracts=(data.contracts_for&&data.contracts_for.available||[]).map(function(c){var durationText=String(c.min_contract_duration||''),durationMatch=durationText.match(/^(\d+)([smhd])$/);return{contract_type:c.contract_type,barrier:c.barrier,duration:durationMatch?Number(durationMatch[1]):null,duration_unit:durationMatch?durationMatch[2]:null,contract_category:c.contract_category,min_contract_duration:c.min_contract_duration,max_contract_duration:c.max_contract_duration,expiry_type:c.expiry_type,raw:c};});
@@ -972,7 +1120,7 @@ li span:first-child{color:#668b70}
   window.addEventListener('beforeunload',function(){if(archiveFlushTimer)clearInterval(archiveFlushTimer);if(archiveSocket)archiveSocket.close();});
   $('#runIntelValidation').addEventListener('click',runArchiveValidation);
   $('#runBestEntryScan').addEventListener('click',runBestEntryScan);
-  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();
+  refreshIntelligenceSummary();archiveSummaryTimer=setInterval(refreshIntelligenceSummary,15000);startIntelligenceCollector();autoScanTimer=setInterval(runAutoScan,5000);runAutoScan();
 
   function createOver1Tracking(){
     return{armed:true,nextId:1,pending:[],totals:{1:{wins:0,losses:0},2:{wins:0,losses:0},3:{wins:0,losses:0},5:{wins:0,losses:0}},latest:null};
