@@ -859,7 +859,7 @@ li span:first-child{color:#668b70}
         archiveSubscriptions[tickId]=m.symbol;archiveContractRequests[contractId]=m.symbol;archiveHistoryRequests[historyId]=m.symbol;
         archiveSocket.send(JSON.stringify({ticks:m.symbol,subscribe:1,req_id:tickId}));
         archiveSocket.send(JSON.stringify({ticks_history:m.symbol,count:5000,end:'latest',style:'ticks',req_id:historyId}));
-        archiveSocket.send(JSON.stringify({contracts_for:m.symbol,currency:'USD',req_id:contractId}));
+        archiveSocket.send(JSON.stringify({contracts_for:m.symbol,req_id:contractId}));
       });
       if(archiveFlushTimer)clearInterval(archiveFlushTimer);archiveFlushTimer=setInterval(flushArchiveQueue,1000);
       refreshIntelligenceSummary();
@@ -878,7 +878,7 @@ li span:first-child{color:#668b70}
         if(MK.some(function(m){return m.symbol===market;})&&digit>=0){archiveQueue.push({market:market,epoch:Number(tick.epoch),quote:String(tick.quote),digit:digit});if(archiveQueue.length>=250)flushArchiveQueue();}
       }else if(data.msg_type==='contracts_for'){
         var symbol=archiveContractRequests[data.req_id];if(!symbol)return;
-        var contracts=(data.contracts_for&&data.contracts_for.available||[]).map(function(c){return{contract_type:c.contract_type,barrier:c.barrier,duration:c.min_contract_duration,duration_unit:c.duration_unit||c.min_contract_duration_unit||null,contract_display:c.contract_display,expiry_type:c.expiry_type,raw:c};});
+        var contracts=(data.contracts_for&&data.contracts_for.available||[]).map(function(c){var durationText=String(c.min_contract_duration||''),durationMatch=durationText.match(/^(\\d+)([smhd])$/);return{contract_type:c.contract_type,barrier:c.barrier,duration:durationMatch?Number(durationMatch[1]):null,duration_unit:durationMatch?durationMatch[2]:null,contract_category:c.contract_category,min_contract_duration:c.min_contract_duration,max_contract_duration:c.max_contract_duration,expiry_type:c.expiry_type,raw:c};});
         fetch(INTELLIGENCE_API+'/api/contracts/snapshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({market:symbol,contracts:contracts})}).catch(function(){});
         event('system','CONTRACT CATALOG UPDATED',symbol+' · '+contracts.length+' available contract definitions.');
       }
